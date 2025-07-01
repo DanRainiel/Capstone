@@ -97,7 +97,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   //modal
 const modal = document.getElementById("modal-container");
-const showModalBtn = document.getElementById("home-btn");
 const lm1 = document.getElementById("lm-1");
 const lm2 = document.getElementById("lm-2");
 const lm3 = document.getElementById("lm-3");
@@ -111,9 +110,6 @@ const news3 = document.getElementById("news3");
 const exitModalBtn = document.getElementById("exit");
 
 // Show modal
-showModalBtn.onclick = function () {
-  modal.classList.add("show");
-};
 lm1.onclick = function () {
   modal.classList.add("show");
 };
