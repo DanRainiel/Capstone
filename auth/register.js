@@ -1,4 +1,3 @@
-// ✅ Import ONCE
 import { db } from './db_config.js';
 import { collection, getDocs, doc, setDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
@@ -62,31 +61,30 @@ document.getElementById("SignInBtn").addEventListener("click", async (e) => {
   }
 
   try {
-    // Check CUSTOMER login first
     const usersRef = collection(db, "users");
     const userSnapshot = await getDocs(usersRef);
     for (const docItem of userSnapshot.docs) {
       const data = docItem.data();
       if (data.email === email && data.password === password) {
+        sessionStorage.setItem("isLoggedIn", "true");
         alert(`Welcome back, ${data.name}!`);
-        window.location.href = "../Dashboard/customer/customer.html";
+        location.replace("../Dashboard/customer/customer.html");
         return;
       }
     }
 
-    // If not found in users, check ADMIN login
     const adminRef = collection(db, "Admin");
     const adminSnapshot = await getDocs(adminRef);
     for (const docItem of adminSnapshot.docs) {
       const data = docItem.data();
       if (data.email === email && data.password === password) {
+        sessionStorage.setItem("isLoggedIn", "true");
         alert(`Welcome back, Admin ${data.name}!`);
-        window.location.href = "../Dashboard/admin/admin.html";
+        location.replace("../Dashboard/admin/admin.html");
         return;
       }
     }
 
-    // If not found in either
     alert("Account not found or incorrect password.");
 
   } catch (error) {
