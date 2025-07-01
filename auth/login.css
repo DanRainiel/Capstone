@@ -56,7 +56,7 @@ body {
     justify-content: center; /* Center content horizontally */
     width: 100%;
     box-sizing: border-box;
-    
+    animation:slideTop 0.5s ease-in-out;
 }
 
 
@@ -130,9 +130,8 @@ body::before {
     box-shadow: 0px 0px 0 10px var(--newbordercolor);
     transition: var(--transition-3s);    
     z-index: 1;
-    
+    animation: slideTop 0.8s ease-in-out;
 }
-
 .form-header{
     position: absolute;
     top: 0;
@@ -360,5 +359,17 @@ font-weight: 500;
     }
     .header .navbar a {
         font-size: 1rem;
+    }
+}
+
+/* Keyframes for slide-in animation */
+@keyframes slideTop {
+    from {
+        transform: translateY(-100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
     }
 }
