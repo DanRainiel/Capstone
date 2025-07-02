@@ -72,7 +72,7 @@ document.getElementById("SignInBtn").addEventListener("click", async (e) => {
       }
     }
 
-    // 🔍 Check "Admin" collection
+    // 🔍 Check "Admin" 
     const adminRef = collection(db, "Admin");
     const adminSnapshot = await getDocs(adminRef);
     for (const docItem of adminSnapshot.docs) {
