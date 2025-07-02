@@ -8,7 +8,7 @@
    --background-color: #01949A;
   --light-color: #28fa79;
   --box-shadow: .5rem .5rem 0 rgba(0, 0, 0, 0.2);
-  --text-shadow: .4rem .4rem 0 rgba(0, 0, 0, 0.2);
+  --text-shadow: .2rem .2rem 0 rgba(0, 133, 129, 0.2);
   --border:.2rem solid var(--green);
 }
 
@@ -24,4 +24,59 @@
     min-height: 100vh;
     background: var(--background-color);
     color:var(--white);
+}
+
+nav{
+  background-color: var(--white);
+  width: 100%;
+  padding:10px 10%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+}
+
+nav .logo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start; /* align text to left */
+  line-height: 1.2;
+}
+
+nav .logo a {
+    font-size: 2rem;
+    font-weight: 900;
+    color: var(--background-color);
+    text-shadow: var(--text-shadow);
+    letter-spacing: 1px;
+    font-family: 'Raleway', sans-serif;
+    text-decoration: none;
+}
+
+nav .user{
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 1;
+}
+
+.user .welcome {
+  font-size: 1rem;
+  color: var(--background-color);
+  font-weight: 600;
+  margin-right: 10px;
+}
+
+.user button {
+  padding: 10px;
+  width: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  border-color: var(--background-color);
+  border-width: .1rem;
+  border-style: solid;
+}
+
+.user button i{
+  color:var(--background-color);
 }
