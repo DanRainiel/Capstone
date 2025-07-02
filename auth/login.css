@@ -132,6 +132,21 @@ body::before {
     z-index: 1;
     animation: slideTop 0.8s ease-in-out;
 }
+
+.dog-top {
+  position: absolute;
+  top: -90px; 
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3; 
+}
+
+.dog-top img {
+  width: 120px;  
+  height: auto;
+  object-fit: contain;
+}
+
 .form-header{
     position: absolute;
     top: 0;

@@ -1,0 +1,27 @@
+@import url('https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,100..900;1,100..900&display=swap');
+
+:root {
+  --green: #1efdf2;
+  --white: #fff;
+   --black: #2e2525;
+   --orange: #f8732b;
+   --background-color: #01949A;
+  --light-color: #28fa79;
+  --box-shadow: .5rem .5rem 0 rgba(0, 0, 0, 0.2);
+  --text-shadow: .4rem .4rem 0 rgba(0, 0, 0, 0.2);
+  --border:.2rem solid var(--green);
+}
+
+*{
+    font-family: 'Raleway', sans-serif;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+.hero{
+    width:100%;
+    min-height: 100vh;
+    background: var(--background-color);
+    color:var(--white);
+}
