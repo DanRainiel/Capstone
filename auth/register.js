@@ -1,7 +1,7 @@
 import { db } from './db_config.js';
 import { collection, getDocs, doc, setDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-// ✅ CUSTOMER SIGN-UP LOGIC
+// ✅ CUSTOMER SIGN-UP
 document.getElementById("SignUpBtn").addEventListener("click", async (e) => {
   e.preventDefault();
 
@@ -23,8 +23,7 @@ document.getElementById("SignUpBtn").addEventListener("click", async (e) => {
   try {
     const userCollection = collection(db, "users");
     const querySnapshot = await getDocs(userCollection);
-    const ownerCount = querySnapshot.size;
-    const newOwnerId = `owner${ownerCount + 1}`;
+    const newOwnerId = `owner${querySnapshot.size + 1}`;
     const docRef = doc(db, "users", newOwnerId);
 
     await setDoc(docRef, {
@@ -34,21 +33,16 @@ document.getElementById("SignUpBtn").addEventListener("click", async (e) => {
       createdAt: new Date()
     });
 
-    alert(`User saved as "${newOwnerId}"`);
-
-    // Clear form
-    document.getElementById("reg-name").value = "";
-    document.getElementById("reg-email").value = "";
-    document.getElementById("reg-pass").value = "";
-    document.getElementById("agree").checked = false;
+    alert(`User registered as "${newOwnerId}"`);
+    document.querySelector(".register-form").reset();
 
   } catch (err) {
-    console.error("Error writing document:", err);
+    console.error("Error registering user:", err);
     alert("Failed to register user.");
   }
 });
 
-// ✅ UNIFIED LOGIN LOGIC
+// ✅ LOGIN LOGIC
 document.getElementById("SignInBtn").addEventListener("click", async (e) => {
   e.preventDefault();
 
@@ -61,31 +55,35 @@ document.getElementById("SignInBtn").addEventListener("click", async (e) => {
   }
 
   try {
+    // 🔍 Check "users" collection
     const usersRef = collection(db, "users");
     const userSnapshot = await getDocs(usersRef);
     for (const docItem of userSnapshot.docs) {
       const data = docItem.data();
       if (data.email === email && data.password === password) {
         sessionStorage.setItem("isLoggedIn", "true");
+        sessionStorage.setItem("userId", docItem.id); // ✅ This is the fix!
         alert(`Welcome back, ${data.name}!`);
         location.replace("../Dashboard/customer/customer.html");
         return;
       }
     }
 
+    // 🔍 Check "Admin" collection
     const adminRef = collection(db, "Admin");
     const adminSnapshot = await getDocs(adminRef);
     for (const docItem of adminSnapshot.docs) {
       const data = docItem.data();
       if (data.email === email && data.password === password) {
         sessionStorage.setItem("isLoggedIn", "true");
+        sessionStorage.setItem("userId", docItem.id);
         alert(`Welcome back, Admin ${data.name}!`);
         location.replace("../Dashboard/admin/admin.html");
         return;
       }
     }
 
-    alert("Account not found or incorrect password.");
+    alert("Account not found or incorrect credentials.");
 
   } catch (error) {
     console.error("Login error:", error);
