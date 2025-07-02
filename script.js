@@ -154,3 +154,35 @@ window.onclick = function (e) {
 };
 
 });
+// ✅ Redirect if already logged in and opens index.html
+if (window.location.pathname.endsWith('index.html') && sessionStorage.getItem("userId")) {
+  const role = sessionStorage.getItem("role");
+  if (role === "admin") {
+    location.replace("Dashboard/admin/admin.html");
+  } else if (role === "customer") {
+    location.replace("Dashboard/customer/customer.html");
+  }
+}
+
+// your existing DOMContentLoaded, navbar, smooth scroll, modal code...
+document.addEventListener('DOMContentLoaded', () => {
+  // your existing code...
+});
+
+const role = sessionStorage.getItem("role");
+const currentPath = window.location.pathname;
+
+if (role === "customer" && currentPath.includes('customer.html')) {
+  history.pushState(null, null, currentPath);
+  window.addEventListener('popstate', () => {
+    location.replace(currentPath);
+  });
+}
+
+if (role === "admin" && currentPath.includes('admin.html')) {
+  history.pushState(null, null, currentPath);
+  window.addEventListener('popstate', () => {
+    location.replace(currentPath);
+  });
+}
+

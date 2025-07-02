@@ -61,10 +61,13 @@ document.getElementById("SignInBtn").addEventListener("click", async (e) => {
     for (const docItem of userSnapshot.docs) {
       const data = docItem.data();
       if (data.email === email && data.password === password) {
-        sessionStorage.setItem("isLoggedIn", "true");
-        sessionStorage.setItem("userId", docItem.id); // ✅ This is the fix!
-        alert(`Welcome back, ${data.name}!`);
-        location.replace("../Dashboard/customer/customer.html");
+     // inside "users" login
+     sessionStorage.setItem("isLoggedIn", "true");
+     sessionStorage.setItem("userId", docItem.id);
+     sessionStorage.setItem("role", "customer");
+     alert(`Welcome back, ${data.name}!`);
+     location.replace("../Dashboard/customer/customer.html");
+
         return;
       }
     }
@@ -75,10 +78,12 @@ document.getElementById("SignInBtn").addEventListener("click", async (e) => {
     for (const docItem of adminSnapshot.docs) {
       const data = docItem.data();
       if (data.email === email && data.password === password) {
-        sessionStorage.setItem("isLoggedIn", "true");
-        sessionStorage.setItem("userId", docItem.id);
-        alert(`Welcome back, Admin ${data.name}!`);
-        location.replace("../Dashboard/admin/admin.html");
+       sessionStorage.setItem("isLoggedIn", "true");
+       sessionStorage.setItem("userId", docItem.id);
+       sessionStorage.setItem("role", "admin");
+       alert(`Welcome back, Admin ${data.name}!`);
+      location.replace("../Dashboard/admin/admin.html");
+
         return;
       }
     }

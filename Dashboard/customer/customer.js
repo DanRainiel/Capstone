@@ -46,3 +46,9 @@ async function loadUsername() {
 
 loadUsername();
 
+if (sessionStorage.getItem("role") === "customer") {
+  history.pushState(null, null, location.href);
+  window.addEventListener('popstate', () => {
+    location.replace(location.href);
+  });
+}
