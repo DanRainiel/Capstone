@@ -1,94 +1,81 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="stylesheet" href="/Dashboard/customer/customer.css" />
+    <title>Customer</title>
+    <script type="module" src="customer.js" defer></script>
+    <script src="script.js"></script>
 
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-  <link rel="stylesheet" href="/Dashboard/customer/customer.css" />
-  <title>Customer</title>
-  <script type="module" src="customer.js" defer></script>
-  <script src="script.js"></script>
-</head>
 
-<body>
-  <div class="hero">
-    <nav>
-      <div class="logo">
-        <a href="#"><i class="fa-solid fa-paw"></i> PetStop Veterinary Clinic</a>
-      </div>
 
-      <div class="user">
-        <span class="welcome">Welcome back, <strong id="welcome-username"> Username</strong></span>
-        <button onclick="toggleMenu()"><i class="fa-solid fa-user"></i></button>
-      </div>
-    </nav>
 
-    <!-- ✅ INSERTED PROFILE ICON + POPUP CARD -->
+    <!-- JavaScript Logic -->
     
 
-    <div id="profilePopup" class="profile-popup">
-      <div class="profile-card">
-        <div class="icon">
-          <i class="fa-solid fa-user profile-icon"></i>
+    </head>
+    <body>
+    <div class="hero">
+        <nav>
+        <div class="logo">
+            <a href="#"><i class="fa-solid fa-paw"></i> PetStop Veterinary Clinic</a>
         </div>
-        <div class="text-data">
-          <span class="name"><strong id="profilepage-username">Username</strong></span>
+
+        <div class="user">
+            <span class="welcome">Welcome back, <strong id="welcome-username"> Username</strong></span>
+            <button onclick="toggleMenu()"><i class="fa-solid fa-user"></i></button>
         </div>
-        <div class="buttons">
-          <div class="data">
-            <button class="button">Pet Profile</button>
-            <button class="button" id="popup-logout-btn">Sign Out</button>
-          </div>
+        </nav>
+        <div class="sub-menu-wrap" id="subMenu">
+            <div class="sub-menu">
+                <div class="user-info">
+                    <i class="fa-solid fa-user" ></i>
+                    <strong id="profile-username">Username</strong>
+                </div>
+                <hr>
+
+               <a href="customerprofilecard.html" class="sub-menu-link">
+                 <i class="fa-solid fa-user"></i>
+                 <p>Profile</p>
+                 <span class="sub-menu-arrow"><i class="fa-solid fa-chevron-right" id="arrow"></i></span>
+              </a>
+
+
+                 <a href="#" class="sub-menu-link">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                    <p>History</p>
+                    <span class="sub-menu-arrow"><i class="fa-solid fa-chevron-right" id="arrow"></i></span>
+                </a>
+
+                 <a href="#" class="sub-menu-link">
+                    <i class="fa-solid fa-calendar-check"></i>
+                    <p>Appointments</p>
+                    <span class="sub-menu-arrow"><i class="fa-solid fa-chevron-right" id="arrow"></i></span>
+                </a>
+
+                 <a href="#" class="sub-menu-link" id="logout-btn">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                    <p>Logout</p>
+                    <span class="sub-menu-arrow"><i class="fa-solid fa-chevron-right" id="arrow"></i></span>
+                </a>
+            </div>
         </div>
-      </div>
     </div>
-    <!-- ✅ END INSERT -->
+    <!-- Logout Confirmation Popup -->
+            <div class="logout-modal" id="logoutModal">
+                    <div class="logout-modal-content">
+                    <p>Are you sure you want to logout?</p>
+                        <div class="logout-buttons">
+                            <button id="confirmLogout" class="btn-yes">Yes</button>
+                            <button id="cancelLogout" class="btn-no">No</button>
+                        </div>
+                    </div>
+                </div>
 
-    <div class="sub-menu-wrap" id="subMenu">
-      <div class="sub-menu">
-        <div class="user-info">
-          <i class="fa-solid fa-user"></i>
-          <strong id="profile-username">Username</strong>
-        </div>
-        <hr>
+                
 
-        <a href="#" class="sub-menu-link">
-          <i class="fa-solid fa-user"></i>
-          <p>Profile</p>
-          <span class="sub-menu-arrow"><i class="fa-solid fa-chevron-right" id="arrow"></i></span>
-        </a>
-
-        <a href="#" class="sub-menu-link">
-          <i class="fa-solid fa-clock-rotate-left"></i>
-          <p>History</p>
-          <span class="sub-menu-arrow"><i class="fa-solid fa-chevron-right" id="arrow"></i></span>
-        </a>
-
-        <a href="#" class="sub-menu-link">
-          <i class="fa-solid fa-calendar-check"></i>
-          <p>Appointments</p>
-          <span class="sub-menu-arrow"><i class="fa-solid fa-chevron-right" id="arrow"></i></span>
-        </a>
-
-        <a href="#" class="sub-menu-link" id="logout-btn">
-          <i class="fa-solid fa-arrow-right-from-bracket"></i>
-          <p>Logout</p>
-          <span class="sub-menu-arrow"><i class="fa-solid fa-chevron-right" id="arrow"></i></span>
-        </a>
-      </div>
-    </div>
-  </div>
-
-  <!-- Logout Confirmation Popup -->
-  <div class="logout-modal" id="logoutModal">
-    <div class="logout-modal-content">
-      <p>Are you sure you want to logout?</p>
-      <div class="logout-buttons">
-        <button id="confirmLogout" class="btn-yes">Yes</button>
-        <button id="cancelLogout" class="btn-no">No</button>
-      </div>
-    </div>
-  </div>
-</body>
-</html>
+    </body>
+    </html>

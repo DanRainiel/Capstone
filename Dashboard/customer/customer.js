@@ -33,17 +33,30 @@ async function loadUsername() {
 
     if (userSnap.exists()) {
       const data = userSnap.data();
+      const username = data.name;
 
-      // Set both name fields
-      document.getElementById("welcome-username").textContent = data.name;
-      document.getElementById("profile-username").textContent = data.name;
-      document.getElementById("profilepage-username").textContent = data.name;
+      // Store for use on other pages
+      sessionStorage.setItem("username", username);
+
+      // Set wherever available
+      const welcomeEl = document.getElementById("welcome-username");
+      const profileEl = document.getElementById("profile-username");
+      const profilePageEl = document.getElementById("profilepage-username");
+
+      if (welcomeEl) welcomeEl.textContent = username;
+      if (profileEl) profileEl.textContent = username;
+      if (profilePageEl) profilePageEl.textContent = username;
+
+    } else {
       console.log("User document not found.");
     }
   } catch (error) {
     console.error("Error loading username:", error);
   }
 }
+
+loadUsername();
+
 
 
 loadUsername();

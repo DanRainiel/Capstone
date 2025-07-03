@@ -1,0 +1,200 @@
+@import url('https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,100..900;1,100..900&display=swap');
+:root {
+  --green: #1efdf2;
+  --white: #fff;
+   --black: #2e2525;
+   --orange: #f8732b;
+   --background-color: #01949A;
+   --login:#efefef;
+  --light-color: #28fa79;
+  --box-shadow: .5rem .5rem 0 rgba(0, 0, 0, 0.2);
+  --text-shadow: .4rem .4rem 0 rgba(0, 0, 0, 0.2);
+  --border:.2rem solid var(--green);
+  --transition-3s:0.3s ;
+  --primary-color:#0D1936;
+  --secondary-color:#535354;
+  --newbordercolor:#e3e4e6;
+}
+
+
+*{
+   
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "poppins", sans-serif;
+}
+
+.profile-page-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  padding: 20px 30px;
+  background: transparent;
+  color: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 20px;
+  z-index: 1000;
+  color:var(--background-color);
+}
+
+.back-button {
+  background: var(--background-color);
+  border: none;
+  color: var(--white);
+  padding: 1rem;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  border-radius: 10px;
+  transition: ease 0.3s;
+  text-decoration: none;
+}
+
+.back-button:hover {
+  text-decoration: none;
+  background: var(--orange);
+  transform: scale(1.1);
+}
+
+.header-title {
+  font-size: 40px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--white);
+}
+
+.icon {
+  width: 150px;
+  height: 150px;
+  background-color: var(--orange);
+  border-radius: 50%;
+  padding: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  margin-top: -30px;   /* Pushes icon slightly upward */
+  margin-bottom: 10px;
+  z-index: 2;
+}
+
+
+.profile-icon {
+  font-size: 80px; /* Size of the icon */
+  color: var(--white); /* Icon color */
+}
+
+body {
+height: 100vh;
+display: flex;
+align-items: center;
+justify-content: center;
+background: url(/images/bg_login.png)no-repeat center/cover;
+
+}
+
+.profile-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 500px;           /* Wider */
+  height: 600px;              /* Taller */
+  width: 100%;
+  background: var(--newbordercolor);
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+  border-radius: 24px;
+  padding: 40px 30px;         /* Adjusted padding */
+  margin-top: -10px;
+  position: relative;
+  text-align: center;
+}
+
+
+.profile-card .text-data {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 5px;
+  z-index: 2; /* Ensures it's above the ::before background */
+  position: relative;
+  color: var(--white);
+}
+
+
+.profile-card::before{
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 36%;
+  width: 100%;
+  border-radius: 24px 24px 0 0;
+  background-color: var(--background-color);
+  z-index: 1;
+}
+
+.text-data{
+    font-size: 22px;
+    font-weight: 500;
+}
+
+.profile-card .buttons {
+  display: flex;
+  flex-direction: column;      /* Stack buttons vertically */
+  align-items: center;         /* Center horizontally */
+  justify-content: center;     /* Center vertically */
+  margin-top: 50px;
+  padding: 20px;
+                    /* Space between buttons */
+}
+
+.buttons button {
+  background-color: var(--background-color);
+  color: var(--white);
+  border: none;
+  padding: 15px 28px;
+  border-radius: 24px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 400;
+  margin: 0;      
+  margin-top: 100px;             
+  transition: all 0.3s ease;
+  width: 200px;                
+  text-align: center;
+  
+}
+
+hr{
+  width: 400px;
+  height: 1px;
+  background-color: var(--background-color);
+  border: none;
+  margin: 20px 0 20px; 
+}
+
+.buttons .data #sign-out-button  {
+  background-color: var(--orange);
+  color: var(--white);
+  border: none;
+  padding: 15px 28px;
+  border-radius: 24px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 400;
+  margin-top: 10px;            
+  
+}
+
+
+.buttons button:hover {
+  background-color: var(--orange);
+  transform: scale(1.2);
+}
