@@ -80,3 +80,178 @@ nav .user{
 .user button i{
   color:var(--background-color);
 }
+
+.sub-menu-wrap {
+  position: absolute;
+  top: 100px;
+  right: 10%;
+  width: 320px;
+  overflow: hidden;
+  max-height: 0px;
+}
+
+.sub-menu-wrap.openMenu{
+  max-height: 500px;
+  transition: 0.4s ease-in-out;
+  box-shadow: var(--box-shadow);
+  background-color: var(--white);
+  border-radius: 10px;
+}
+
+.sub-menu{
+  background: #fff;
+  padding: 20px;
+  margin: 10px;
+  color:var(--background-color);
+}
+
+.user-info{
+  display: flex;
+  align-items: center;
+
+}
+
+.user-info strong {
+  margin-left: 10px;
+  font-size: 1.3rem;
+  color: var(--background-color);
+}
+
+.user-info i{
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: var(--background-color)solid 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgb(226, 233, 235);
+}
+
+.sub-menu hr{
+  border:0;
+  height: 1px;
+  width: 100%;
+  background-color: var(--background-color);
+  margin:15px 0 10px;
+}
+
+.sub-menu-link i{
+ width: 40px;
+ background-color: rgb(226, 233, 235);
+ border-radius: 50%;
+ padding:12px;
+ display: flex;
+ align-items: center; 
+ justify-content: center;
+ color: var(--background-color);
+}
+
+.sub-menu-link #arrow {
+  font-size: 15px;
+  color: var(--background-color);
+  background-color: transparent;
+  border: none;
+  padding: 0;
+  width: 24px;
+  margin-left: auto;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  transition: 0.4s;
+}
+.sub-menu-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: var(--background-color);
+  margin: 12px 0;
+  width: 100%;
+}
+.sub-menu-link p {
+  font-size: 1.5rem;
+  margin-left: 15px;
+  flex: 1;
+}
+
+.sub-menu-link:hover #arrow{
+  color: var(--orange);
+  transform: translateX(5px);
+}
+
+.sub-menu-link:hover p {
+  color: var(--orange);
+  text-decoration: none;
+}
+
+.logout-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.logout-modal-content {
+  background: var(--white);
+  color: var(--background-color);
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: var(--box-shadow);
+  text-align: center;
+  width: 90%;
+  max-width: 400px;
+}
+
+.logout-modal-content p {
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+.logout-buttons {
+  display: flex;
+  justify-content: space-around;
+  gap: 20px;
+}
+
+.logout-buttons button {
+  padding: 10px 20px;
+  font-size: 1rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.btn-yes {
+  background-color: var(--orange);
+  color: white;
+}
+
+.btn-yes:hover {
+  background-color: #e25e18;
+}
+
+.btn-no {
+  background-color: var(--background-color);
+  color: white;
+}
+
+.btn-no:hover {
+  background-color: #016c6f;
+}
+
+
+
+
+
+
+/*responsive*/
+
+

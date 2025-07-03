@@ -15,7 +15,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 async function loadUsername() {
-  const userId = sessionStorage.getItem("userId"); // get saved user ID from login
+  const userId = sessionStorage.getItem("userId");
 
   if (!userId) {
     console.log("No user logged in.");
@@ -23,26 +23,28 @@ async function loadUsername() {
   }
 
   try {
-    // check if it’s from users collection or admin collection
     let userRef = doc(db, "users", userId);
     let userSnap = await getDoc(userRef);
 
     if (!userSnap.exists()) {
-      // maybe it’s an admin
       userRef = doc(db, "Admin", userId);
       userSnap = await getDoc(userRef);
     }
 
     if (userSnap.exists()) {
       const data = userSnap.data();
-      document.getElementById("username").textContent = data.name;
-    } else {
+
+      // Set both name fields
+      document.getElementById("welcome-username").textContent = data.name;
+      document.getElementById("profile-username").textContent = data.name;
+      document.getElementById("profilepage-username").textContent = data.name;
       console.log("User document not found.");
     }
   } catch (error) {
     console.error("Error loading username:", error);
   }
 }
+
 
 loadUsername();
 
@@ -52,3 +54,50 @@ if (sessionStorage.getItem("role") === "customer") {
     location.replace(location.href);
   });
 }
+
+
+
+
+//dropdown menu
+window.toggleMenu = function(){
+  const dropMenu = document.getElementById("subMenu");
+  dropMenu.classList.toggle("openMenu");
+
+}
+
+
+document.addEventListener('DOMContentLoaded', () => {
+  const logoutBtn = document.getElementById("logout-btn");
+  const logoutModal = document.getElementById("logoutModal");
+  const confirmLogout = document.getElementById("confirmLogout");
+  const cancelLogout = document.getElementById("cancelLogout");
+
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", (e) => {
+      e.preventDefault(); // ✅ Prevent immediate redirect
+      logoutModal.style.display = "flex"; // ✅ Show the modal
+    });
+  }
+
+  if (cancelLogout) {
+    cancelLogout.addEventListener("click", () => {
+      logoutModal.style.display = "none"; // ❌ Cancel logout
+    });
+  }
+
+  if (confirmLogout) {
+    confirmLogout.addEventListener("click", () => {
+      sessionStorage.clear(); // ✅ Clear login info
+      location.replace("/index.html"); // ✅ Redirect after confirmation
+    });
+  }
+
+  window.addEventListener("click", (e) => {
+    if (e.target === logoutModal) {
+      logoutModal.style.display = "none";
+    }
+  });
+});
+
+
+
