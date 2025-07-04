@@ -6,3 +6,12 @@ document.addEventListener("DOMContentLoaded", () => {
     profilePageEl.textContent = storedName;
   }
 });
+
+document.addEventListener('DOMContentLoaded', () => {
+  const accountBtn = document.getElementById("account-setting-btn");
+  if (accountBtn) {
+    accountBtn.addEventListener("click", () => {
+      window.location.href = "profilepage.html";
+    });
+  }
+});

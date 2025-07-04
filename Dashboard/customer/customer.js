@@ -33,19 +33,31 @@ async function loadUsername() {
 
     if (userSnap.exists()) {
       const data = userSnap.data();
-      const username = data.name;
+      const username = data.name || "User";
+      const email = data.email || "Email";
 
-      // Store for use on other pages
+      // Store to session
       sessionStorage.setItem("username", username);
+      sessionStorage.setItem("email", email);
 
-      // Set wherever available
-      const welcomeEl = document.getElementById("welcome-username");
-      const profileEl = document.getElementById("profile-username");
-      const profilePageEl = document.getElementById("profilepage-username");
+      // Update username wherever it exists
+      const usernameElements = [
+        document.getElementById("welcome-username"),
+        document.getElementById("profile-username"),
+        document.getElementById("profilepage-username"),
+        document.getElementById("account-username")
+      ];
+      usernameElements.forEach(el => {
+        if (el) el.textContent = username;
+      });
 
-      if (welcomeEl) welcomeEl.textContent = username;
-      if (profileEl) profileEl.textContent = username;
-      if (profilePageEl) profilePageEl.textContent = username;
+      // Update email wherever it exists
+      const emailElements = [
+        document.getElementById("account-email")
+      ];
+      emailElements.forEach(el => {
+        if (el) el.textContent = email;
+      });
 
     } else {
       console.log("User document not found.");
@@ -54,7 +66,6 @@ async function loadUsername() {
     console.error("Error loading username:", error);
   }
 }
-
 loadUsername();
 
 

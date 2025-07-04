@@ -12,16 +12,115 @@
   <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
 
   <link rel="stylesheet" href="profilepagedesign.css">
+  <script type="module" src="profilepage.js" defer></script> 
 </head>
 <body>
-  <div class="container">
+
+  <header class="profile-page-header">
+    <a href="customer.html" class="back-button">
+      <i class="fa-solid fa-arrow-left"></i> Back
+    </a>
+    <h1 class="header-title"><i class="fas fa-paw" id="paw">PetStop Veterinary Clinic</i></h1>
+  </header>
+
+  <section class="container">
     <div class="profile">
       <div class="profile-header">
-        <i class="fa-solid fa-user profile-icon"></i>
+        <i class="fa-solid fa-user profile-icon" ></i>
         <div class="profile-text-container">
-          <span class="name" id="profilepage-username"><strong>Username</strong></span>
+          <span class="name" id="account-username"><strong>Username</strong></span>
+          <p class="email" id="account-email"><strong>Email</strong></p>
+
       </div>
     </div>
+
+    <div class="menu">
+      <a href="#" class="menu-link"> <i class="fa-solid fa-circle-user" ></i>Account</a>
+      <a href="#" class="menu-link"> <i class="fa-solid fa-circle-user" ></i>Setting</a>
+    </div>
   </div>
+
+  <form class ="account">
+  <div class="account-header">
+    <h1 class="account-title">Account Settings</h1>
+    <div class="btn-container">
+      <button class="btn-cancel">Cancel</button>
+      <button class="btn-save">Save</button>
+    </div>
+  </div>
+
+  <div class="account-edit">
+    <div class="input-container">
+      <label>Username</label>
+      <input type="text" placeholder="Username">
+    </div>
+    <div class="input-container">
+      <label>Email</label>
+      <input type="text" placeholder="Email">
+  </div>
+  <div class="input-container">
+      <label>Contact Number</label>
+      <input type="text" placeholder="Contact Number">
+  </div>
+  <div class="input-container">
+      <label>Date of Birth</label>
+      <input type="text" placeholder="Date of Birth">
+  </div>
+  <div class="input-container">
+      <label>Sex</label>
+      <input type="text" placeholder="Sex">
+  </div>
+  <div class="input-container">
+      <label>Address</label>
+      <textarea placeholder="Address"></textarea>
+  </div>
+  
+  </form>
+
+  <form class="account">
+  <div class="account-header">
+    <h1 class="account-title">Pet Details</h1>
+    <div class="btn-container">
+      <button class="btn-cancel">Add</button>
+      <button class="btn-save">Update</button>
+    </div>
+  </div>
+
+  <div class="account-edit">
+    <div class="input-container">
+      <label>Pet Name</label>
+      <input type="text" placeholder="Pet Name">
+    </div>
+    <div class="input-container">
+      <label>Breed</label>
+      <input type="text" placeholder="Dog, Cat, etc.">
+    </div>
+    <div class="input-container">
+      <label>Sex</label>
+      <input type="text" placeholder="Sex">
+    </div>
+    <div class="input-container">
+      <label>Color</label>
+      <input type="text" placeholder="Color">
+    </div>
+  
+    <div class="input-container">
+      <label>Weight</label>
+      <input type="text" placeholder="Weight">
+    </div>
+    <div class="input-container">
+      <label>Size</label>
+      <input type="text" placeholder="Size">
+    </div>
+    <div class="input-container">
+      <label>Date of Birth</label>
+      <input type="text" placeholder="Date of Birth">
+    </div>
+  </div>
+</form>
+
+  </section>
+
+  
 </body>
 </html>
