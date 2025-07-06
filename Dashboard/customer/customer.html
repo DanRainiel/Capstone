@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
     <link rel="stylesheet" href="/Dashboard/customer/customer.css" />
     <title>Customer</title>
-    <script type="module" src="customer.js" defer></script>
+    <script type="module" src="/Dashboard/customer/javascript.customer/customer.js" defer></script>
     <script src="script.js"></script>
 
 
@@ -28,7 +28,8 @@
             <span class="welcome">Welcome back, <strong id="welcome-username"> Username</strong></span>
             <button onclick="toggleMenu()"><i class="fa-solid fa-user"></i></button>
         </div>
-        </nav>
+    </nav>
+    </div>
         <div class="sub-menu-wrap" id="subMenu">
             <div class="sub-menu">
                 <div class="user-info">
@@ -73,7 +74,28 @@
                             <button id="cancelLogout" class="btn-no">No</button>
                         </div>
                     </div>
-                </div>
+            </div>
+
+    <section class ="booking" id="booking">
+        <h1 class="heading">Book<span> Appointment</span></h1>
+        <div class="row">
+            <div class="image">
+                <img src="/images/cat1nobg (1).gif" alt="Cat Image">
+            </div>
+
+            <form action="">
+                <h3>Appointment Details</h3>
+                <input type="text" placeholder="Your Name" class="box" required>
+                <input type="number" placeholder="Your Number" class="box" required>
+                <input type="text" placeholder="Pet Name" class="box" required>
+                <input type="text" placeholder="Pet Type" class="box" required>
+                <input type="text" placeholder="Pet Size" class="box" required>
+                <input type="date" placeholder="Appointment Date" class="box" required>
+                <input type="submit" value="Submit" class="btn">
+            </form>
+        </div>
+    </section>
+    
 
                 
 
