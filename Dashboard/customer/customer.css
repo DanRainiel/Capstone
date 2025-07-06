@@ -324,6 +324,7 @@ nav .user{
   padding:2rem;
   text-align: center;
   margin-right: 30px;
+  border-radius: 20px;
 }
 
 .booking .row form h3{
