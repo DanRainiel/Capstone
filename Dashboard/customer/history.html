@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+<link rel="stylesheet" href="/Dashboard/customer/history.css" />
+<script  src="/Dashboard/customer/javascript.customer/history.js" defer></script>
+<script type="module" src="/Dashboard/customer/javascript.customer/historydatabase.js" defer></script>
+<title>History</title>
+</head>
+<body>
+<div class="container">
+    <div class="navigation">
+        <ul class="logo-section">
+            <li>
+                <a href="#">
+                    <i class="fa-solid fa-paw"></i>
+                    <span class="title">PetStop Veterinary Clinic</span>
+                </a>
+            </li>
+        </ul>
+
+        <div class="menu" id="menu">
+        <ul class="menu-list">
+            <li>
+                <a href="#" id="db-link">
+                    <i class="fa-solid fa-house"></i>
+                    <span class="side-btn">Dashboard</span>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <i class="fa-solid fa-user"></i>
+                    <span class="side-btn">Invoices</span>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <i class="fa-solid fa-message"></i>
+                    <span class="side-btn">Messages</span>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <i class="fa-solid fa-question"></i>
+                    <span class="side-btn">Help</span>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <i class="fa-solid fa-gear"></i>
+                    <span class="side-btn">Settings</span>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <i class="fa-solid fa-lock"></i>
+                    <span class="side-btn">Password</span>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    <span class="side-btn">Sign Out</span>
+                </a>
+            </li>
+            </ul>
+        </div>
+    </div>
+    <div class="main">
+        <div class="topbar">
+            <div class="toggle">
+                <i class="fa-solid fa-bars"></i>
+            </div>
+            <div class="search">
+                <label>
+                    <input type="text" placeholder="Search..." />
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </label>
+            </div>
+            <div class="user">
+                <i class="fa-solid fa-user profile-icon"></i>
+            </div>
+        </div>
+
+        <div class="details">
+            <div class="recentOrders">
+                <div class="cardHeader">
+                    <h2>Appointment History</h2>
+                    <a href="#" class="btn">View All</a>
+                </div>  
+
+               <table>
+                <thead>
+                   <tr>
+                     <td>Customer Name</td>
+                     <td>Pet Name</td>
+                     <td>Service</td>
+                     <td>Date</td>
+                   </tr>
+                 </thead>
+                 <tbody id="appointments-table-body">
+                   <!-- Rows will be added here -->
+                 </tbody>
+               </table>
+
+        </div>
+    </div>
+</div>
+</body>
+</html>
+
+</table>
+
+        </div>
+    </div>
+</div>
+</body>
+</html>

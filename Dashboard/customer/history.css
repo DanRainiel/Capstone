@@ -1,0 +1,228 @@
+@import url('https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,100..900;1,100..900&display=swap');
+
+:root {
+  --green: #1efdf2;
+  --white: #fff;
+  --black: #2e2525;
+  --orange: #f8732b;
+  --background-color: #01949A;
+  --light-color: #28fa79;
+  --box-shadow: .5rem .5rem 0 rgba(0, 0, 0, 0.2);
+  --text-shadow: .2rem .2rem 0 rgba(0, 133, 129, 0.2);
+  --border: .2rem solid var(--green);
+}
+
+* {
+  font-family: "Raleway", sans-serif;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.container {
+  position: relative;
+  width: 100%;
+}
+
+.navigation {
+  position: fixed;
+  width: 300px;
+  height: 100%;
+  background: var(--background-color);
+  transition: 0.5s;
+  overflow-y: auto; /* so it scrolls if needed */
+}
+
+.navigation.active {
+  width: 80px;
+}
+
+.main.active {
+    width: calc(100% - 80px);
+    left: 80px;
+}
+
+.navigation ul {
+  width: 100%;
+  list-style: none;
+}
+
+.navigation ul.logo-section {
+  margin-bottom: 40px;
+  pointer-events: none;
+}
+
+.navigation ul li a {
+  display: flex;
+  align-items: center;
+  padding: 15px 20px;
+  text-decoration: none;
+  border-top-left-radius: 30px;
+  margin-left: auto;
+}
+
+.navigation ul li a i {
+  font-size: 2rem;
+  color: var(--white);
+  text-shadow: var(--text-shadow);
+  margin-right: 40px; 
+  width: 30px;
+  text-align: center;
+}
+
+.navigation ul li a .title,
+.navigation ul li a .side-btn {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--white);
+}
+
+.navigation ul li a .title {
+  font-size: 1.6rem;
+  font-weight: 900;
+}
+
+.navigation ul li:hover {
+  background: var(--orange);
+}
+
+
+
+.main {
+  position: absolute;
+  width: calc(100% - 300px);
+  left: 300px;
+  min-height: 100vh;
+  background: var(--white);
+  transition: 0.5s;
+}
+
+.topbar {
+  width: 100%;
+  height: 60px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 10px;
+}
+
+.toggle {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 2rem;
+  cursor: pointer;
+  color: var(--background-color);
+}
+
+.search {
+  position: relative;
+  width: 400px;
+  margin: 0 10px;
+}
+
+.search label {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.search label input {
+  width: 100%;
+  height: 40px;
+  border-radius: 40px;
+  padding: 5px 20px;
+  padding-left: 35px;
+  font-size: 18px;
+  outline: none;
+  border: 1px solid var(--background-color);
+}
+
+.search label i {
+  position: absolute;
+  left: 10px;
+  font-size: 1.2rem;
+  color: var(--background-color);
+}
+
+
+
+.user {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: #01949A solid 1px;
+}
+
+.user i {
+  font-size: 1.8rem;
+  color: var(--background-color);
+}
+
+.details {
+  position: relative;
+  width: 150%;
+  padding: 20px;
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  grid-gap:30px;
+  margin-top: 10px;
+}
+
+.details .recentOrders {
+ position: relative;
+ display: grid;
+ min-height: 500px;
+ background: var(--white);
+ padding: 20px;
+ box-shadow: 0 7px 25px rgba(0, 0, 0, 0.8);
+ border-radius: 20px;
+
+}
+.details .recentOrders table {
+    margin-bottom: 100rem;
+}
+
+.details .cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+ 
+}
+
+.cardHeader h2 {
+  color: var(--background-color);
+  font-weight: 600;
+}
+
+.cardHeader .btn{
+  position: relative;
+  padding: 5px 10px;
+  background: var(--background-color);
+  text-decoration: none;
+  color: var(--white);
+  border-radius: 6px;
+}
+
+.cardHeader .btn:hover{
+  background: var(--orange);
+}
+
+.details table{
+    width: 100%;
+    border-collapse: collapse; 
+    margin-top: 10px;
+}
