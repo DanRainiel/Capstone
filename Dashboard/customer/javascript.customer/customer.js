@@ -123,4 +123,38 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
+document.addEventListener("DOMContentLoaded", () => {
+  const tabs = document.querySelectorAll(".second-navbar nav a");
+  const sections = document.querySelectorAll("section");
+  const navbar = document.querySelector(".second-navbar"); // Get the navbar element
+
+  tabs.forEach(tab => {
+    tab.addEventListener("click", (e) => {
+      e.preventDefault();
+
+      const id = tab.id.replace("-tab", ""); // e.g., book-tab → book
+
+      sections.forEach(section => {
+        // Skip the navbar section from being hidden
+        if (section.classList.contains('second-navbar')) {
+          return; // Don't hide the navbar
+        }
+        
+        if (section.id === id || (id === "book" && section.id === "booking")) {
+          section.style.display = "block";
+        } else {
+          section.style.display = "none";
+        }
+      });
+      
+      // Ensure navbar is always visible
+      if (navbar) {
+        navbar.style.display = "flex";
+      }
+    });
+  });
+});
+
+
+
 

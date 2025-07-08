@@ -38,7 +38,6 @@
   justify-content: flex-start;
   gap: 20px;
   z-index: 1000;
-  color:var(--background-color);
 }
 
 .back-button {
@@ -198,3 +197,4 @@ hr{
   background-color: var(--orange);
   transform: scale(1.2);
 }
+

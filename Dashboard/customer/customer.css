@@ -12,16 +12,17 @@
   --border:.2rem solid var(--green);
 }
 
+
 *{
-    font-family: 'Raleway', sans-serif;
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-     margin: 0;
-    padding:0;
-    box-sizing: border-box;
-    outline: none;
-    text-decoration: none;
+     font-family: "Raleway", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: weight;
+  font-style: normal;
+  margin: 0;
+  padding:0;
+  box-sizing: border-box;
+  outline: none;
+  text-decoration: none;
     border:none;
     transition: all .2s ease-in-out;
     scroll-behavior: smooth;
@@ -48,6 +49,7 @@ nav{
   justify-content: space-between;
   position: relative;
   height:auto;
+  box-shadow: rgba(0, 0, 0, 0.2) 0px 4px 8px;
 }
 
 nav .logo {
@@ -65,6 +67,41 @@ nav .logo a {
     letter-spacing: 1px;
     font-family: 'Raleway', sans-serif;
     text-decoration: none;
+}
+
+.btn{
+    background:white;
+    display:inline-block;
+    margin-top: 1rem;
+    padding: 0.5rem;
+    padding-left: 1rem;
+    border: var(--background-color) 2px solid;
+    border-radius: .5rem;
+    box-shadow: #1b2726 3px 3px 0px 0px;
+    color:var(--background-color);
+    cursor:pointer;
+    font-size: 1.7rem;
+}
+
+.btn span{
+    padding:.7rem 1rem;
+    border-radius: .5rem;
+    background:var(--background-color);
+    color:var(--white);
+    margin-left:.5rem;
+}
+
+.btn:hover{
+    background: var(--orange);
+    color: var(--white);
+    
+}
+
+.btn:hover span{
+    background: var(--white);
+    color: var(--background-color);
+    margin-left: 1rem;
+    
 }
 
 nav .user{
@@ -103,6 +140,7 @@ nav .user{
   overflow: hidden;
   max-height: 0px;
   transition: 0.4s ease-in-out;
+  z-index: 1000;
 }
 
 .sub-menu-wrap.openMenu{
@@ -110,6 +148,8 @@ nav .user{
   box-shadow: var(--box-shadow);
   background-color: var(--white);
   border-radius: 10px;
+  z-index: 1000;
+  
 }
 
 .sub-menu{
@@ -117,6 +157,7 @@ nav .user{
   padding: 20px;
   margin: 10px;
   color:var(--background-color);
+  
 }
 
 .user-info{
@@ -266,8 +307,8 @@ nav .user{
     text-align: center;
     justify-content: center;
     font-weight: 800;
-    padding-top: 3.5rem;
-    padding-bottom: 3.5rem;
+    padding-top: 1.5rem;
+    padding-bottom: .5rem;
     text-transform: uppercase;
     color:#3f3f3f;
     text-shadow: rgba(0, 0, 0, 0.2) .3rem .4rem;
@@ -343,6 +384,235 @@ nav .user{
   text-transform: none;
   padding:1rem;
 }
+
+.form-wrapper {
+  position: relative;
+  display: inline-block;
+  margin-top: 60px;
+}
+
+form {
+  position: relative;
+  background: white;
+  padding: 40px 20px 20px;
+  border-radius: 15px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  z-index: 1;
+}
+
+.booking .row .form-wrapper {
+  position: relative;
+  flex: 1 1 45rem;
+  margin-right: 30px;
+}
+
+.booking .row .form-wrapper .peek-container {
+  position: absolute;
+  top: -147px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.booking .row .form-wrapper .peeking-pet {
+  width: 400px;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+.form-scroll {
+  max-height: 450px;             
+  overflow-y: auto;              
+  overscroll-behavior: contain;  
+  padding-right: 10px;           
+}
+
+.form-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.form-scroll::-webkit-scrollbar-thumb {
+  background-color: var(--background-color);
+  border-radius: 10px;
+}
+
+.second-navbar {
+  background-color: transparent;
+  justify-content: center;
+  display: flex;
+  align-items: center;
+  min-width: 100vh;
+}
+
+.second-navbar .container {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 800px;
+  height: 50px;
+  background-color: var(--white);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 8px;
+  box-shadow: rgba(0, 0, 0, 0.2) 2px 0 10px 5px;
+  z-index: 10000;
+}
+
+.second-navbar .container nav a{
+  position:relative;
+  display: inline-block;
+  font-size: 1em;
+  font-weight: 500;
+  color:var(--background-color);
+  text-decoration: none;
+  padding:0 23px;
+  z-index: 1;
+}
+
+.second-navbar .container nav span{
+  position: absolute;
+  top:0;
+  left:0;
+  width:95px;
+  height: 100%;
+  background: var(--orange);
+  border-radius: 8px;
+  transition: .5s;
+  opacity: 0;
+}
+
+.second-navbar .container nav a:nth-child(1):hover ~ span{
+  left:76px;
+  opacity: 1;
+}
+
+.second-navbar .container nav a:nth-child(2):hover ~ span {
+  left: 195px;
+  opacity: 1;
+}
+
+.second-navbar .container nav a:nth-child(3):hover ~ span {
+  left:324px;
+  width:150px;
+  opacity: 1;
+}
+
+.second-navbar .container nav a:nth-child(4):hover ~ span {
+  left:508px;
+  opacity: 1;
+}
+
+.second-navbar .container nav a:nth-child(5):hover ~ span {
+  left:629px;
+  opacity: 1;
+}
+
+.second-navbar .container nav a:hover {
+  color: var(--white);
+}
+
+#services {
+    width: 100%;
+    padding: 5rem 10%;  
+    background-color: whitesmoke;
+}
+
+.peeking-dog {
+  position: absolute;
+  width: 200px;
+  top: -100px; /* adjust depending on your image */
+  left: -103px;
+  transform: translateX(-50%);
+  z-index: 2;
+}
+
+.peeking-dog2 {
+  position: absolute;
+  width: 300px;
+  top: -10px; /* adjust depending on your image */
+  left: -30.3px;
+  transform: translateX(-50%);
+  z-index: 2;
+}
+
+.dog-lying {
+  rotate:calc(2deg);
+  position: absolute;
+  width: 350px;
+  top: -137px; /* adjust depending on your image */
+  left: 140px;
+  z-index: 2; /* behind the content */
+}
+
+.box {
+  position: relative;
+  overflow: visible; /* Allow the dog image to overflow if needed */
+}
+
+#services .heading{
+    font-size: 4.5rem;
+    text-align: center;
+    justify-content: center;
+    font-weight: 800;
+    padding-bottom: .5rem;
+    text-transform: uppercase;
+    color:#3f3f3f;
+    text-shadow: rgba(0, 0, 0, 0.2) .3rem .4rem;
+    letter-spacing: .5rem;
+}
+
+#services .heading span{
+    color:var(--background-color);
+}
+
+#services .box-container{
+    display: grid;
+    gap: 3.5rem;
+    grid-template-columns: repeat(3, 1fr);
+}
+
+#services .box-container .box{
+    border-color: var(--background-color);
+    border-style: solid;
+    border-radius: .5rem;
+    box-shadow: var(--box-shadow);
+    padding: 4.5rem;
+}
+
+#services .box-container .box i{
+    padding-left: .5rem;
+    font-size: 5.5rem;
+    color: var(--orange);
+}   
+
+#services .box-container .box h3{
+    font-weight: 800;
+    font-size: 3rem;
+    color: var(--background-color);
+    padding: 1rem 0;
+}
+
+#services .box-container .box p{
+    font-size: 1.5rem;
+    color: var(--black);
+    font-weight: 500;
+    padding: 1rem 0;
+} 
+
+/*dynamic content*/
+.tab-content {
+  display: none;
+  min-height: calc(100vh - 200px); /* Adjust to fit your layout */
+}
+
+.tab-content.active {
+  display: block;
+}
+
+/*animation*/
+
 
 
 
