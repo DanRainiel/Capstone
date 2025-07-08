@@ -1,0 +1,128 @@
+@import url('https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,100..900;1,100..900&display=swap');
+
+:root {
+  --green: #1efdf2;
+  --white: #fff;
+  --black: #2e2525;
+  --orange: #f8732b;
+  --background-color: #01949A;
+  --light-color: #28fa79;
+  --box-shadow: .5rem .5rem 0 rgba(0, 0, 0, 0.2);
+  --text-shadow: .2rem .2rem 0 rgba(0, 133, 129, 0.2);
+  --border: .2rem solid var(--green);
+  --primary-color: #000000;
+  --secondary-color: #01949A;
+}
+
+* {
+  font-family: "Raleway", sans-serif;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--background-color);
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--primary-color);
+  padding: 0 20px;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.invoice{
+    background: var(--white);
+    width: 600px;
+    max-width: 100%;
+    height: auto;
+    margin: 2rem auto;
+    padding: 3rem 4vw;
+}
+
+.p_title{
+    font-weight: 700;
+    font-size: 14px;
+}
+
+.i_row{
+    display: flex;
+}
+
+.text_right{
+    text-align: right;
+}
+
+.invoice .header .i_row{                
+    justify-content: space-between; 
+    margin-bottom: 30px;
+}
+
+.invoice .header .i_row:last-child{
+    align-items: flex-end;
+}
+
+.invoice .header .i_logo p{
+    font-family: 'redressed', sans-serif;
+    font-weight: bold;
+}
+
+.invoice .header .i_logo p,
+.invoice .header .i_title h2{
+    font-size: 32px;
+    line-height: 38px;
+    color: var(--secondary-color);
+}
+
+.invoice .header .i_address .p_title span{
+    font-size: 12px;
+    font-weight: 400;
+}
+
+.invoice .body .i_table {
+    overflow-x: auto;
+    width: 100%;
+    display: block;
+}
+
+.invoice .body .i_table p{
+    font-weight: 700;
+}
+
+.invoice .body .i_table .i_col{
+    padding: 12px 5px;
+}
+
+.invoice .body .i_table_head .i_row{
+    border: 2px solid var(--primary-color);
+    border-left: 0px;
+    border-right: 0;
+}
+
+.invoice .body .i_table_body .i_row:last-child{
+    border-bottom: 2px solid var(--primary-color);
+}
+
+.invoice .body .i_table_foot .grand_total_wrap{
+    margin-top: 20px;
+}
+
+.invoice .body .i_table_foot .grand_total_wrap .grand_total{
+    background: var(--secondary-color);
+    color: var(--white);
+    padding: 10px 15px;
+}
+
+.w_15{
+    width: 50%;
+}
+
+.w_50{
+    width: 50%;
+}
+
+.w_55{
+    width: 55%;
+}

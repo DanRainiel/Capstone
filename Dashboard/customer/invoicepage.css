@@ -1,0 +1,206 @@
+@import url('https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,100..900;1,100..900&display=swap');
+
+:root {
+  --green: #1efdf2;
+  --white: #fff;
+  --black: #2e2525;
+  --orange: #f8732b;
+  --background-color: #01949A;
+  --light-color: #28fa79;
+  --box-shadow: .5rem .5rem 0 rgba(0, 0, 0, 0.2);
+  --text-shadow: .2rem .2rem 0 rgba(0, 133, 129, 0.2);
+  --border: .2rem solid var(--green);
+}
+
+* {
+  font-family: "Raleway", sans-serif;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  min-height: 100vh;
+  overflow-x: hidden;
+  background: var(--white);
+}
+
+.main {
+  width: 100%;
+  padding: 30px;
+}
+
+/* Topbar */
+.topbar {
+  width: 100%;
+  height: 60px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 10px;
+  margin-bottom: 20px;
+}
+
+.search {
+  position: relative;
+  width: 400px;
+  margin: 0 10px;
+}
+
+.search label {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.search label input {
+  width: 100%;
+  height: 40px;
+  border-radius: 40px;
+  padding: 5px 20px;
+  padding-left: 35px;
+  font-size: 18px;
+  outline: none;
+  border: 1px solid var(--background-color);
+}
+
+.search label i {
+  position: absolute;
+  left: 10px;
+  font-size: 1.2rem;
+  color: var(--background-color);
+}
+
+.user {
+  padding: 10px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 1px solid var(--background-color);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.user i {
+  color: var(--background-color);
+}
+
+/* Table and Card */
+.details {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-gap: 30px;
+  margin-top: 10px;
+}
+
+.recentOrders {
+  width: 100%;
+  background: var(--white);
+  padding: 20px;
+  box-shadow: 0 7px 25px rgba(0, 0, 0, 0.1);
+  border-radius: 20px;
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.cardHeader h2 {
+  color: var(--background-color);
+  font-weight: 600;
+}
+
+.cardHeader .btn {
+  padding: 5px 10px;
+  background: var(--background-color);
+  text-decoration: none;
+  color: var(--white);
+  border-radius: 6px;
+}
+
+.cardHeader .btn:hover {
+  background: var(--orange);
+}
+
+/* Table styling */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+table thead {
+  background-color: var(--background-color);
+  color: white;
+}
+
+table thead td {
+  font-weight: bold;
+  padding: 12px;
+}
+
+table tbody td {
+  padding: 12px;
+  border-bottom: 1px solid #ddd;
+}
+
+table tbody tr:hover {
+  background-color: #f3f3f3;
+}
+
+.btn {
+  background-color: var(--background-color);
+  color: white;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn:hover {
+  background-color: var(--orange);
+}
+
+.title-bar {
+    font-size: 2rem;
+    font-weight: 900;
+    color: var(--white);
+    text-shadow: var(--text-shadow);
+    letter-spacing: 1px;
+    font-family: 'Raleway', sans-serif;
+    color: var(--background-color);
+}
+
+.title-bar i {
+  font-size: 1.8rem;
+  color: var(--background-color);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .search {
+    width: 100%;
+    margin-top: 10px;
+  }
+
+  .topbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .details {
+    padding: 10px;
+  }
+
+  table thead td,
+  table tbody td {
+    font-size: 14px;
+  }
+}

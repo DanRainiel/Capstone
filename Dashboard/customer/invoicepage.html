@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="/Dashboard/customer/invoicepage.css" />
+  <script type="module" src="./javascript.customer/invoicepagedatabase.js" defer></script>
+  <title>Invoice</title>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="title-bar">
+    <i class="fa-solid fa-paw"></i>
+    <span class="clinic-title">PetStop Veterinary Clinic</span>
+  </div>
+  <div class="search">
+    <label>
+      <input type="text" placeholder="Search..." />
+      <i class="fa-solid fa-magnifying-glass"></i>
+    </label>
+  </div>
+  <div class="user">
+    <i class="fa-solid fa-user profile-icon"></i>
+  </div>
+</div>
+
+
+  <div class="details">
+    <div class="recentOrders">
+      <div class="cardHeader">
+        <h2>Invoices</h2>
+        <a href="#" class="btn">View All</a>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <td>Customer Name</td>
+            <td>Pet Name</td>
+            <td>Service</td>
+            <td>Action</td>
+          </tr>
+        </thead>
+        <tbody id="appointments-table-body">
+          <tr></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
