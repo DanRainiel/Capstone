@@ -138,7 +138,6 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-<<<<<<< HEAD
  document.addEventListener("DOMContentLoaded", () => {
     // Open modal when clicking on the button
     document.getElementById("lm-1").addEventListener("click", () => {
@@ -182,11 +181,10 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   });
-=======
+
 // ✅ Appointment form submission logic
  document.addEventListener("DOMContentLoaded", () => {
   const submitBtn = document.getElementById("submit-appointment");
->>>>>>> 2960244e9693f81db472b7dc7be9dada63987392
 
   if (!submitBtn) return;
 
