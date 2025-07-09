@@ -522,7 +522,7 @@ form {
 .peeking-dog {
   position: absolute;
   width: 200px;
-  top: -100px; /* adjust depending on your image */
+  top: -100px; 
   left: -103px;
   transform: translateX(-50%);
   z-index: 2;
@@ -531,7 +531,7 @@ form {
 .peeking-dog2 {
   position: absolute;
   width: 300px;
-  top: -10px; /* adjust depending on your image */
+  top: -10px; 
   left: -30.3px;
   transform: translateX(-50%);
   z-index: 2;
@@ -541,14 +541,14 @@ form {
   rotate:calc(2deg);
   position: absolute;
   width: 350px;
-  top: -137px; /* adjust depending on your image */
+  top: -137px; 
   left: 140px;
-  z-index: 2; /* behind the content */
+  z-index: 2; 
 }
 
 .box {
   position: relative;
-  overflow: visible; /* Allow the dog image to overflow if needed */
+  overflow: visible; 
 }
 
 #services .heading{
@@ -601,6 +601,100 @@ form {
     padding: 1rem 0;
 } 
 
+.modal {
+  display: none; /* Hidden by default */
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0, 0, 0, 0.6);
+}
+
+.modal-content {
+  position: relative;
+  background-color: #fff;
+  margin: 10% auto;
+  padding: 30px;
+  width: 80%;
+  max-width: 500px;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.modal-content .md-heading {
+  margin: 0;
+  font-size: 2rem;
+  color: var(--background-color);
+  text-align: center;
+}
+
+.modal-content p {
+  font-size: 1.2rem;
+  color: #333;
+  margin: 10px 0;
+  text-align: center;
+  line-height: 1.8;
+}
+
+.modal-content .md-heading i{
+  font-size: 2.5rem;
+  color: var(--orange);
+  margin-right: 10px;
+}
+
+.modal-close {
+  position: absolute;
+  top: 12px;
+  right: 15px;
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  color: #555;
+  cursor: pointer;
+  transition: transform 0.2s ease, color 0.3s ease;
+}
+
+.modal-close i{
+  font-size: 24px;
+  color: var(--white);
+  background-image: linear-gradient(to right, var(--orange), red);
+  padding:5px;
+  border-radius: 10px;
+}
+
+.modal-close:hover {
+  color: #f8732b;
+  transform: scale(1.2);
+}
+
+
+
+#calendar{
+  background-color: var(--white);
+}
+#calendar .heading{
+    font-size: 4.5rem;
+    text-align: center;
+    justify-content: center;
+    font-weight: 800;
+    padding-bottom: .5rem;
+    text-transform: uppercase;
+    color:#3f3f3f;
+    text-shadow: rgba(0, 0, 0, 0.2) .3rem .4rem;
+    letter-spacing: .5rem;
+}
+
+#calendar .heading span{
+    color:var(--background-color);
+}
+
 /*dynamic content*/
 .tab-content {
   display: none;
@@ -628,5 +722,306 @@ form {
 
 
 /*responsive*/
+/* Responsive Styles */
+@media (max-width: 1200px) {
+  .second-navbar .container {
+    width: 95vw;
+    min-width: unset;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  #services .box-container {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  nav {
+    flex-direction: column;
+    padding: 10px 3%;
+    height: auto;
+  }
+  nav .logo {
+    margin-bottom: 10px;
+  }
+  .booking .row {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  .booking .row .image,
+  .booking .row form,
+  .booking .row .form-wrapper {
+    flex: 1 1 100%;
+    margin-right: 0;
+    width: 100%;
+    max-width: 100%;
+  }
+  .second-navbar .container {
+    width: 98vw;
+    min-width: unset;
+    left: 50%;
+    transform: translateX(-50%);
+    height: 60px;
+    padding: 0 10px;
+  }
+  #services .box-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .booking .heading,
+  #services .heading {
+    font-size: 2.2rem;
+    letter-spacing: .2rem;
+    padding-top: 1rem;
+    padding-bottom: .3rem;
+  }
+  .booking .row .form-wrapper .peeking-pet,
+  .peeking-dog,
+  .peeking-dog2,
+  .dog-lying {
+    width: 150px !important;
+    max-width: 60vw;
+    left: 50% !important;
+    top: -60px !important;
+  }
+  .booking .row form {
+    padding: 1rem;
+    border-radius: 12px;
+  }
+  .second-navbar .container {
+    width: 100vw;
+    min-width: unset;
+    border-radius: 0;
+    height: 55px;
+    padding: 0 2px;
+  }
+  .second-navbar .container nav a {
+    font-size: 0.95em;
+    padding: 0 10px;
+  }
+  .second-navbar .container nav span {
+    width: 60px;
+  }
+}
+
+@media (max-width: 500px) {
+  nav {
+    padding: 8px 1%;
+  }
+  nav .logo a {
+    font-size: 1.3rem;
+  }
+  .user .welcome {
+    font-size: 0.85rem;
+  }
+  .sub-menu-wrap {
+    width: 95vw;
+    right: 2.5vw;
+    top: 70px;
+  }
+  .logout-modal-content {
+    padding: 15px;
+    max-width: 95vw;
+  }
+  .booking .row .form-wrapper .peeking-pet,
+  .peeking-dog,
+  .peeking-dog2,
+  .dog-lying {
+    width: 90px !important;
+    top: -35px !important;
+  }
+  .booking .row form {
+    padding: 0.5rem;
+    border-radius: 8px;
+  }
+  .second-navbar .container {
+    width: 100vw;
+    min-width: unset;
+    border-radius: 0;
+    height: 45px;
+    padding: 0 1px;
+  }
+  .second-navbar .container nav a {
+    font-size: 0.8em;
+    padding: 0 4px;
+  }
+  .second-navbar .container nav span {
+    width: 40px;
+  }
+  #services {
+    padding: 2rem 2vw;
+  }
+}
+
+/* Hide peeking images on very small screens if needed */
+@media (max-width: 400px) {
+  .booking .row .form-wrapper .peek-container,
+  .peeking-dog,
+  .peeking-dog2,
+  .dog-lying {
+    display: none !important;
+  }
+}
+
+/* Responsive styles for .sub-menu-wrap */
+@media (max-width: 700px) {
+  .sub-menu-wrap,
+  .sub-menu-wrap.openMenu {
+    width: 95vw;
+    right: 2.5vw;
+    top: 70px;
+    border-radius: 8px;
+    min-width: unset;
+    max-width: 98vw;
+  }
+  .sub-menu {
+    padding: 12px;
+    margin: 5px;
+  }
+  .user-info i {
+    width: 40px;
+    height: 40px;
+  }
+  .user-info strong {
+    font-size: 1rem;
+  }
+  .sub-menu-link i {
+    width: 32px;
+    padding: 8px;
+    font-size: 1.2rem;
+  }
+  .sub-menu-link p {
+    font-size: 1.1rem;
+    margin-left: 10px;
+  }
+}
+
+@media (max-width: 500px) {
+  .sub-menu-wrap,
+  .sub-menu-wrap.openMenu {
+    width: 99vw;
+    right: 0.5vw;
+    top: 60px;
+    border-radius: 6px;
+    max-width: 99vw;
+  }
+  .sub-menu {
+    padding: 8px;
+    margin: 2px;
+  }
+  .user-info i {
+    width: 30px;
+    height: 30px;
+  }
+  .user-info strong {
+    font-size: 0.9rem;
+  }
+  .sub-menu-link i {
+    width: 24px;
+    padding: 5px;
+    font-size: 1rem;
+  }
+  .sub-menu-link p {
+    font-size: 0.95rem;
+    margin-left: 6px;
+  }
+}
+
+/* Responsive adjustments for bottom navbar */
+@media (max-width: 800px) {
+  .second-navbar .container {
+    width: 100vw;
+    min-width: unset;
+    left: 0;
+    transform: none;
+    border-radius: 0;
+    padding: 0 2vw;
+    height: 50px;
+  }
+  .second-navbar .container nav a {
+    font-size: 1em;
+    padding: 0 10px;
+  }
+  .second-navbar .container nav span {
+    width: 60px;
+  }
+}
+
+@media (max-width: 600px) {
+  .second-navbar .container {
+    width: 100vw;
+    min-width: unset;
+    left: 0;
+    transform: none;
+    border-radius: 0;
+    padding: 0 1vw;
+    height: 45px;
+  }
+  .second-navbar .container nav a {
+    font-size: 0.9em;
+    padding: 0 6px;
+  }
+  .second-navbar .container nav span {
+    width: 40px;
+  }
+}
+
+@media (max-width: 400px) {
+  .second-navbar .container {
+    width: 100vw;
+    min-width: unset;
+    left: 0;
+    transform: none;
+    border-radius: 0;
+    padding: 0;
+    height: 40px;
+    
+  }
+  .second-navbar .container nav a {
+    font-size: 0.8em;
+    padding: 0 2px;
+  }
+  .second-navbar .container nav span {
+    width: 28px;
+  }
+
+  .second-navbar .container nav :hover{
+    color: var(--white);
+    background-color: var(--orange);
+    padding:10px;
+    border-radius:5px;
+  }
+
+  .second-navbar .container nav a:nth-child(1):hover ~ span{
+    left: 0px;
+    opacity: 0;
+  }
+
+  .second-navbar .container nav a:nth-child(2):hover ~ span {
+    left: 0px;
+    opacity: 0;
+  }
+
+  .second-navbar .container nav a:nth-child(3):hover ~ span {
+    left: 0px;
+    opacity: 0;
+  }
+
+  .second-navbar .container nav a:nth-child(4):hover ~ span {
+    left: 0px;
+    opacity: 0;
+  }
+
+  .second-navbar .container nav a:nth-child(5):hover ~ span {
+    left: 0px;
+    opacity: 0;
+  }
+}
+
+
+
+
 
 

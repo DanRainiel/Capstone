@@ -155,6 +155,49 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
+ document.addEventListener("DOMContentLoaded", () => {
+    // Open modal when clicking on the button
+    document.getElementById("lm-1").addEventListener("click", () => {
+      document.getElementById("modal-1").style.display = "block";
+    });
+
+    document.getElementById("lm-2").addEventListener("click", () => {
+      document.getElementById("modal-2").style.display = "block";
+    });
+
+    document.getElementById("lm-3").addEventListener("click", () => {
+      document.getElementById("modal-3").style.display = "block";
+    });
+
+    document.getElementById("lm-4").addEventListener("click", () => {
+      document.getElementById("modal-4").style.display = "block";
+    });
+
+    document.getElementById("lm-5").addEventListener("click", () => {
+      document.getElementById("modal-5").style.display = "block";
+    });
+
+    document.getElementById("lm-6").addEventListener("click", () => {
+      document.getElementById("modal-6").style.display = "block";
+    });
+
+
+
+    document.querySelectorAll(".modal-close").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const modalId = btn.getAttribute("data-close");
+        document.getElementById(modalId).style.display = "none";
+      });
+    });
+
+    // Close when clicking outside modal-content
+    window.addEventListener("click", (e) => {
+      const modal = document.getElementById("modal-1");
+      if (e.target === modal) {
+        modal.style.display = "none";
+      }
+    });
+  });
 
 
 
