@@ -5,7 +5,9 @@ import {
   collection,
   query,
   where,
-  getDocs
+  getDocs,
+  doc,
+  setDoc
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
 // ✅ Your Firebase config
@@ -21,45 +23,47 @@ const firebaseConfig = {
 
 // ✅ Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+const db = getFirestore(app); // make sure this exists here!
 
-// ✅ Load and render appointments
+
 async function loadAppointments() {
-  const userId = sessionStorage.getItem("userId"); // "owner1", etc.
+  const userId = sessionStorage.getItem("userId");
+  console.log("Loaded userId from sessionStorage:", userId);
   const tableBody = document.getElementById("appointments-table-body");
   tableBody.innerHTML = "";
 
-  console.log("Logged-in userId:", userId);
   if (!userId) {
-    tableBody.innerHTML = "<tr><td colspan='4'>User not logged in.</td></tr>";
+    tableBody.innerHTML = "<tr><td colspan='6'>User not logged in.</td></tr>";
     return;
   }
 
   try {
-    const q = query(collection(db, "Appointment"), where("UID", "==", userId));
+    // ✅ Query all appointments where userId == current userId
+    const q = query(collection(db, "Appointment"), where("userId", "==", userId));
     const querySnapshot = await getDocs(q);
 
     if (querySnapshot.empty) {
-      tableBody.innerHTML = "<tr><td colspan='4'>No appointments found.</td></tr>";
+      tableBody.innerHTML = "<tr><td colspan='6'>No History found.</td></tr>";
     } else {
       querySnapshot.forEach((doc) => {
-      const data = doc.data();
-      const row = document.createElement("tr");
-      row.innerHTML = `
-    <td>${data.CustomerName || ""}</td>
-    <td>${data.PetName || ""}</td>
-    <td>${data.Service || ""}</td>
-    <td><button class="btn" onclick="location.href='invoice.html'">View Invoice</button></td>
-  `;
-  tableBody.appendChild(row);
-});
-
+        const data = doc.data();
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${data.name || ""}</td>
+          <td>${data.petName || ""}</td>
+          <td>${data.service || ""}</td>
+          
+          <td><button class="btn" onclick="location.href='invoice.html'">View Invoice</button></td>
+        `;
+        tableBody.appendChild(row);
+      });
     }
   } catch (error) {
     console.error("Error fetching appointments:", error);
-    tableBody.innerHTML = "<tr><td colspan='4'>Error loading appointments.</td></tr>";
+    tableBody.innerHTML = "<tr><td colspan='6'>Error loading appointments.</td></tr>";
   }
 }
 
-// ✅ Auto-run when page is ready
-window.addEventListener("DOMContentLoaded", loadAppointments);
+window.addEventListener("DOMContentLoaded", () => {
+  loadAppointments();
+});

@@ -1,8 +1,16 @@
-// Import needed Firebase functions
-import { initializeApp } from "firebase/app";
-import { getFirestore, collection, getDocs } from "firebase/firestore";
+// ✅ Import Firebase functions
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import {
+  getFirestore,
+  collection,
+  query,
+  where,
+  getDocs,
+  doc,
+  setDoc
+} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-// Firebase config
+// ✅ Your Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyDtDApHuFcav9QIZaJ8CDIcyI_fxcO4Kzw",
   authDomain: "fir-demo-66ae2.firebaseapp.com",
@@ -13,34 +21,50 @@ const firebaseConfig = {
   measurementId: "G-JYDG36FQMX"
 };
 
-// Initialize Firebase
+// ✅ Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+const db = getFirestore(app); // make sure this exists here!
 
-// Function to load appointments
+
 async function loadAppointments() {
-  const tableBody = document.getElementById("appointments-table-body");
-  tableBody.innerHTML = ""; // clear existing rows
+  const userId = sessionStorage.getItem("userId");
+  console.log("Loaded userId from sessionStorage:", userId);
+  const tableBody = document.getElementById("history");
+  tableBody.innerHTML = "";
+
+  if (!userId) {
+    tableBody.innerHTML = "<tr><td colspan='6'>User not logged in.</td></tr>";
+    return;
+  }
 
   try {
-    const querySnapshot = await getDocs(collection(db, "appointments"));
+    // ✅ Query all appointments where userId == current userId
+    const q = query(collection(db, "Appointment"), where("userId", "==", userId));
+    const querySnapshot = await getDocs(q);
 
-    querySnapshot.forEach((doc) => {
-      const data = doc.data();
-      const row = document.createElement("tr");
-
-      row.innerHTML = `
-        <td>${data.customerName || ""}</td>
-        <td>${data.petName || ""}</td>
-        <td>${data.service || ""}</td>
-        <td>${data.date || ""}</td>
-        <td>${data.status || ""}</td>
-      `;
-      tableBody.appendChild(row);
-    });
+    if (querySnapshot.empty) {
+      tableBody.innerHTML = "<tr><td colspan='6'>No History found.</td></tr>";
+    } else {
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${data.name || ""}</td>
+          <td>${data.petName || ""}</td>
+          <td>${data.service || ""}</td>
+          <td>${data.date || ""}</td>
+          <td>${data.number || ""}</td>
+          
+        `;
+        tableBody.appendChild(row);
+      });
+    }
   } catch (error) {
     console.error("Error fetching appointments:", error);
+    tableBody.innerHTML = "<tr><td colspan='6'>Error loading appointments.</td></tr>";
   }
 }
 
-
+window.addEventListener("DOMContentLoaded", () => {
+  loadAppointments();
+});

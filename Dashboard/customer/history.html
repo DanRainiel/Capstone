@@ -6,7 +6,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 <link rel="stylesheet" href="/Dashboard/customer/history.css" />
 <script  src="/Dashboard/customer/javascript.customer/history.js" defer></script>
-<script type="module" src="/Dashboard/customer/javascript.customer/historydatabase.js" defer></script>
+<script type="module" src="./javascript.customer/historydatabase.js" defer></script>
 <title>History</title>
 </head>
 <body>
@@ -91,18 +91,18 @@
                     <a href="#" class="btn">View All</a>
                 </div>  
 
-               <table>
+               <table class="table">
                 <thead>
                    <tr>
                      <td>Customer Name</td>
                      <td>Pet Name</td>
                      <td>Service</td>
                      <td>Date</td>
-                     <td>Time</td>
+                     <td>Contact</td>
                     
                    </tr>
                  </thead>
-                 <tbody id="appointments-table-body">
+                 <tbody id="history">
                    <!-- Rows will be added here -->
                  </tbody>
                </table>

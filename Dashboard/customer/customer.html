@@ -13,7 +13,7 @@
 
 
 
-    <!-- JavaScript Logic -->
+   
     
 
     </head>
@@ -91,12 +91,12 @@
             <form action="">
                 <h3>Appointment Details</h3>
             <div class="form-scroll">
-                <input type="text" placeholder="Your Name" class="box" required>
-                <input type="number" placeholder="Your Number" class="box" required>
-                <input type="text" placeholder="Pet Name" class="box" required>
-                <input type="text" placeholder="Species/Breed" class="box" required>
+                <input type="text" placeholder="Your Name" class="box" id="appt-name" required>
+                <input type="number" placeholder="Your Number" class="box" id="appt-number" required>
+                <input type="text" placeholder="Pet Name" class="box" id="appt-petname"required>
+                <input type="text" placeholder="Species/Breed" class="box" id="appt-breed" required>
                 
-                <select class="box" required>
+                <select class="box" id="appt-size"required>
                 <option value="" disabled selected>Select Pet Size</option>
                 <option value="small">Small</option>
                 <option value="medium">Medium</option>
@@ -104,13 +104,13 @@
                 <option value="extra-large">Extra Large</option>
                 </select>
 
-                <select class="box" required>
+                <select class="box" id="appt-sex" required>
                 <option value="" disabled selected>Sex</option>
                 <option value="male">Male</option>
                 <option value="female">Female</option>
                 </select>
 
-                <select class="box" required>
+                <select class="box" id="appt-service" required>
                 <option value="" disabled selected>Services</option>
                 <option value="grooming">Grooming</option>
                 <option value="vaccinations">Vaccinations</option>
@@ -121,9 +121,9 @@
 
                 </select>
 
-                <input type="date" placeholder="Appointment Date" class="box" required>
+                <input type="date" placeholder="Appointment Date" class="box" id="appt-date" required>
             </div>
-                <input type="submit" value="Submit" class="btn">
+                <input type="submit" value="Submit" class="btn" id="submit-appointment">
             </form>
         </div>
     </section>
