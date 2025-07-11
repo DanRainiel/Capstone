@@ -83,7 +83,7 @@
             </div>
     
     <section class ="booking" id="booking">
-        <h1 class="heading">Book<span> Appointment</span></h1>
+        <h1 class="heading">Book an<span> Appointment</span></h1>
         <div class="row">
             <div class="image">
                 <img src="/images/cat1nobg (1).gif" alt="Cat Image">
@@ -336,11 +336,100 @@
                 </div>
     </section>
 
-    <section class="tab-content" id="calendar" style="display: none;">
+    <section class="tab-content" id="calendar" style="display: block;">
         <h1 class="heading">Appointment<span> Calendar</span></h1>
-        <p style="text-align: center;">Here you can view the calendar for appointments.</p>
-    </section>
+        <p style="text-align: center;">Here you can view and manage appointments for your pets.</p>
+        
+        <!-- Calendar Integration Starts Here -->
+        <div class="calendar-container">
+            <div class="calendar-wrapper">
+                <div class="calendar-header-banner">
+                    <p>🐾 Schedule your beloved pet's appointment with our caring veterinarians <span class="paw-icon">🐕</span></p>
+                </div>
 
+                <div class="calendar-main-content">
+                    <div class="calendar-section">
+                        <div class="calendar-nav-header">
+                            <button class="calendar-nav-btn" onclick="navigateMonth(-1)">‹</button>
+                            <div class="calendar-month-year" id="monthYear"></div>
+                            <button class="calendar-nav-btn" onclick="navigateMonth(1)">›</button>
+                        </div>
+
+                        <div class="calendar-grid" id="calendarGrid"></div>
+
+                        <div class="calendar-legend">
+                            <div class="calendar-legend-item">
+                                <div class="calendar-legend-color calendar-legend-today"></div>
+                                <span>Today</span>
+                            </div>
+                            <div class="calendar-legend-item">
+                                <div class="calendar-legend-color calendar-legend-available"></div>
+                                <span>Available</span>
+                            </div>
+                            <div class="calendar-legend-item">
+                                <div class="calendar-legend-color calendar-legend-booked"></div>
+                                <span>Fully Booked</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="calendar-sidebar">
+                        <h3>📅 Appointment Details</h3>
+                        
+                        <div class="calendar-selected-date" id="selectedDate">
+                            Select a date to view appointments
+                        </div>
+
+                        <div class="calendar-time-slots" id="timeSlots"></div>
+
+                        <div class="calendar-appointments-list" id="appointmentsList"></div>
+
+                        <button class="calendar-book-btn" id="bookBtn" onclick="showBookingModal()" disabled>
+                            Book New Appointment
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Calendar Integration Ends Here -->
+    
+
+    <!-- Booking Modal -->
+    <div class="calendar-modal" id="bookingModal">
+        <div class="calendar-modal-content">
+            <span class="calendar-close" onclick="hideBookingModal()">&times;</span>
+            <h2>🐾 Book New Appointment</h2>
+            <form id="bookingForm">
+                <div class="calendar-form-group">
+                    <label for="petName">Pet Name</label>
+                    <input type="text" id="petName" required>
+                </div>
+                <div class="calendar-form-group">
+                    <label for="ownerName">Owner Name</label>
+                    <input type="text" id="ownerName" required>
+                </div>
+                <div class="calendar-form-group">
+                    <label for="appointmentType">Appointment Type</label>
+                    <select id="appointmentType" required>
+                        <option value="">Select type...</option>
+                        <option value="checkup">General Checkup</option>
+                        <option value="vaccination">Vaccination</option>
+                        <option value="surgery">Surgery</option>
+                        <option value="grooming">Grooming</option>
+                        <option value="dental">Dental Care</option>
+                    </select>
+                </div>
+                <div class="calendar-form-group">
+                    <label for="phone">Phone Number</label>
+                    <input type="tel" id="phone" required>
+                </div>
+                <button type="submit" class="calendar-book-btn">Confirm Booking</button>
+            </form>
+        </div>
+    </div>
+
+    </section>
+    
     <section class="tab-content" id="contact" style="display: none;">
         <h1 class="heading">Contact <span>Us</span></h1>
         <p style="text-align: center;">Here you can provide contact information.</p>

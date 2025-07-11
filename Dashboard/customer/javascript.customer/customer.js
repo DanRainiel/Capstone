@@ -247,3 +247,279 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
+
+
+  // Calendar state
+        let currentDate = new Date();
+        let selectedDate = null;
+        let selectedTimeSlot = null;
+
+        // Sample appointment data
+        const appointments = {
+            '2025-07-15': [
+                { id: 1, time: '09:00', petName: 'Buddy', type: 'checkup', owner: 'John Smith', phone: '(555) 123-4567' },
+                { id: 2, time: '10:30', petName: 'Whiskers', type: 'vaccination', owner: 'Sarah Johnson', phone: '(555) 234-5678' },
+                { id: 3, time: '14:00', petName: 'Max', type: 'surgery', owner: 'Mike Davis', phone: '(555) 345-6789' }
+            ],
+            '2025-07-16': [
+                { id: 4, time: '11:00', petName: 'Luna', type: 'grooming', owner: 'Emma Wilson', phone: '(555) 456-7890' }
+            ],
+            '2025-07-18': [
+                { id: 5, time: '09:30', petName: 'Charlie', type: 'dental', owner: 'Alex Brown', phone: '(555) 567-8901' },
+                { id: 6, time: '15:00', petName: 'Bella', type: 'checkup', owner: 'Lisa Garcia', phone: '(555) 678-9012' }
+            ]
+        };
+
+        const timeSlots = [
+            '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
+            '14:00', '14:30', '15:00', '15:30', '16:00', '16:30'
+        ];
+
+        const months = [
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+
+        // Initialize calendar
+        function initCalendar() {
+            updateCalendar();
+            updateSidebar();
+        }
+
+        function updateCalendar() {
+            const monthYear = document.getElementById('monthYear');
+            const calendarGrid = document.getElementById('calendarGrid');
+            
+            monthYear.textContent = `${months[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
+            
+            // Clear calendar grid
+            calendarGrid.innerHTML = '';
+            
+            // Add day headers
+            const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            dayHeaders.forEach(day => {
+                const dayHeader = document.createElement('div');
+                dayHeader.className = 'calendar-day-header';
+                dayHeader.textContent = day;
+                calendarGrid.appendChild(dayHeader);
+            });
+            
+            // Get first day of month and number of days
+            const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+            const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+            const startingDayOfWeek = firstDay.getDay();
+            const daysInMonth = lastDay.getDate();
+            
+            // Add empty cells for days before first day of month
+            for (let i = 0; i < startingDayOfWeek; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = 'calendar-day-cell';
+                calendarGrid.appendChild(emptyCell);
+            }
+            
+            // Add days of month
+            const today = new Date();
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayCell = document.createElement('div');
+                const cellDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+                const dateStr = formatDate(cellDate);
+                
+                dayCell.className = 'calendar-day-cell';
+                dayCell.innerHTML = `<div class="calendar-day-number">${day}</div>`;
+                
+                // Add classes based on date status
+                if (cellDate.toDateString() === today.toDateString()) {
+                    dayCell.classList.add('today');
+                }
+                
+                if (cellDate < today.setHours(0, 0, 0, 0)) {
+                    dayCell.classList.add('past');
+                } else {
+                    dayCell.addEventListener('click', () => selectDate(cellDate));
+                }
+                
+                if (selectedDate && cellDate.toDateString() === selectedDate.toDateString()) {
+                    dayCell.classList.add('selected');
+                }
+                
+                // Check for appointments
+                const dayAppointments = appointments[dateStr] || [];
+                if (dayAppointments.length > 0) {
+                    dayCell.classList.add('has-appointments');
+                    const countBadge = document.createElement('div');
+                    countBadge.className = 'calendar-appointment-count';
+                    countBadge.textContent = dayAppointments.length;
+                    dayCell.appendChild(countBadge);
+                }
+                
+                // Check if fully booked
+                if (dayAppointments.length >= timeSlots.length) {
+                    dayCell.classList.add('fully-booked');
+                } else if (dayAppointments.length < timeSlots.length && cellDate >= today.setHours(0, 0, 0, 0)) {
+                    const availableIndicator = document.createElement('div');
+                    availableIndicator.className = 'calendar-available-indicator';
+                    availableIndicator.textContent = 'Available';
+                    dayCell.appendChild(availableIndicator);
+                }
+                
+                calendarGrid.appendChild(dayCell);
+            }
+        }
+
+        function navigateMonth(direction) {
+            currentDate.setMonth(currentDate.getMonth() + direction);
+            updateCalendar();
+        }
+
+        function selectDate(date) {
+            selectedDate = date;
+            selectedTimeSlot = null;
+            updateCalendar();
+            updateSidebar();
+        }
+
+        function updateSidebar() {
+            const selectedDateDiv = document.getElementById('selectedDate');
+            const timeSlotsDiv = document.getElementById('timeSlots');
+            const appointmentsListDiv = document.getElementById('appointmentsList');
+            const bookBtn = document.getElementById('bookBtn');
+            
+            if (!selectedDate) {
+                selectedDateDiv.textContent = 'Select a date to view appointments';
+                timeSlotsDiv.innerHTML = '';
+                appointmentsListDiv.innerHTML = '';
+                bookBtn.disabled = true;
+                return;
+            }
+            
+            const dateStr = formatDate(selectedDate);
+            selectedDateDiv.textContent = selectedDate.toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            
+            // Update time slots
+            timeSlotsDiv.innerHTML = '';
+            const dayAppointments = appointments[dateStr] || [];
+            
+            timeSlots.forEach(time => {
+                const timeSlot = document.createElement('div');
+                timeSlot.className = 'calendar-time-slot';
+                timeSlot.textContent = time;
+                
+                const isBooked = dayAppointments.some(apt => apt.time === time);
+                
+                if (isBooked) {
+                    timeSlot.classList.add('booked');
+                } else {
+                    timeSlot.addEventListener('click', () => selectTimeSlot(time));
+                }
+                
+                if (selectedTimeSlot === time) {
+                    timeSlot.classList.add('selected');
+                }
+                
+                timeSlotsDiv.appendChild(timeSlot);
+            });
+            
+            // Update appointments list
+            appointmentsListDiv.innerHTML = '';
+            if (dayAppointments.length > 0) {
+                dayAppointments.forEach(apt => {
+                    const appointmentDiv = document.createElement('div');
+                    appointmentDiv.className = 'calendar-appointment';
+                    appointmentDiv.innerHTML = `
+                        <div class="calendar-appointment-time">${apt.time}</div>
+                        <div class="calendar-appointment-details">
+                            <strong>${apt.petName}</strong> - ${apt.owner}
+                            <div class="calendar-appointment-type calendar-type-${apt.type}">${getTypeDisplayName(apt.type)}</div>
+                        </div>
+                    `;
+                    appointmentsListDiv.appendChild(appointmentDiv);
+                });
+            } else {
+                appointmentsListDiv.innerHTML = '<p style="text-align: center; color: #6c757d;">No appointments scheduled</p>';
+            }
+            
+            // Update book button
+            bookBtn.disabled = !selectedTimeSlot;
+        }
+
+        function selectTimeSlot(time) {
+            selectedTimeSlot = time;
+            updateSidebar();
+        }
+
+        function formatDate(date) {
+            return date.toISOString().split('T')[0];
+        }
+
+        function getTypeDisplayName(type) {
+            const types = {
+                checkup: 'General Checkup',
+                vaccination: 'Vaccination',
+                surgery: 'Surgery',
+                grooming: 'Grooming',
+                dental: 'Dental Care'
+            };
+            return types[type] || type;
+        }
+
+        function showBookingModal() {
+            const modal = document.getElementById('bookingModal');
+            modal.style.display = 'block';
+        }
+
+        function hideBookingModal() {
+            const modal = document.getElementById('bookingModal');
+            modal.style.display = 'none';
+            document.getElementById('bookingForm').reset();
+        }
+
+        // Handle form submission
+        document.getElementById('bookingForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const petName = document.getElementById('petName').value;
+            const ownerName = document.getElementById('ownerName').value;
+            const appointmentType = document.getElementById('appointmentType').value;
+            const phone = document.getElementById('phone').value;
+            
+            // Add new appointment
+            const dateStr = formatDate(selectedDate);
+            if (!appointments[dateStr]) {
+                appointments[dateStr] = [];
+            }
+            
+            appointments[dateStr].push({
+                id: Date.now(),
+                time: selectedTimeSlot,
+                petName: petName,
+                type: appointmentType,
+                owner: ownerName,
+                phone: phone
+            });
+            
+            // Update UI
+            updateCalendar();
+            updateSidebar();
+            hideBookingModal();
+            
+            // Show success message
+            alert('Appointment booked successfully! 🎉');
+        });
+
+        // Close modal when clicking outside
+        window.addEventListener('click', function(e) {
+            const modal = document.getElementById('bookingModal');
+            if (e.target === modal) {
+                hideBookingModal();
+            }
+        });
+
+        // Initialize calendar when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initCalendar();
+        });
