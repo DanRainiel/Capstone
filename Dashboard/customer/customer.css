@@ -519,6 +519,50 @@ form {
     background-color: whitesmoke;
 }
 
+.dog-cartoon {
+  position: absolute;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 150px; 
+  z-index: 1001; /* Above modal content */
+  pointer-events: none;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.2));
+}
+
+.dog-cartoon2 {
+  position: absolute;
+  top: 40px; 
+  left: 50%;
+  transform: translateX(-50%);
+  width: 200px; 
+  z-index: 1001; 
+  pointer-events: none;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.2));
+}
+
+.dog-cartoon3{
+  position: absolute;
+  top: -8px; 
+  left: 50%;
+  transform: translateX(-50%);
+  width: 250px; 
+  z-index: 1001; 
+  pointer-events: none;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.2));
+}
+
+.dog-cartoon4{
+  position: absolute;
+  top: -20px; 
+  left: 50%;
+  transform: translateX(-50%);
+  width: 250px; 
+  z-index: 1001; 
+  pointer-events: none;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.2));
+}
+
 .peeking-dog {
   position: absolute;
   width: 200px;

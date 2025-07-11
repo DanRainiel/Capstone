@@ -41,6 +41,23 @@ function registerFunction() {
 // Optional: Set default state on page load
 window.onload = loginFunction;
 
+const loginButton = document.getElementById("SignInBtn");
+
+loginButton.addEventListener("click", function (e) {
+    e.preventDefault();
+
+    // Show loading screen
+    const loader = document.getElementById("loading-screen");
+    loader.style.display = "flex";
+
+    // Simulate login delay (e.g., 2 seconds)
+    setTimeout(() => {
+        loader.style.display = "none";
+        alert("Login successful!"); // Replace this with actual redirect or logic
+        // window.location.href = "/dashboard.html"; // Optional: redirect after login
+    }, 2000);
+});
+
 
 
 
