@@ -96,6 +96,7 @@
                 
             <form action="">
                 <h3>Appointment Details</h3>
+                
             <div class="form-scroll">
                 <input type="text" placeholder="Your Name" class="box" id="appt-name" required>
                 <input type="number" placeholder="Your Number" class="box" id="appt-number" required>
@@ -126,8 +127,6 @@
                 <option value="treatment">Treatments</option>
 
                 </select>
-                
-                <input type="time" placeholder="Appointment Time" class="box" id="appt-time" required>
 
                 <input type="date" placeholder="Appointment Date" class="box" id="appt-date" required>
             </div>
@@ -338,7 +337,7 @@
                 </div>
     </section>
 
-    <section class="tab-content" id="calendar" style="display: block;">
+    <section class="tab-content" id="calendar" style="display: none;">
         <h1 class="heading">Appointment<span> Calendar</span></h1>
         <p style="text-align: center;">Here you can view and manage appointments for your pets.</p>
         
@@ -393,10 +392,12 @@
                 </div>
             </div>
         </div>
+        </section>
         <!-- Calendar Integration Ends Here -->
     
 
     <!-- Booking Modal -->
+
     <div class="calendar-modal" id="bookingModal">
         <div class="calendar-modal-content">
             <span class="calendar-close" onclick="hideBookingModal()">&times;</span>
@@ -430,7 +431,6 @@
         </div>
     </div>
 
-    </section>
     
     <section class="tab-content" id="contact" style="display: none;">
         <h1 class="heading">Contact <span>Us</span></h1>
