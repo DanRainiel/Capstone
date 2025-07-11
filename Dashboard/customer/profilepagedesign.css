@@ -129,6 +129,16 @@ body {
   padding: 10px;
 }
 
+.profile-pet {
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.profile-pet:hover {
+  transform: scale(1.02);
+  box-shadow: rgba(0,0,0,0.3) 0px 4px 10px;
+}
+
 .profile-header, .profile-header-pet {
   display: flex;
   align-items: center;

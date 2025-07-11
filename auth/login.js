@@ -51,11 +51,7 @@ loginButton.addEventListener("click", function (e) {
     loader.style.display = "flex";
 
     // Simulate login delay (e.g., 2 seconds)
-    setTimeout(() => {
-        loader.style.display = "none";
-        alert("Login successful!"); // Replace this with actual redirect or logic
-        // window.location.href = "/dashboard.html"; // Optional: redirect after login
-    }, 2000);
+
 });
 
 

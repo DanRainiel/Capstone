@@ -4,3 +4,11 @@ if (sessionStorage.getItem("role") === "admin") {
     location.replace(location.href);
   });
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+  const welcomeMsg = sessionStorage.getItem("welcomeMessage");
+  if (welcomeMsg) {
+    alert(welcomeMsg);
+    sessionStorage.removeItem("welcomeMessage");
+  }
+});

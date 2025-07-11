@@ -1,4 +1,5 @@
 // ✅ Import Firebase functions
+// ✅ Import Firebase functions
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
 import {
   getFirestore,
@@ -7,8 +8,10 @@ import {
   where,
   getDocs,
   doc,
-  setDoc
+  setDoc,
+  getDoc      // ✅ add this line
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
 
 // ✅ Your Firebase config
 const firebaseConfig = {
@@ -63,16 +66,17 @@ async function addPet() {
     const timestamp = Date.now();
     const customDocId = `${userId}_${petName}_${timestamp}`;
 
-    await setDoc(doc(db, "Pets", customDocId), {
-      userId,
-      petName,
-      breed,
-      sex,
-      color,
-      weight,
-      size,
-      dob
-    });
+ await setDoc(doc(db, "Pets", customDocId), {
+  userId,
+  petName,
+  breed,
+  sex,
+  color,
+  weight,
+  size,
+  dob
+}, { merge: true });
+
     alert("Pet successfully added!");
     loadPets(); // reload list after adding
   } catch (error) {
@@ -101,21 +105,25 @@ async function loadPets() {
     const q = query(collection(db, "Pets"), where("userId", "==", userId));
     const querySnapshot = await getDocs(q);
 
-    querySnapshot.forEach((docSnap) => {
-      const data = docSnap.data();
-      const petCard = document.createElement('div');
-      petCard.classList.add('profile-pet');
-      petCard.innerHTML = `
-        <div class="profile-header-pet">
-          <i class="fa-solid fa-user profile-icon"></i>
-          <div class="profile-text-container-pet">
-            <span class="name"><strong>${data.petName}</strong></span>
-            <p class="email"><strong>${data.breed}</strong></p>
-          </div>
-        </div>
-      `;
-      petsList.appendChild(petCard);
-    });
+  querySnapshot.forEach((docSnap) => {
+  const data = docSnap.data();
+  const petId = docSnap.id; // ✅ get document ID
+  const petCard = document.createElement('div');
+  petCard.classList.add('profile-pet');
+  petCard.innerHTML = `
+    <div class="profile-header-pet">
+      <i class="fa-solid fa-user profile-icon"></i>
+      <div class="profile-text-container-pet">
+        <span class="name"><strong>${data.petName}</strong></span>
+        <p class="email"><strong>${data.breed}</strong></p>
+      </div>
+    </div>
+  `;
+  petCard.addEventListener('click', () => showPetDetails(petId)); // ✅ pass petId!
+  petsList.appendChild(petCard);
+});
+
+
 
     // Append list left & form right
     container.appendChild(petsList);
@@ -137,6 +145,7 @@ function petFormElement() {
       <h1 class="account-title">Pet Details</h1>
       <div class="btn-container">
         <button type="button" class="btn-cancel" id="addPetBtn">Add</button>
+         <button class="btn-save">Update</button>
       </div>
     </div>
     <div class="account-edit">
@@ -152,3 +161,50 @@ function petFormElement() {
   form.querySelector('#addPetBtn').addEventListener('click', addPet);
   return form;
 }
+
+// ✅ New: Show details of clicked pet (read-only form)
+async function showPetDetails(petId) {
+  try {
+    const docSnap = await getDoc(doc(db, "Pets", petId));
+    if (!docSnap.exists()) {
+      alert("Pet not found!");
+      return; 
+    }
+
+    const data = docSnap.data();
+
+    const container = document.querySelector('.container-pet');
+    const petsList = container.querySelector('.pets-list'); // keep cards on left
+
+    // Create a new form to show details
+    const detailForm = document.createElement('form');
+    detailForm.classList.add('account');
+    detailForm.innerHTML = `
+      <div class="account-header">
+        <h1 class="account-title">Pet Details</h1>
+        <div class="btn-container">
+        <button type="button" class="btn-cancel" onclick="location.href='profilepage.html'">Back</button>
+
+
+        </div>
+      </div>
+      <div class="account-edit">
+        <div class="input-container"><label>Pet Name</label><input type="text" value="${data.petName || ''}" readonly></div>
+        <div class="input-container"><label>Breed</label><input type="text" value="${data.breed || ''}" readonly></div>
+        <div class="input-container"><label>Sex</label><input type="text" value="${data.sex || ''}" readonly></div>
+        <div class="input-container"><label>Color</label><input type="text" value="${data.color || ''}" readonly></div>
+        <div class="input-container"><label>Weight</label><input type="text" value="${data.weight || ''}" readonly></div>
+        <div class="input-container"><label>Size</label><input type="text" value="${data.size || ''}" readonly></div>
+        <div class="input-container"><label>Date of Birth</label><input type="text" value="${data.dob || ''}" readonly></div>
+      </div>
+    `;
+
+    container.innerHTML = ''; // clear existing
+    container.appendChild(petsList); // keep cards
+    container.appendChild(detailForm); // show details
+  } catch (error) {
+    console.error("Error loading pet details:", error);
+    alert("Failed to load pet details!");
+  }
+}
+

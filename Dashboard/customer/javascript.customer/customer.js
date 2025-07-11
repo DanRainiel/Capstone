@@ -70,6 +70,15 @@ async function loadUsername() {
 }
 loadUsername();
 
+document.addEventListener("DOMContentLoaded", () => {
+  const welcomeMsg = sessionStorage.getItem("welcomeMessage");
+  if (welcomeMsg) {
+    alert(welcomeMsg);
+    sessionStorage.removeItem("welcomeMessage");
+  }
+});
+
+
 if (sessionStorage.getItem("role") === "customer") {
   history.pushState(null, null, location.href);
   window.addEventListener('popstate', () => {
