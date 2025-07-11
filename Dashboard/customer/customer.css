@@ -601,6 +601,26 @@ form {
     padding: 1rem 0;
 } 
 
+hr{
+  margin-bottom: 20px;
+  border:2px solid var(--background-color);
+  height: 1px;
+  width: 100%;
+  border-radius: 10px;
+  background-color:var(--background-color);
+}
+
+.price-heading{
+  color:var(--orange);
+  font-size:30px;
+}
+
+.price i{
+  color:var(--background-color);
+  font-size: 20px;
+  margin-right:8px;
+}
+
 .modal {
   display: none; /* Hidden by default */
   position: fixed;

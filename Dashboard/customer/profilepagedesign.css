@@ -1,58 +1,57 @@
 @import url('https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,100..900;1,100..900&display=swap');
+
 :root {
   --green: #1efdf2;
   --white: #fff;
-   --black: #2e2525;
-   --orange: #f8732b;
-   --background-color: #01949A;
-   --login:#efefef;
+  --black: #2e2525;
+  --orange: #f8732b;
+  --background-color: #01949A;
+  --login: #efefef;
   --light-color: #28fa79;
   --box-shadow: .5rem .5rem 0 rgba(0, 0, 0, 0.2);
   --text-shadow: .4rem .4rem 0 rgba(0, 0, 0, 0.2);
-  --border:.2rem solid var(--green);
-  --transition-3s:0.3s ;
-  --primary-color:#0D1936;
-  --secondary-color:#535354;
-  --newbordercolor:#e3e4e6;
+  --border: .2rem solid var(--green);
+  --transition-3s: 0.3s;
+  --primary-color: #0D1936;
+  --secondary-color: #535354;
+  --newbordercolor: #e3e4e6;
 }
 
-*{
-    font-family: "Raleway", sans-serif;
-  font-optical-sizing: auto;
-  font-weight: weight;
-  font-style: normal;
+* {
+  font-family: "Raleway", sans-serif;
   margin: 0;
-  padding:0;
+  padding: 0;
   box-sizing: border-box;
-  outline: none;
   text-decoration: none;
-    border:none;
-    text-transform: capitalize;
-    transition: all .2s ease-in-out;
-    scroll-behavior: smooth;
-    box-sizing: border-box;;
-   
+  border: none;
+  text-transform: capitalize;
+  transition: all .2s ease-in-out;
+  scroll-behavior: smooth;
 }
 
+body {
+  background: url(/images/bg_login.png);
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+/* Header */
 .profile-page-header {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   padding: 20px 30px;
-  background: transparent;
-  color: var(--white);
   display: flex;
   align-items: center;
-  justify-content: flex-start;
   gap: 20px;
   z-index: 1000;
-  color:var(--background-color);
+  color: var(--background-color);
 }
 
 .back-button {
   background: var(--background-color);
-  border: none;
   color: var(--white);
   padding: 1rem;
   font-size: 16px;
@@ -62,122 +61,109 @@
   gap: 8px;
   font-weight: 600;
   border-radius: 10px;
-  transition: ease 0.3s;
-  text-decoration: none;
 }
 
 .back-button:hover {
-  text-decoration: none;
   background: var(--orange);
   transform: scale(1.1);
 }
 
-.header-title{
+.header-title {
   font-size: 40px;
   font-weight: 400;
-  margin: 0;
+  letter-spacing: 5px;
   color: var(--white);
-  letter-spacing:5px;
 }
 
-.header-title i{
-    font-size: 32px;
-    text-shadow:5px 5px rgba(0, 0, 0, 0.1);
+.header-title i {
+  font-size: 32px;
+  text-shadow: 5px 5px rgba(0, 0, 0, 0.1);
 }
 
-body{
-     background: url(/images/bg_login.png);
-    background-size: cover  ;
-    background-repeat: no-repeat;
-    background-attachment: fixed;
-    
-    
+/* Containers */
+.container,
+.container-pet {
+  display: flex;
+  margin: 50px 10px;
+  margin-top: 100px;
 }
 
-
-.container{
-    display: flex;
-    margin: 50px 10px;
-    margin-top: 100px;
+/* Profile card */
+.profile {
+  flex: 1;
+  margin-right: 10px;
+  background-color: var(--white);
+  box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
+  border-radius: 20px;
+  color: var(--background-color);
 }
 
-.profile{
-    flex:  1;
+    .profile-pet {
+    flex: 1;
     margin-right: 10px;
     background-color: var(--white);
     box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
     border-radius: 20px;
-    height: max-content;
-    color:var(--background-color);
+    color: var(--background-color);
+    }
 
-}
-
-.profile-header{
-    display:flex;
-    align-items: center;
+.profile-header, .profile-header-pet {
+  display: flex;
+  align-items: center;
 }
 
 .profile-icon {
-    display: flex;                    
-    align-items: center;              
-    justify-content: center;          
-    font-size: 50px;                   
-    width: 80px;                       
-    height: 80px;
-    border-radius: 50%;                
-    margin: 15px;
-    background-color: var(--orange);
-    color:var(--white);
+  font-size: 50px;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  margin: 15px;
+  background-color: var(--orange);
+  color: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.profile-text-container {
-   line-height: 1.2;
+.profile-text-container, .profile-text-container-pet {
+  line-height: 1.2;
 }
 
-.profile-title{
-    
-    font-size: 20px;
+.name {
+  font-size: 20px;
 }
-    
-.profile-email {
-    
-    font-size: 14px;
 
+.email {
+  font-size: 14px;
 }
 
 .menu {
-
-    margin: 0 20px;
+  margin: 0 20px;
 }
 
 .menu-link {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px;
-    color: var(--background-color);
-    text-decoration: none;
-    margin: 10px ;
-    border-radius: 10px;
-    
-}   
-
-.menu-icon {
-    margin-right: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  color: var(--background-color);
+  margin: 10px;
+  border-radius: 10px;
 }
 
 .menu-link:hover {
-    background-color: var(--orange);
-    color: var(--white);
+  background-color: var(--orange);
+  color: var(--white);
 }
 
-.account{
-    flex:2;
-    margin-left: 10px;
-    background-color: var(--white);
-    box-shadow: rgba(0, 0, 0, 0.16)0px 1px 4px;
-    border-radius: 5px;
-    height: max-content;
+/* Form styling: shared by account and pet form */
+.account {
+  flex: 2;
+  margin-left: 10px;
+  background-color: var(--white);
+  box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
+  border-radius: 5px;
+  height: max-content;
 }
 
 .account-header {
@@ -186,105 +172,75 @@ body{
   align-items: center;
   padding: 10px;
   background-color: var(--background-color);
-  border-bottom: 1px solid var(--secondary-color);  
+  border-bottom: 1px solid var(--secondary-color);
 }
 
-.account-title  {
-   font-size: 20px;
-   color: var(--white);
-   font-weight: 500;
-   margin-left: 10px;
+.account-title {
+  font-size: 20px;
+  color: var(--white);
+  font-weight: 500;
+  margin-left: 10px;
 }
 
-.btn-container{
-    margin-right: 5px;
+.btn-container {
+  margin-right: 5px;
 }
 
-.btn-cancel{
-    width: 8em;
-    height: 3em;
-    cursor:pointer;
-    border-radius: 2em;
-    color: var(--background-color);
-    font-weight: bold;
-    margin-right: 5px ;
-    background-color: var(--white);
-    transition-duration: 0.2s;
-    box-shadow: rgba(0, 0, 0, 0.1);
+.btn-cancel, .btn-save {
+  width: 8em;
+  height: 3em;
+  cursor: pointer;
+  border-radius: 2em;
+  color: var(--background-color);
+  font-weight: bold;
+  margin-right: 5px;
+  background-color: var(--white);
+  transition-duration: 0.3s;
 }
 
-.btn-cancel:hover{
- background-color: var(--orange);
- color:var(--white);
-
-}
-
-.btn-save{
-    width: 8em;
-    height: 3em;
-    cursor:pointer;
-    border-radius: 2em;
-    color: var(--background-color);
-    font-weight: bold;
-    margin-right: 5px ;
-    background-color: var(--white);
-    transition-duration: 0.3s;
-    box-shadow: rgba(0, 0, 0, 0.1);
-}
-
-.btn-save:hover{
- background-color: var(--orange);
- color:var(--white);
+.btn-cancel:hover, .btn-save:hover {
+  background-color: var(--orange);
+  color: var(--white);
 }
 
 .account-edit {
-    display: flex;
-    flex-direction: column;   /* stack items vertically */
-    gap: 15px;                /* space between items */
-    margin: 15px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin: 15px 0;
 }
 
-.input-container{
-    width: 70%;
-    display: flex;
-    flex-direction: column;
-    margin: 0 20px;
-    line-height: 1.8;
+.input-container {
+  width: 70%;
+  display: flex;
+  flex-direction: column;
+  margin: 0 20px;
+  line-height: 1.8;
 }
 
-.input-container label{
-    color: var(--black);
-    font-size: 14px;
+.input-container label {
+  color: var(--black);
+  font-size: 14px;
 }
 
-.input-container input{
-    height: 25px;
-    border: 1.5px solid var(--secondary-color);
-    border-radius: 5px;
-    padding: 5px;
-    color: var(--secondary-color);
+.input-container input, .input-container textarea {
+  border: 1.5px solid var(--secondary-color);
+  border-radius: 5px;
+  padding: 5px;
+  color: var(--secondary-color);
+}   
+
+.input-container input {
+  height: 25px;
 }
 
-.input-container input:focus{
-    outline: none;
-    border: 1.5px solid var(--background-color);
+.input-container input:focus, .input-container textarea:focus {
+  outline: none;
+  border: 1.5px solid var(--background-color);
 }
 
-.input-container textarea{
-    display: block;
-    width: 100%;
-    height: 100px;
-    padding: 5px;
-    border: 1.5px solid var(--secondary-color);
-    border-radius: 5px;
-
+.input-container textarea {
+  width: 100%;
+  height: 100px;
 }
 
-.input-container textarea:focus{
-    outline: none;
-    border: 1.5px solid var(--background-color);
-}
-
-.account + .account {
-    margin-top: 500px; 
-}

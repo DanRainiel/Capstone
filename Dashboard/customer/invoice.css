@@ -35,7 +35,7 @@ body {
 
 .invoice{
     background: var(--white);
-    width: 600px;
+    width: 1000px;
     max-width: 100%;
     height: auto;
     margin: 2rem auto;
@@ -45,6 +45,19 @@ body {
 .p_title{
     font-weight: 700;
     font-size: 14px;
+}
+
+.i_number .p_title {
+    font-size: 20px;
+}
+
+.i_address p{
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.i_address .p_title {
+    font-weight: normal;
 }
 
 .i_row{
@@ -69,6 +82,14 @@ body {
     font-weight: bold;
 }
 
+.invoice .header .i_logo i{
+    font-size: 35px;
+    color: var(--secondary-color);
+    display: flex;
+    gap:2px;
+
+}
+
 .invoice .header .i_logo p,
 .invoice .header .i_title h2{
     font-size: 32px;
@@ -88,35 +109,58 @@ body {
 }
 
 .invoice .body .i_table p{
-    font-weight: 700;
-}
+    font-weight: 7000;
+}   
 
 .invoice .body .i_table .i_col{
-    padding: 12px 5px;
+    padding: 20px 3px;
 }
 
 .invoice .body .i_table_head .i_row{
-    border: 2px solid var(--primary-color);
+    border: 3px solid var(--primary-color);
     border-left: 0px;
-    border-right: 0;
+    border-right: 0;   
 }
 
 .invoice .body .i_table_body .i_row:last-child{
     border-bottom: 2px solid var(--primary-color);
+    font-size: 12px;
+}
+
+.invoice .body .i_table_body .i_row .i_col .p_title {
+    font-size: 15px;
+    font-weight: normal;
+}
+
+.invoice .body .i_table_foot {
+    font-size: 20px;
+    padding: 10px 0;
+    text-align: right;
+    color: var(--primary-color);
 }
 
 .invoice .body .i_table_foot .grand_total_wrap{
     margin-top: 20px;
 }
 
-.invoice .body .i_table_foot .grand_total_wrap .grand_total{
+.invoice .body .i_table_foot .grand_total_wrap .grand_total {
     background: var(--secondary-color);
     color: var(--white);
-    padding: 10px 15px;
+    padding: 20px 20px; 
+    font-size: 20px;
+    text-align: center;
+    border-radius: 5px;
+    width: 250px;
+    margin-left: auto;
+}
+
+.invoice .body .i_table_foot .grand_total_wrap .grand_total p{
+    display: flex;
+    justify-content: space-between;
 }
 
 .w_15{
-    width: 50%;
+    width: 60%;
 }
 
 .w_50{
@@ -124,5 +168,20 @@ body {
 }
 
 .w_55{
-    width: 55%;
+    width: 80%;
+}
+
+.invoice .footer{
+    margin: auto;
+}
+
+.invoice .footer .p_title{
+    font-size: 20px;
+    margin-top: 20px;
+    text-align: center
+}
+
+.invoice .footer .p_title p{
+    font-size: 12px;
+    text-align: center;
 }

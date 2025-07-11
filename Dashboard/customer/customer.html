@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/regular.min.css" integrity="sha512-8hM9a+2hrLBhOuB3uiy+QIXBsu6Qk+snsP1CboFQW6pdt/yYz0IcDp/+CGv5m39r9doGUc/zw6aBpyLF6XFgzg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/fontawesome.min.css" integrity="sha512-v8QQ0YQ3H4K6Ic3PJkym91KoeNT5S3PnDKvqnwqFD1oiqIl653crGZplPdU5KKtHjO0QKcQ2aUlQZYjHczkmGw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/brands.min.css" integrity="sha512-58P9Hy7II0YeXLv+iFiLCv1rtLW47xmiRpC1oFafeKNShp8V5bKV/ciVtYqbk2YfxXQMt58DjNfkXFOn62xE+g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome-animation/1.1.0/font-awesome-animation.min.css" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="stylesheet" href="/Dashboard/customer/customer.css" />
     <title>Customer</title>
     <script type="module" src="/Dashboard/customer/javascript.customer/customer.js" defer></script>
@@ -196,6 +202,14 @@
                             we also create care plans to manage it properly. Whether your pet just needs a routine visit or is feeling unwell, 
                             our goal is to give them safe, gentle, and professional care every time.
                         </p>
+
+                        <hr>
+                        <h1 class ="price-heading">Price <i class="fa-solid fa-tags"></i></h1>
+                        <p>--Treatment--</p>
+                        <p class ="price">Tick and Flea Treatment: <i class="fa-solid fa-peso-sign"></i> 600 - 1000</p>
+                        <p class ="price">HeartWorm Prevention: <i class="fa-solid fa-peso-sign"></i> 600 - 1000</p>
+
+
                     </div>
                 </div>
 
@@ -212,10 +226,40 @@
                                  address concerns, and develop personalized care plans. 
                             Our consultations combine thorough examinations with compassionate communication to ensure your pet receives the best possible care.
                         </p>
+
+                        <hr>
+                        <h1 class ="price-heading">Price <i class="fa-solid fa-tags"></i></h1>
+                        <p>--Consultation--</p>
+                        <p class ="price"><i class="fa-solid fa-peso-sign"></i>600 - 1000</p>
+
                     </div>
                 </div>
 
-                <!-- Vaccination -->
+                <!-- Grooming -->
+                <div class="modal" id="modal-4">
+                    <div class="modal-content">
+                        <button class="modal-close" data-close="modal-4">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                        <h2 class="md-heading"><i class="fa-solid fa-scissors"></i>Grooming</h2>
+
+                        <p>
+                            Pet grooming is a comprehensive care service that goes far beyond making your pet look their best. 
+                            It's an essential aspect of pet health and wellness that involves the cleaning, styling, and maintenance of your 
+                            pet's coat, skin, nails, ears, and teeth. At Pet Stop, our professional grooming services 
+                            combine aesthetic care with preventive health measures to keep your furry family members comfortable, healthy, and happy.
+                        </p>
+
+                        <hr>
+                        <h1 class ="price-heading">Price <i class="fa-solid fa-tags"></i></h1>
+                        <p>--Grooming--</p>
+                        <p class ="price"><i class="fa-solid fa-peso-sign"></i>450 - 1000</p>
+                        <p>Price depends on the size of the pet</p>
+                        
+                    </div>
+                </div>
+
+                 <!-- Vaccination -->
                 <div class="modal" id="modal-3">
                     <div class="modal-content">
                         <button class="modal-close" data-close="modal-3">
@@ -228,6 +272,60 @@
                             Vaccines work by stimulating the immune system to produce antibodies against specific pathogens, creating immunity without causing the actual disease. 
                             This biological process helps pets develop resistance to dangerous viruses, bacteria, and other infectious agents.
                         </p>
+
+                         <hr>
+                        <h1 class ="price-heading">Price <i class="fa-solid fa-tags"></i></h1>
+                            <p>--Vaccination--</p>
+                            <p class ="price"> Canine Vaccination: <i class="fa-solid fa-peso-sign"></i> 500 - 600</p>
+                            <p class ="price"> Feline Vaccination: <i class="fa-solid fa-peso-sign"></i> 950</p>
+                            <p class ="price"> Anti-Rabies Vaccination: <i class="fa-solid fa-peso-sign"></i> 350</p>
+
+                    </div>
+                </div>
+
+                <!-- Laboratory -->
+                <div class="modal" id="modal-5">
+                    <div class="modal-content">
+                        <button class="modal-close" data-close="modal-5">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                        <h2 class="md-heading"><i class="fa-solid fa-flask-vial"></i>Laboratory</h2>
+
+                        <p>
+                            Laboratory tests are diagnostic tools that allow our veterinary team at Pet Stop to examine your pet's blood, urine, 
+                            feces, and other biological samples to assess their health status. These tests provide crucial information about your pet's internal organ function, detect diseases in their early stages, and help us monitor ongoing health conditions. 
+                            Laboratory diagnostics are an essential component of preventive care and accurate medical diagnosis.
+                        </p>
+
+                        <hr>
+                        
+                        <h1 class ="price-heading">Price <i class="fa-solid fa-tags"></i></h1>
+                            <p>--Laboratory--</p>
+                            <p class ="price">Blood Test: <i class="fa-solid fa-peso-sign"></i> 1500 - 2500</p>
+                            <p class ="price">Follow-up Exam: <i class="fa-solid fa-peso-sign"></i> 350</p>
+
+                    </div>
+                </div>
+
+                <!-- Deworming -->
+                <div class="modal" id="modal-6">
+                    <div class="modal-content">
+                        <button class="modal-close" data-close="modal-6">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                        <h2 class="md-heading"><i class="fa-solid fa-shield-virus"></i>Deworming</h2>
+
+                        <p>
+                            Deworming is a crucial preventive healthcare measure that involves administering medication to eliminate intestinal parasites 
+                            (worms) from your pet's system. These parasites can seriously impact your pet's health and, in some cases, can be transmitted to humans. 
+                            At Pet Stop, we provide comprehensive deworming services using safe, 
+                            effective medications tailored to your pet's specific needs and parasite exposure risks.
+                        </p>
+                        
+                        <hr>
+                        <h1 class ="price-heading">Price <i class="fa-solid fa-tags"></i></h1>
+                            <p>--Deworming--</p>
+                            <p class ="price"><i class="fa-solid fa-peso-sign"></i>300 - 950</p>
                     </div>
                 </div>
     </section>
