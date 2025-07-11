@@ -125,10 +125,13 @@
                 <option value="consultation">Consultation</option>
                 <option value="laboratory">Laboratory</option>
                 <option value="treatment">Treatments</option>
-
+                
                 </select>
 
+                <input type="time" placeholder="Appointment Time" class="box" id="appt-time" required>
+
                 <input type="date" placeholder="Appointment Date" class="box" id="appt-date" required>
+
             </div>
                 <input type="submit" value="Submit" class="btn" id="submit-appointment">
             </form>
@@ -397,7 +400,7 @@
     
 
     <!-- Booking Modal -->
-     
+
     <div class="calendar-modal" id="bookingModal">
         <div class="calendar-modal-content">
             <span class="calendar-close" onclick="hideBookingModal()">&times;</span>
