@@ -1413,7 +1413,7 @@ hr{
  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
 }
 
-.modal {
+.petModal {
   display: none;
   position: fixed;
   top: 0;
@@ -1425,7 +1425,7 @@ hr{
   z-index: 1000;
 }
 
-.modal-content {
+.petModal-content {
  position: absolute;
  top: 50%;
  left: 50%;
@@ -1441,14 +1441,14 @@ hr{
 
 }
 
-.modal-header {
+.petModal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 25px;
 }
 
-.modal-header h2 {
+.petModal-header h2 {
   color: #333;
   font-size: 1.5rem;
 }

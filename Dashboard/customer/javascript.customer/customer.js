@@ -548,6 +548,7 @@ document.addEventListener("DOMContentLoaded", () => {
             initCalendar();
         });
 
+        
  const PetManager = {
             pets: [
                 {
