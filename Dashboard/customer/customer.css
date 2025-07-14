@@ -679,6 +679,8 @@ hr{
   margin-right:8px;
 }
 
+
+
 .modal {
   display: none; /* Hidden by default */
   position: fixed;
@@ -1214,6 +1216,8 @@ hr{
             }
         }
 
+        
+
 #pet .heading{
   display: block;
     font-size: 4.5rem;
@@ -1413,19 +1417,19 @@ hr{
  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
 }
 
-.petModal {
+.modal {
   display: none;
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
-  height: 100%;
+  height: 110%;
   background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(5px);
-  z-index: 1000;
+  z-index: 9999;
 }
 
-.petModal-content {
+.modal-content {
  position: absolute;
  top: 50%;
  left: 50%;
@@ -1435,20 +1439,20 @@ hr{
  border-radius: 20px;
  width: 90%;
  max-width: 500px;
- max-height: 90vh;
- overflow-y: auto;
+ max-height: 1300vh;
+
  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
 
 }
 
-.petModal-header {
+.modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 25px;
 }
 
-.petModal-header h2 {
+.modal-header h2 {
   color: #333;
   font-size: 1.5rem;
 }

@@ -548,7 +548,8 @@ document.addEventListener("DOMContentLoaded", () => {
             initCalendar();
         });
 
-        
+
+//PETS//
  const PetManager = {
             pets: [
                 {
@@ -873,21 +874,25 @@ document.addEventListener("DOMContentLoaded", () => {
         };
 
         // Global functions for onclick events
-        function showAddPetModal() {
-            PetManager.showAddPetModal();
-        }
+       function showAddPetModal() {
+    PetManager.showAddPetModal();
+    }
+function closePetModal() {
+    PetManager.closePetModal();
+}
+function closeAppointmentModal() {
+    PetManager.closeAppointmentModal();
+}
+function closeConfirmModal() {
+    PetManager.closeConfirmModal();
+}
 
-        function closePetModal() {
-            PetManager.closePetModal();
-        }
+// Expose to global scope:
+window.showAddPetModal = showAddPetModal;
+window.closePetModal = closePetModal;
+window.closeAppointmentModal = closeAppointmentModal;
+window.closeConfirmModal = closeConfirmModal;
 
-        function closeAppointmentModal() {
-            PetManager.closeAppointmentModal();
-        }
-
-        function closeConfirmModal() {
-            PetManager.closeConfirmModal();
-        }
 
         // Initialize the pet management system
         document.addEventListener('DOMContentLoaded', () => {
