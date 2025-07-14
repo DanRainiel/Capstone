@@ -193,9 +193,8 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
 // ✅ Appointment form submission logic
- document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", () => {
   const submitBtn = document.getElementById("submit-appointment");
-
 
   if (!submitBtn) return;
 
@@ -215,19 +214,30 @@ document.addEventListener("DOMContentLoaded", () => {
     const size = document.getElementById("appt-size").value;
     const sex = document.getElementById("appt-sex").value;
     const service = document.getElementById("appt-service").value;
+    const time = document.getElementById("appt-time").value;
     const date = document.getElementById("appt-date").value;
 
-    if (!name || !number || !petName || !breed || !size || !sex || !service || !date) {
+    if (!name || !number || !petName || !breed || !size || !sex || !service || !time || !date) {
       alert("Please fill in all appointment fields.");
       return;
     }
 
     try {
-      // ✅ CHANGE THIS PART ONLY:
-      const uniqueId = `${userId}_${Date.now()}`; // create unique doc ID
+      // ✅ 1. Check if the date and time is already booked
+      const appointmentsRef = collection(db, "Appointment");
+      const q = query(appointmentsRef, where("date", "==", date), where("time", "==", time));
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        alert("This time slot is already booked. Please choose another.");
+        return;
+      }
+
+      // ✅ 2. Proceed to book appointment
+      const uniqueId = `${userId}_${Date.now()}`;
       const appointmentRef = doc(db, "Appointment", uniqueId);
       await setDoc(appointmentRef, {
-        userId, // save userId so you can query later
+        userId,
         name,
         number,
         petName,
@@ -235,6 +245,7 @@ document.addEventListener("DOMContentLoaded", () => {
         size,
         sex,
         service,
+        time,
         date,
         createdAt: new Date().toISOString()
       });
@@ -246,7 +257,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
-
 
 
   // Calendar state
