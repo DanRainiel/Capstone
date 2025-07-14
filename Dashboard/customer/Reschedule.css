@@ -307,7 +307,6 @@ color:var(--background-color);
 .btn:hover {
   background-color: var(--orange);
 }
-
 /* ===== Responsive Enhancements ===== */
 
 @media (max-width: 1200px) {
