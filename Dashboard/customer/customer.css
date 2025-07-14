@@ -28,6 +28,7 @@
     scroll-behavior: smooth;
     box-sizing: border-box;
 }
+
 body{
   background-color: whitesmoke;
 }
@@ -321,6 +322,7 @@ nav .user{
     color:#3f3f3f;
     text-shadow: rgba(0, 0, 0, 0.2) .3rem .4rem;
     letter-spacing: .5rem;
+    animation:fadeIn 1s ease-in-out;
     
 }
 
@@ -364,6 +366,7 @@ nav .user{
 
 .booking .row .image img{
   width: 100%;
+  animation:fadeIn 1s ease-in-out;
 }
 
 .booking .row form{
@@ -375,6 +378,7 @@ nav .user{
   text-align: center;
   margin-right: 30px;
   border-radius: 20px;
+  animation:fadeIn 1s ease-in-out;
 }
 
 .booking .row form h3{
@@ -428,6 +432,7 @@ form {
   width: 400px;
   max-width: 100%;
   object-fit: contain;
+  animation:fadeIn 1s ease-in-out;
 }
 
 .form-scroll {
@@ -1208,6 +1213,22 @@ hr{
             }
         }
 
+#pet .heading{
+    font-size: 4.5rem;
+    text-align: center;
+    justify-content: center;
+    font-weight: 800;
+    padding-bottom: .5rem;
+    text-transform: uppercase;
+    color:#3f3f3f;
+    text-shadow: rgba(0, 0, 0, 0.2) .3rem .4rem;
+    letter-spacing: .5rem;
+}
+
+#pet .heading span{
+    color:var(--background-color);
+}
+
 /*dynamic content*/
 .tab-content {
   display: none;
@@ -1217,20 +1238,6 @@ hr{
 .tab-content.active {
   display: block;
 }
-
-/*animation*/
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1530,6 +1537,16 @@ hr{
   .second-navbar .container nav a:nth-child(5):hover ~ span {
     left: 0px;
     opacity: 0;
+  }
+}
+
+/*animation*/
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
 
