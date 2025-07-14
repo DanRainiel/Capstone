@@ -3,8 +3,14 @@ import {
   getFirestore,
   doc,
   getDoc,
-  setDoc
+  setDoc,
+  collection,      // <-- ADD THIS
+  getDocs,         // <-- AND THIS
+  query,
+  where
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
+
 
 const firebaseConfig = {
   apiKey: "AIzaSyDtDApHuFcav9QIZaJ8CDIcyI_fxcO4Kzw",
@@ -207,15 +213,16 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    const name = document.getElementById("appt-name").value.trim();
-    const number = document.getElementById("appt-number").value.trim();
-    const petName = document.getElementById("appt-petname").value.trim();
-    const breed = document.getElementById("appt-breed").value.trim();
-    const size = document.getElementById("appt-size").value;
-    const sex = document.getElementById("appt-sex").value;
-    const service = document.getElementById("appt-service").value;
-    const time = document.getElementById("appt-time").value;
-    const date = document.getElementById("appt-date").value;
+    // Get form values
+    const name = document.getElementById("appt-name")?.value.trim();
+    const number = document.getElementById("appt-number")?.value.trim();
+    const petName = document.getElementById("appt-petname")?.value.trim();
+    const breed = document.getElementById("appt-breed")?.value.trim();
+    const size = document.getElementById("appt-size")?.value;
+    const sex = document.getElementById("appt-sex")?.value;
+    const service = document.getElementById("appt-service")?.value;
+    const time = document.getElementById("appt-time")?.value;
+    const date = document.getElementById("appt-date")?.value;
 
     if (!name || !number || !petName || !breed || !size || !sex || !service || !time || !date) {
       alert("Please fill in all appointment fields.");
@@ -223,9 +230,15 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
-      // ✅ 1. Check if the date and time is already booked
       const appointmentsRef = collection(db, "Appointment");
-      const q = query(appointmentsRef, where("date", "==", date), where("time", "==", time));
+
+      // ✅ Check if TIME is already booked by any user (REGARDLESS of date)
+      const q = query(
+      appointmentsRef,
+      where("time", "==", time),
+      where("date", "==", date)
+      );
+
       const querySnapshot = await getDocs(q);
 
       if (!querySnapshot.empty) {
@@ -233,7 +246,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      // ✅ 2. Proceed to book appointment
+      // ✅ Proceed to save
       const uniqueId = `${userId}_${Date.now()}`;
       const appointmentRef = doc(db, "Appointment", uniqueId);
       await setDoc(appointmentRef, {
@@ -257,6 +270,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+
 
 
   // Calendar state

@@ -29,7 +29,7 @@ const db = getFirestore(app); // make sure this exists here!
 async function loadAppointments() {
   const userId = sessionStorage.getItem("userId");
   console.log("Loaded userId from sessionStorage:", userId);
-  const tableBody = document.getElementById("appointments-table-body");
+  const tableBody = document.getElementById("reschedule");
   tableBody.innerHTML = "";
 
   if (!userId) {
@@ -54,7 +54,7 @@ async function loadAppointments() {
           <td>${data.service || ""}</td>
           <td>${data.date || ""}</td>
           
-          <td><button class="btn" onclick="location.href='invoice.html'">View Invoice</button></td>
+          <td><button class="btn" onclick="location.href='">Reschedule</button></td>
         `;
         tableBody.appendChild(row);
       });

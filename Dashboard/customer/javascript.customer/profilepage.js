@@ -1,5 +1,3 @@
-// ✅ Import Firebase functions
-// ✅ Import Firebase functions
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
 import {
   getFirestore,
@@ -9,11 +7,11 @@ import {
   getDocs,
   doc,
   setDoc,
-  getDoc      // ✅ add this line
+  getDoc      
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
 
-// ✅ Your Firebase config
+
 const firebaseConfig = {
   apiKey: "AIzaSyDtDApHuFcav9QIZaJ8CDIcyI_fxcO4Kzw",
   authDomain: "fir-demo-66ae2.firebaseapp.com",
@@ -24,11 +22,10 @@ const firebaseConfig = {
   measurementId: "G-JYDG36FQMX"
 };
 
-// ✅ Initialize Firebase
+
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// ✅ Load user profile info from sessionStorage
 document.addEventListener("DOMContentLoaded", () => {
   const profilePageEl = document.getElementById("account-username");
   const storedName = sessionStorage.getItem("username");
@@ -42,12 +39,12 @@ document.addEventListener("DOMContentLoaded", () => {
     profileEmailEl.textContent = storedEmail;
   }
 
-  loadPets(); // load pets on page load
+  loadPets();
 });
 
-// ✅ Add new pet
+
 async function addPet() {
-  const userId = sessionStorage.getItem("userId"); // should be the user's Firestore doc ID e.g. "owner1"
+  const userId = sessionStorage.getItem("userId"); 
   if (!userId) {
     alert("User not logged in!");
     return;
@@ -62,7 +59,7 @@ async function addPet() {
   const dob = document.querySelector('input[placeholder="Date of Birth"]').value;
 
   try {
-    // Create custom doc ID using userId + timestamp
+    
     const timestamp = Date.now();
     const customDocId = `${userId}_${petName}_${timestamp}`;
 
@@ -78,18 +75,18 @@ async function addPet() {
 }, { merge: true });
 
     alert("Pet successfully added!");
-    loadPets(); // reload list after adding
+    loadPets(); 
   } catch (error) {
     console.error("Error adding pet:", error);
     alert("Failed to add pet!");
   }
 }
 
-// ✅ Load pets and show them
+
 async function loadPets() {
   const userId = sessionStorage.getItem("userId");
   const container = document.querySelector('.container-pet');
-  container.innerHTML = ''; // clear existing content
+  container.innerHTML = ''; 
 
   const petsList = document.createElement('div');
   petsList.classList.add('pets-list');
@@ -107,7 +104,7 @@ async function loadPets() {
 
   querySnapshot.forEach((docSnap) => {
   const data = docSnap.data();
-  const petId = docSnap.id; // ✅ get document ID
+  const petId = docSnap.id; 
   const petCard = document.createElement('div');
   petCard.classList.add('profile-pet');
   petCard.innerHTML = `
@@ -119,24 +116,24 @@ async function loadPets() {
       </div>
     </div>
   `;
-  petCard.addEventListener('click', () => showPetDetails(petId)); // ✅ pass petId!
+  petCard.addEventListener('click', () => showPetDetails(petId)); 
   petsList.appendChild(petCard);
 });
 
 
 
-    // Append list left & form right
+  
     container.appendChild(petsList);
     container.appendChild(petFormElement());
   } catch (error) {
     console.error("Error loading pets:", error);
-    // still add list and form
+    
     container.appendChild(petsList);
     container.appendChild(petFormElement());
   }
 }
 
-// ✅ Create form element
+
 function petFormElement() {
   const form = document.createElement('form');
   form.classList.add('account');
@@ -145,7 +142,7 @@ function petFormElement() {
       <h1 class="account-title">Pet Details</h1>
       <div class="btn-container">
         <button type="button" class="btn-cancel" id="addPetBtn">Add</button>
-         <button class="btn-save">Update</button>
+         
       </div>
     </div>
     <div class="account-edit">
@@ -162,49 +159,73 @@ function petFormElement() {
   return form;
 }
 
-// ✅ New: Show details of clicked pet (read-only form)
+
 async function showPetDetails(petId) {
   try {
     const docSnap = await getDoc(doc(db, "Pets", petId));
     if (!docSnap.exists()) {
       alert("Pet not found!");
-      return; 
+      return;
     }
 
     const data = docSnap.data();
-
     const container = document.querySelector('.container-pet');
-    const petsList = container.querySelector('.pets-list'); // keep cards on left
+    const petsList = container.querySelector('.pets-list'); 
 
-    // Create a new form to show details
+    
     const detailForm = document.createElement('form');
     detailForm.classList.add('account');
     detailForm.innerHTML = `
       <div class="account-header">
-        <h1 class="account-title">Pet Details</h1>
+        <h1 class="account-title">Edit Pet Details</h1>
         <div class="btn-container">
-        <button type="button" class="btn-cancel" onclick="location.href='profilepage.html'">Back</button>
-
-
+          <button type="button" class="btn-cancel" onclick="location.href='profilepage.html'">Back</button>
+          <button type="submit" class="btn-save">Update</button>
         </div>
       </div>
       <div class="account-edit">
-        <div class="input-container"><label>Pet Name</label><input type="text" value="${data.petName || ''}" readonly></div>
-        <div class="input-container"><label>Breed</label><input type="text" value="${data.breed || ''}" readonly></div>
-        <div class="input-container"><label>Sex</label><input type="text" value="${data.sex || ''}" readonly></div>
-        <div class="input-container"><label>Color</label><input type="text" value="${data.color || ''}" readonly></div>
-        <div class="input-container"><label>Weight</label><input type="text" value="${data.weight || ''}" readonly></div>
-        <div class="input-container"><label>Size</label><input type="text" value="${data.size || ''}" readonly></div>
-        <div class="input-container"><label>Date of Birth</label><input type="text" value="${data.dob || ''}" readonly></div>
+        <div class="input-container"><label>Pet Name</label><input type="text" name="petName" value="${data.petName || ''}"></div>
+        <div class="input-container"><label>Breed</label><input type="text" name="breed" value="${data.breed || ''}"></div>
+        <div class="input-container"><label>Sex</label><input type="text" name="sex" value="${data.sex || ''}"></div>
+        <div class="input-container"><label>Color</label><input type="text" name="color" value="${data.color || ''}"></div>
+        <div class="input-container"><label>Weight</label><input type="text" name="weight" value="${data.weight || ''}"></div>
+        <div class="input-container"><label>Size</label><input type="text" name="size" value="${data.size || ''}"></div>
+        <div class="input-container"><label>Date of Birth</label><input type="text" name="dob" value="${data.dob || ''}"></div>
       </div>
     `;
 
-    container.innerHTML = ''; // clear existing
-    container.appendChild(petsList); // keep cards
-    container.appendChild(detailForm); // show details
+    detailForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const updatedPet = {
+        petName: detailForm.petName.value.trim(),
+        breed: detailForm.breed.value.trim(),
+        sex: detailForm.sex.value.trim(),
+        color: detailForm.color.value.trim(),
+        weight: detailForm.weight.value.trim(),
+        size: detailForm.size.value.trim(),
+        dob: detailForm.dob.value.trim(),
+      };
+
+      try {
+        const petRef = doc(db, "Pets", petId);
+        await setDoc(petRef, updatedPet, { merge: true });
+
+        alert("Pet details updated successfully!");
+        loadPets(); 
+      } catch (error) {
+        console.error("Error updating pet:", error);
+        alert("Failed to update pet details.");
+      }
+    });
+
+    container.innerHTML = ''; 
+    container.appendChild(petsList); 
+    container.appendChild(detailForm); 
   } catch (error) {
     console.error("Error loading pet details:", error);
     alert("Failed to load pet details!");
   }
 }
+
 
