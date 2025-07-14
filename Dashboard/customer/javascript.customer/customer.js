@@ -533,3 +533,351 @@ document.addEventListener("DOMContentLoaded", () => {
         document.addEventListener('DOMContentLoaded', function() {
             initCalendar();
         });
+
+ const PetManager = {
+            pets: [
+                {
+                    id: 1,
+                    name: "Buddy",
+                    species: "dog",
+                    breed: "Golden Retriever",
+                    age: 3,
+                    sex: "male",
+                    size: "large",
+                    weight: 25.5,
+                    color: "Golden",
+                    medicalHistory: "Allergic to chicken. Last vaccination: March 2024"
+                },
+                {
+                    id: 2,
+                    name: "Whiskers",
+                    species: "cat",
+                    breed: "Persian",
+                    age: 2,
+                    sex: "female",
+                    size: "medium",
+                    weight: 4.2,
+                    color: "White",
+                    medicalHistory: "Regular grooming required. Spayed."
+                }
+            ],
+            
+            currentEditId: null,
+            currentDeleteId: null,
+            currentBookingPet: null,
+
+            speciesIcons: {
+                dog: 'fas fa-dog',
+                cat: 'fas fa-cat',
+                bird: 'fas fa-dove',
+                rabbit: 'fas fa-rabbit',
+                hamster: 'fas fa-hamster',
+                other: 'fas fa-paw'
+            },
+
+            init() {
+                this.renderPets();
+                this.bindEvents();
+                this.addAnimationStyles();
+            },
+
+            renderPets() {
+                const petsGrid = document.getElementById('petsGrid');
+                const emptyState = document.getElementById('emptyState');
+                const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+
+                const filteredPets = this.pets.filter(pet => 
+                    pet.name.toLowerCase().includes(searchTerm) ||
+                    pet.species.toLowerCase().includes(searchTerm) ||
+                    (pet.breed && pet.breed.toLowerCase().includes(searchTerm))
+                );
+
+                if (filteredPets.length === 0) {
+                    petsGrid.innerHTML = '';
+                    emptyState.style.display = 'block';
+                    return;
+                }
+
+                emptyState.style.display = 'none';
+                petsGrid.innerHTML = filteredPets.map(pet => `
+                    <div class="pet-card">
+                        <div class="pet-avatar">
+                            <i class="${this.speciesIcons[pet.species] || 'fas fa-paw'}"></i>
+                        </div>
+                        <div class="pet-info">
+                            <h3>${pet.name}</h3>
+                            <div class="pet-details">
+                                <div class="pet-detail">
+                                    <i class="fas fa-paw"></i>
+                                    <span>${pet.species.charAt(0).toUpperCase() + pet.species.slice(1)}</span>
+                                </div>
+                                <div class="pet-detail">
+                                    <i class="fas fa-dna"></i>
+                                    <span>${pet.breed || 'Mixed'}</span>
+                                </div>
+                                <div class="pet-detail">
+                                    <i class="fas fa-birthday-cake"></i>
+                                    <span>${pet.age} years</span>
+                                </div>
+                                <div class="pet-detail">
+                                    <i class="fas fa-venus-mars"></i>
+                                    <span>${pet.sex.charAt(0).toUpperCase() + pet.sex.slice(1)}</span>
+                                </div>
+                                <div class="pet-detail">
+                                    <i class="fas fa-ruler"></i>
+                                    <span>${pet.size.charAt(0).toUpperCase() + pet.size.slice(1)}</span>
+                                </div>
+                                <div class="pet-detail">
+                                    <i class="fas fa-weight"></i>
+                                    <span>${pet.weight ? pet.weight + ' kg' : 'Not specified'}</span>
+                                </div>
+                            </div>
+                            <div class="pet-actions">
+                                <button class="pet-btn btn-edit" onclick="PetManager.editPet(${pet.id})">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                                <button class="pet-btn btn-book" onclick="PetManager.bookAppointment(${pet.id})">
+                                    <i class="fas fa-calendar-plus"></i> Book
+                                </button>
+                                <button class="pet-btn btn-delete" onclick="PetManager.confirmDelete(${pet.id})">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            },
+
+            showAddPetModal() {
+                document.getElementById('modalTitle').textContent = 'Add New Pet';
+                document.getElementById('submitBtn').textContent = 'Add Pet';
+                document.getElementById('petForm').reset();
+                this.currentEditId = null;
+                document.getElementById('petModal').style.display = 'block';
+            },
+
+            editPet(id) {
+                const pet = this.pets.find(p => p.id === id);
+                if (!pet) return;
+
+                document.getElementById('modalTitle').textContent = 'Edit Pet';
+                document.getElementById('submitBtn').textContent = 'Update Pet';
+                
+                document.getElementById('petName').value = pet.name;
+                document.getElementById('petSpecies').value = pet.species;
+                document.getElementById('petBreed').value = pet.breed || '';
+                document.getElementById('petAge').value = pet.age;
+                document.getElementById('petSex').value = pet.sex;
+                document.getElementById('petSize').value = pet.size;
+                document.getElementById('petWeight').value = pet.weight || '';
+                document.getElementById('petColor').value = pet.color || '';
+                document.getElementById('petMedicalHistory').value = pet.medicalHistory || '';
+                
+                this.currentEditId = id;
+                document.getElementById('petModal').style.display = 'block';
+            },
+
+            closePetModal() {
+                document.getElementById('petModal').style.display = 'none';
+                this.currentEditId = null;
+            },
+
+            bookAppointment(id) {
+                const pet = this.pets.find(p => p.id === id);
+                if (!pet) return;
+
+                this.currentBookingPet = pet;
+                document.getElementById('appointmentPetName').textContent = pet.name;
+                document.getElementById('appointmentForm').reset();
+                
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('appointmentDate').min = today;
+                
+                document.getElementById('appointmentModal').style.display = 'block';
+            },
+
+            closeAppointmentModal() {
+                document.getElementById('appointmentModal').style.display = 'none';
+                this.currentBookingPet = null;
+            },
+
+            confirmDelete(id) {
+                const pet = this.pets.find(p => p.id === id);
+                if (!pet) return;
+
+                this.currentDeleteId = id;
+                document.getElementById('confirmTitle').textContent = 'Delete Pet';
+                document.getElementById('confirmMessage').textContent = `Are you sure you want to delete ${pet.name}? This action cannot be undone.`;
+                document.getElementById('confirmModal').style.display = 'block';
+            },
+
+            closeConfirmModal() {
+                document.getElementById('confirmModal').style.display = 'none';
+                this.currentDeleteId = null;
+            },
+
+            deletePet() {
+                if (this.currentDeleteId) {
+                    this.pets = this.pets.filter(p => p.id !== this.currentDeleteId);
+                    this.renderPets();
+                    this.closeConfirmModal();
+                    this.showNotification('Pet deleted successfully!', 'success');
+                }
+            },
+
+            submitPetForm(formData) {
+                if (this.currentEditId) {
+                    const petIndex = this.pets.findIndex(p => p.id === this.currentEditId);
+                    this.pets[petIndex] = { ...this.pets[petIndex], ...formData };
+                    this.showNotification('Pet updated successfully!', 'success');
+                } else {
+                    const newPet = {
+                        id: Date.now(),
+                        ...formData
+                    };
+                    this.pets.push(newPet);
+                    this.showNotification('Pet added successfully!', 'success');
+                }
+
+                this.renderPets();
+                this.closePetModal();
+            },
+
+            submitAppointmentForm(appointmentData) {
+                if (!this.currentBookingPet) return;
+                
+                const fullAppointmentData = {
+                    petId: this.currentBookingPet.id,
+                    petName: this.currentBookingPet.name,
+                    species: this.currentBookingPet.species,
+                    breed: this.currentBookingPet.breed,
+                    ...appointmentData
+                };
+
+                console.log('Appointment booked:', fullAppointmentData);
+                this.showNotification(`Appointment booked for ${this.currentBookingPet.name}!`, 'success');
+                this.closeAppointmentModal();
+            },
+
+            showNotification(message, type = 'info') {
+                const notification = document.createElement('div');
+                notification.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: ${type === 'success' ? '#4CAF50' : type === 'error' ? '#f44336' : '#2196F3'};
+                    color: white;
+                    padding: 15px 20px;
+                    border-radius: 8px;
+                    z-index: 10000;
+                    animation: slideIn 0.3s ease;
+                    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+                `;
+                notification.textContent = message;
+                
+                document.body.appendChild(notification);
+                
+                setTimeout(() => {
+                    notification.remove();
+                }, 3000);
+            },
+
+            bindEvents() {
+                document.getElementById('petForm').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    
+                    const formData = {
+                        name: document.getElementById('petName').value,
+                        species: document.getElementById('petSpecies').value,
+                        breed: document.getElementById('petBreed').value,
+                        age: parseInt(document.getElementById('petAge').value),
+                        sex: document.getElementById('petSex').value,
+                        size: document.getElementById('petSize').value,
+                        weight: parseFloat(document.getElementById('petWeight').value) || null,
+                        color: document.getElementById('petColor').value,
+                        medicalHistory: document.getElementById('petMedicalHistory').value
+                    };
+
+                    this.submitPetForm(formData);
+                });
+
+                document.getElementById('appointmentForm').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    
+                    const appointmentData = {
+                        ownerName: document.getElementById('ownerName').value,
+                        phone: document.getElementById('ownerPhone').value,
+                        service: document.getElementById('appointmentService').value,
+                        date: document.getElementById('appointmentDate').value,
+                        time: document.getElementById('appointmentTime').value,
+                        notes: document.getElementById('appointmentNotes').value
+                    };
+
+                    this.submitAppointmentForm(appointmentData);
+                });
+
+                document.getElementById('confirmButton').addEventListener('click', () => {
+                    if (this.currentDeleteId) {
+                        this.deletePet();
+                    }
+                });
+
+                document.getElementById('searchInput').addEventListener('input', () => {
+                    this.renderPets();
+                });
+
+                window.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('modal')) {
+                        e.target.style.display = 'none';
+                    }
+                    if (e.target.classList.contains('confirm-modal')) {
+                        e.target.style.display = 'none';
+                    }
+                });
+            },
+
+            addAnimationStyles() {
+                const style = document.createElement('style');
+                style.textContent = `
+                    @keyframes slideIn {
+                        from { transform: translateX(100%); opacity: 0; }
+                        to { transform: translateX(0); opacity: 1; }
+                    }
+                    
+                    @keyframes fadeIn {
+                        from { opacity: 0; transform: translateY(20px); }
+                        to { opacity: 1; transform: translateY(0); }
+                    }
+                    
+                    .pet-card {
+                        animation: fadeIn 0.3s ease;
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+        };
+
+        // Global functions for onclick events
+        function showAddPetModal() {
+            PetManager.showAddPetModal();
+        }
+
+        function closePetModal() {
+            PetManager.closePetModal();
+        }
+
+        function closeAppointmentModal() {
+            PetManager.closeAppointmentModal();
+        }
+
+        function closeConfirmModal() {
+            PetManager.closeConfirmModal();
+        }
+
+        // Initialize the pet management system
+        document.addEventListener('DOMContentLoaded', () => {
+            PetManager.init();
+        });
+
+
+        

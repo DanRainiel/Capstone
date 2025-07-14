@@ -15,6 +15,7 @@
     <title>Customer</title>
     <script type="module" src="/Dashboard/customer/javascript.customer/customer.js" defer></script>
     <script src="script.js"></script>
+    
 
 
 
@@ -434,13 +435,162 @@
         </div>
     </div>
 
+    <!--petsection-->
+
     <section class="tab-content" id="pet" style="display: none;">
         <h1 class="heading">My <span>Pets</span></h1>
         <p style="text-align: center;">Here you can provide information about your pets.</p>
 
+        <div class="pets-actions">
+            <button class="add-pet-btn" onclick="showAddPetModal()">
+                <i class="fas fa-plus"></i> Add New Pet
+            </button>
+            <div class="search-container">
+                <input type="text" class="search-input" placeholder="Search pets..." id="searchInput">
+                <i class="fas fa-search search-icon"></i>
+            </div>
+        </div>
 
-        
-    </section>
+        <div class="pets-grid" id="petsGrid"></div>
+
+        <div class="empty-state" id="emptyState" style="display: none;">
+            <i class="fas fa-paw"></i>
+            <h3>No pets found</h3>
+            <p>Add your first pet to get started!</p>
+        </div>
+    </div>
+
+    <!-- Add/Edit Pet Modal -->
+    <div class="modal" id="petModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Add New Pet</h2>
+                <button class="close-btn" onclick="closePetModal()">&times;</button>
+            </div>
+            <form id="petForm">
+                <div class="form-group">
+                    <label for="petName">Pet Name *</label>
+                    <input type="text" id="petName" required>
+                </div>
+                <div class="form-group">
+                    <label for="petSpecies">Species *</label>
+                    <select id="petSpecies" required>
+                        <option value="">Select species...</option>
+                        <option value="dog">Dog</option>
+                        <option value="cat">Cat</option>
+                        <option value="bird">Bird</option>
+                        <option value="rabbit">Rabbit</option>
+                        <option value="hamster">Hamster</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="petBreed">Breed</label>
+                    <input type="text" id="petBreed" placeholder="e.g., Golden Retriever">
+                </div>
+                <div class="form-group">
+                    <label for="petAge">Age *</label>
+                    <input type="number" id="petAge" min="0" max="50" required>
+                </div>
+                <div class="form-group">
+                    <label for="petSex">Sex *</label>
+                    <select id="petSex" required>
+                        <option value="">Select sex...</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="petSize">Size *</label>
+                    <select id="petSize" required>
+                        <option value="">Select size...</option>
+                        <option value="small">Small</option>
+                        <option value="medium">Medium</option>
+                        <option value="large">Large</option>
+                        <option value="extra-large">Extra Large</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="petWeight">Weight (kg)</label>
+                    <input type="number" id="petWeight" step="0.1" min="0" placeholder="e.g., 5.5">
+                </div>
+                <div class="form-group">
+                    <label for="petColor">Color</label>
+                    <input type="text" id="petColor" placeholder="e.g., Brown and White">
+                </div>
+                <div class="form-group">
+                    <label for="petMedicalHistory">Medical History</label>
+                    <textarea id="petMedicalHistory" placeholder="Any allergies, medications, or medical conditions..."></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="form-btn btn-secondary" onclick="closePetModal()">Cancel</button>
+                    <button type="submit" class="form-btn btn-primary" id="submitBtn">Add Pet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Quick Appointment Modal -->
+    <div class="modal" id="appointmentModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Book Appointment for <span id="appointmentPetName"></span></h2>
+                <button class="close-btn" onclick="closeAppointmentModal()">&times;</button>
+            </div>
+            <form id="appointmentForm">
+                <div class="form-group">
+                    <label for="ownerName">Your Name *</label>
+                    <input type="text" id="ownerName" required>
+                </div>
+                <div class="form-group">
+                    <label for="ownerPhone">Phone Number *</label>
+                    <input type="tel" id="ownerPhone" required>
+                </div>
+                <div class="form-group">
+                    <label for="appointmentService">Service *</label>
+                    <select id="appointmentService" required>
+                        <option value="">Select service...</option>
+                        <option value="grooming">Grooming</option>
+                        <option value="vaccinations">Vaccinations</option>
+                        <option value="deworming">Deworming</option>
+                        <option value="consultation">Consultation</option>
+                        <option value="laboratory">Laboratory</option>
+                        <option value="treatment">Treatments</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="appointmentDate">Preferred Date *</label>
+                    <input type="date" id="appointmentDate" required>
+                </div>
+                <div class="form-group">
+                    <label for="appointmentTime">Preferred Time *</label>
+                    <input type="time" id="appointmentTime" required>
+                </div>
+                <div class="form-group">
+                    <label for="appointmentNotes">Additional Notes</label>
+                    <textarea id="appointmentNotes" placeholder="Any special requirements or notes..."></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="form-btn btn-secondary" onclick="closeAppointmentModal()">Cancel</button>
+                    <button type="submit" class="form-btn btn-primary">Book Appointment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div class="confirm-modal" id="confirmModal">
+        <div class="confirm-content">
+            <h3 id="confirmTitle">Confirm Action</h3>
+            <p id="confirmMessage">Are you sure you want to perform this action?</p>
+            <div class="confirm-actions">
+                <button class="form-btn btn-secondary" onclick="closeConfirmModal()">Cancel</button>
+                <button class="form-btn btn-primary" id="confirmButton">Confirm</button>
+            </div>
+        </div>
+    </div>
+ 
+</section>
     
     <section class="tab-content" id="news" style="display: none;">
         <h1 class="heading">Latest <span>News</span></h1>
