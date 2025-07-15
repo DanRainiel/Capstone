@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/regular.min.css" integrity="sha512-8hM9a+2hrLBhOuB3uiy+QIXBsu6Qk+snsP1CboFQW6pdt/yYz0IcDp/+CGv5m39r9doGUc/zw6aBpyLF6XFgzg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/fontawesome.min.css" integrity="sha512-v8QQ0YQ3H4K6Ic3PJkym91KoeNT5S3PnDKvqnwqFD1oiqIl653crGZplPdU5KKtHjO0QKcQ2aUlQZYjHczkmGw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/brands.min.css" integrity="sha512-58P9Hy7II0YeXLv+iFiLCv1rtLW47xmiRpC1oFafeKNShp8V5bKV/ciVtYqbk2YfxXQMt58DjNfkXFOn62xE+g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome-animation/1.1.0/font-awesome-animation.min.css" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="/Dashboard/customer/custConfirm.css">
+    <script src="/Dashboard/customer/javascript.customer/custConfirm.js"></script>
+    <title>Document</title>
+</head>
+<body>
+
+    <header>
+        <div class="header">
+            <h1><i class="fa fa-paw" aria-hidden="true"></i> PetStop Veterinary Clinic</h1>
+            <p>Appointment Details and Receipt</p>
+         </div>
+    </header>
+
+    <div class="container">
+        <div class="dashboard">
+            <div class="card">
+                <h2><i class="fa-solid fa-calendar-check"></i> Appointment Details</h2>
+                
+
+                <div class="appointment-info">
+
+                    <p><span>Pet Name:</span> <span id="pet-name">Buddy</span></p>
+                    <p><span>Pet Size:</span>
+                        <select id="pet-size">
+                            <option value="small">Small (5-10kg) </option>
+                            <option value="medium">Medium (10-25 kg) </option>
+                            <option value="large">Large (25-40 kg) </option>
+                            <option value="Xl">Extra-Large (Over 40 kg)  </option>
+                        </select>
+                    </p>
+                    <p><span>Owner Name:</span> <span id="owner-name">Kyle Pua</span></p>
+                    <p><span>Appointment Date:</span> <span id="appt-date">June 15, 2023</span></p>
+                    <p><span>Appointment Time:</span> <span id="appt-date">10:30</span></p>
+
+                    <div class="service-selection">
+                        <p><span>Main Service:</span> <span id="main-service">Vaccination</span></p>
+                         
+                        <div class="service-options">
+                            <div class="service-category">
+                                <h3>Vaccination Services</h3>
+
+                                <div class="service-option">
+                                    <input type="checkbox" id="canine-vax" name="services" data-service="Canine Vaccination"
+                                        data-price-small="500.00"
+                                        data-price-medium="500.00"
+                                        data-price-large="600.00"
+                                        data-price-Xl="600.00">
+                                    <label for="canine-vax">Canine Vaccination (<span class ="price-display">₱500.00</span>)</label>
+                                </div>
+
+                                <div class="service-option">
+                                    <input type="checkbox" id="feline-vax" name="services" data-service="Feline Vaccination"
+                                        data-price-small="950.00"
+                                        data-price-medium="950.00"
+                                        data-price-large="950.00"
+                                        data-price-Xl="950.00">
+                                    <label for="canine-vax">Feline Vaccination (<span class ="price-display">₱950.00</span>)</label>
+                                </div>
+
+                                <div class="service-option">
+                                    <input type="checkbox" id="rabies-vax" name="services" data-service="Anti-Rabies Vaccination"
+                                        data-price-small="350.00"
+                                        data-price-medium="350.00"
+                                        data-price-large="350.00">
+                                    <label for="rabies-vax">Anti-Rabies Vaccination (<span class="price-display">₱350.00</span>)</label>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                    <p><span>Veterinarian:</span> <span id ="veterinarian" >Dr. Donna Doll Diones</span></p>
+                    <p><span>Special Instructions</span> <span id ="special-instructions" >Please bring any recent medical records</span></p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2><i class="fa-solid fa-file-invoice"></i> Billing Information</h2>
+                <div class="bill-info">
+                    <p><span>Base Consultation Fee:</span> <span id="consultation-fee">$75.00</span></p>
+                    <p><span>Reservation Fee Type:</span>
+                        <select id="Reservation-fee-type">
+                            <option value="only">Reservation Fee Only</option>
+                            <option value="with-downpayment">Reservation Fee with Downpayment</option>
+                        </select>
+                    </p>
+                    <p><span>Selected Services</span></p>
+                    <div id="selected-services-list">
+                    <!--Dynamic content will be inserted here by JavaScript-->
+                    </div>
+                    <p><span>Blood Work:</span> <span id="blood-work">$65.00</span></p>
+                    <p><span>Medication:</span> <span id="medication">$45.00</span></p>
+                    <p><span>Emergency Fee:</span> <span id="emergency-fee">$00.00</span></p>
+                    <div class="total-amount">
+                        <p><span class="total">Total Amount:</span><span id="total-amount">$305.00</span></p>
+                    </div>
+                </div>
+
+                <div class="action action-top">
+                    <button class="btn btn-confirm" id="confirm-btn">Confirm Appointment</button>
+                    <button class="btn btn-cancel" id="cancel-btn">Cancel Appointment</button>
+                    </div>
+
+                <div class="action action-bottom">
+                    <button class="btn btn-print" id="print-btn">Print Receipt</button>
+                </div>
+              
+            </div>
+        </div>
+    </div>
+
+    <!--modal for G cash Payment-->
+    <div id="paymentModal" class="modal">
+        <div class="modal-content">
+            <span class="clase" id="clase-modal">&times;</span>
+            <h2>Payment Instruction</h2>
+            <p>PLease scan the QR code below to make your payment:</p>
+
+            <img src="/images/qr.jpg" alt="QR code" />
+
+            <p>Upload a screenshot of your payment receipt</p>
+
+            <input type="file" id="receipt-upload" accept="image/*">
+
+            <button id="book-btn" class="btn" disabbled>Book</button>
+        </div>
+    </div>
+
+    <footer>
+        <p>PetStop Veterinary Clinic © 2023 | Contact:PetStopVeterinaryClinic.com | Phone: *** ***-****</p>
+    </footer>
+
+</body>
+</html>
