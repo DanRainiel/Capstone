@@ -874,30 +874,19 @@ document.addEventListener("DOMContentLoaded", () => {
         };
 
         // Global functions for onclick events
-       function showAddPetModal() {
-    PetManager.showAddPetModal();
-    }
-function closePetModal() {
-    PetManager.closePetModal();
-}
-function closeAppointmentModal() {
-    PetManager.closeAppointmentModal();
-}
-function closeConfirmModal() {
-    PetManager.closeConfirmModal();
-}
+      // Initialize the pet management system
+document.addEventListener('DOMContentLoaded', () => {
+    PetManager.init();
+});
 
-// Expose to global scope:
-window.showAddPetModal = showAddPetModal;
-window.closePetModal = closePetModal;
-window.closeAppointmentModal = closeAppointmentModal;
-window.closeConfirmModal = closeConfirmModal;
+// Expose PetManager to global scope so inline onclick handlers work
+window.PetManager = PetManager;
 
-
-        // Initialize the pet management system
-        document.addEventListener('DOMContentLoaded', () => {
-            PetManager.init();
-        });
+// Also expose modal close/open helpers to global scopes
+window.showAddPetModal = () => PetManager.showAddPetModal();
+window.closePetModal = () => PetManager.closePetModal();
+window.closeAppointmentModal = () => PetManager.closeAppointmentModal();
+window.closeConfirmModal = () => PetManager.closeConfirmModal();
 
 
         
