@@ -589,7 +589,7 @@ const PetManager = {
         const data = docSnap.data();
         return {
           id: docSnap.id,
-          name: data.name || data.petName || '',
+          petName: data.petName || data.name || '',
           species: data.species || 'other',
           breed: data.breed || '',
           age: data.age ? parseInt(data.age) : 0,
@@ -613,10 +613,10 @@ const PetManager = {
       if (!userId) return alert("User not logged in.");
 
       const timestamp = Date.now();
-      const docId = `${userId}_${petData.name}_${timestamp}`;
+      const docId = `${userId}_${petData.petName}_${timestamp}`;
       await setDoc(doc(db, "Pets", docId), {
         userId,
-        name: petData.name,
+        petName: petData.petName,
         species: petData.species,
         breed: petData.breed,
         age: petData.age,
@@ -661,7 +661,7 @@ const PetManager = {
     const searchTerm = document.getElementById('searchInput').value.toLowerCase();
 
     const filteredPets = this.pets.filter(pet =>
-      pet.name.toLowerCase().includes(searchTerm) ||
+      pet.petName.toLowerCase().includes(searchTerm) ||
       pet.species.toLowerCase().includes(searchTerm) ||
       (pet.breed && pet.breed.toLowerCase().includes(searchTerm))
     );
@@ -679,7 +679,7 @@ const PetManager = {
           <i class="${this.speciesIcons[pet.species] || 'fas fa-paw'}"></i>
         </div>
         <div class="pet-info">
-          <h3>${pet.name}</h3>
+          <h3>${pet.petName}</h3>
           <div class="pet-details">
             <div class="pet-detail"><i class="fas fa-paw"></i> <span>${pet.species}</span></div>
             <div class="pet-detail"><i class="fas fa-dna"></i> <span>${pet.breed || 'Mixed'}</span></div>
@@ -710,7 +710,7 @@ const PetManager = {
     event.preventDefault();
 
     const petData = {
-      name: document.getElementById('petFormName').value.trim(),
+      petName: document.getElementById('petFormName').value.trim(),
       species: document.getElementById('petSpecies').value.trim(),
       breed: document.getElementById('petBreed').value.trim(),
       age: parseInt(document.getElementById('petAge').value.trim()),
@@ -721,7 +721,7 @@ const PetManager = {
       medicalHistory: document.getElementById('petMedicalHistory').value.trim()
     };
 
-    if (!petData.name) return alert("Pet name is required.");
+    if (!petData.petName) return alert("Pet name is required.");
 
     if (this.currentEditId) {
       this.updatePetInFirestore(this.currentEditId, petData);
@@ -735,7 +735,7 @@ const PetManager = {
     if (!pet) return;
 
     this.currentEditId = id;
-    document.getElementById('petFormName').value = pet.name;
+    document.getElementById('petFormName').value = pet.petName;
     document.getElementById('petSpecies').value = pet.species;
     document.getElementById('petBreed').value = pet.breed;
     document.getElementById('petAge').value = pet.age;
@@ -756,7 +756,7 @@ const PetManager = {
 
     this.currentBookingPet = pet;
     this.currentEditAppointmentId = null;
-    document.getElementById('appointmentPetName').textContent = pet.name;
+    document.getElementById('appointmentPetName').textContent = pet.petName;
     document.getElementById('appointmentForm').reset();
     document.getElementById('appointmentDate').min = new Date().toISOString().split('T')[0];
     document.getElementById('appointmentModal').style.display = 'flex';
@@ -768,7 +768,7 @@ const PetManager = {
 
     this.currentDeleteId = id;
     document.getElementById('confirmTitle').textContent = 'Delete Pet';
-    document.getElementById('confirmMessage').textContent = `Are you sure you want to delete ${pet.name}?`;
+    document.getElementById('confirmMessage').textContent = `Are you sure you want to delete ${pet.petName}?`;
     document.getElementById('confirmModal').style.display = 'block';
   },
 
