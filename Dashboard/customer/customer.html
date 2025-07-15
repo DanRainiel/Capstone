@@ -436,7 +436,7 @@
 
 
         <div class="pets-actions">
-            <button class="add-pet-btn" onclick="showAddPetModal()">
+            <button class="add-pet-btn" onclick="showAddPetModal(event)">
                 <i class="fas fa-plus"></i> Add New Pet
             </button>
 
@@ -526,10 +526,10 @@
     </div>
 
     <!-- Quick Appointment Modal -->
-    <div class="modal" id="appointmentModal">
-        <div class="modal-content">
+    <div class="petmodal" id="appointmentModal">
+        <div class="petmodal-content">
             <div class="modal-header">
-                <h2>Book Appointment for <span id="appointmentPetName"></span></h2>
+                <h2>Book Appointment for <span id="appointmentPetName">  </span></h2>
                 <button class="close-btn" onclick="closeAppointmentModal()">&times;</button>
             </div>
             <form id="appointmentForm">
@@ -567,7 +567,7 @@
                 </div>
                 <div class="form-actions">
                     <button type="button" class="form-btn btn-secondary" onclick="closeAppointmentModal()">Cancel</button>
-                    <button type="submit" class="form-btn btn-primary">Book Appointment</button>
+                    <button type="submit" class="form-btn btn-primary">Confirm Booking </button>
                 </div>
             </form>
         </div>
