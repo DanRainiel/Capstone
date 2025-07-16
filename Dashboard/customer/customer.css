@@ -29,9 +29,15 @@
     box-sizing: border-box;
 }
 
-body{
-  background-color: whitesmoke;
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 0;
+  color: var(--white);
 }
+
 
 .hero {
   width: 100%;
@@ -1218,6 +1224,19 @@ hr{
 
         
 
+html, body {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+/* Hide body scroll when modal is open */
+body.modal-open {
+  overflow: hidden !important;
+}
+
 #pet .heading {
   display: block;
   font-size: 4.5rem;
@@ -1247,10 +1266,9 @@ hr{
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 30px;
+  margin: 50px 0 30px;
   flex-wrap: wrap;
   gap: 15px;
-  margin-top: 50px;
 }
 
 .add-pet-btn {
@@ -1397,7 +1415,7 @@ hr{
 
 .btn-edit {
   background: linear-gradient(45deg, #4CAF50, #45a049);
-  color: var(--white);
+  color: white;
 }
 
 .btn-book {
@@ -1415,39 +1433,40 @@ hr{
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
 }
 
-/* Updated modal styles */
+/* FULLSCREEN MODAL BACKDROP */
 .petmodal {
-  display: none; 
   position: fixed;
-  top: 0;
-  left: 0;
+  inset: 0; /* shorthand for top:0; right:0; bottom:0; left:0; */
   width: 100vw;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
-  z-index: 9999;
-
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 10000;
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 20px; /* adds spacing on smaller screens */
-  overflow: hidden; /* important: prevent background scroll */
+  overflow: hidden;
+  padding: 0;  /* Make sure no padding adds offset */
+  margin: 0;
 }
 
+
+/* Modal content box */
 .petmodal-content {
   background: white;
   border-radius: 20px;
   padding: 30px;
-  width: 100%;
+  width: 90%;
   max-width: 600px;
-
-  max-height: 90vh; /* allow space around */
-  overflow-y: auto; /* scroll *inside* the modal if content is long */
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
   animation: fadeIn 0.3s ease-in-out;
+  position: relative;
+  z-index: 10001;
+  margin: 20px;
 }
-
 
 /* Fade-in animation */
 @keyframes fadeIn {
@@ -1506,6 +1525,7 @@ hr{
   border-radius: 8px;
   font-size: 16px;
   transition: border-color 0.3s ease;
+  box-sizing: border-box;
 }
 
 .form-group input:focus,
@@ -1552,33 +1572,17 @@ hr{
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
 }
 
-.empty-state {
-  text-align: center;
-  padding: 60px 20px;
-  color: #666;
-}
-
-.empty-state i {
-  font-size: 4rem;
-  color: #ccc;
-  margin-bottom: 20px;
-}
-
-.empty-state h3 {
-  font-size: 1.5rem;
-  margin-bottom: 10px;
-}
-
+/* Confirm modal */
 .confirm-modal {
   display: none;
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
+  width: 100vw;
+  height: 100vh;
   background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(5px);
-  z-index: 1001;
+  z-index: 10002;
 }
 
 .confirm-content {
@@ -1592,6 +1596,7 @@ hr{
   text-align: center;
   max-width: 400px;
   width: 90%;
+  z-index: 10003;
 }
 
 .confirm-actions {
@@ -1601,36 +1606,33 @@ hr{
   margin-top: 20px;
 }
 
-/*dynamic content*/
+/* Tab content */
 .tab-content {
   display: none;
-  min-height: calc(100vh - 200px); /* Adjust to fit your layout */
+  min-height: calc(100vh - 200px);
 }
 
 .tab-content.active {
   display: block;
 }
 
-
-
-
-/* Responsive Styles */
-
+/* Responsive */
 @media (max-width: 768px) {
-.pets-grid {
-  grid-template-columns: 1fr;
-}
-            
-.pets-actions {
-  flex-direction: column;
-  align-items: stretch;
+  .pets-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pets-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-container {
+    max-width: none;
+  }
 }
 
-.search-container {
-  max-width: none;
-}
 
-}
 
 @media (max-width: 1200px) {
   .second-navbar .container {
