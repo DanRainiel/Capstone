@@ -1081,6 +1081,8 @@ hr{
             margin-top: 5px;
         }
 
+        
+
         .calendar-type-checkup { background: #e3f2fd; color: #1976d2; }
         .calendar-type-vaccination { background: #e8f5e8; color: #2e7d32; }
         .calendar-type-surgery { background: #ffebee; color: #d32f2f; }
