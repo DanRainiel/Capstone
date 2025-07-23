@@ -526,9 +526,21 @@
                     <strong>${apt.petName}</strong> - ${apt.owner}
                     <div class="calendar-appointment-type calendar-type-${apt.type}">${getTypeDisplayName(apt.type)}</div>
                 </div>
-            `;
+            `;appointmentDiv.innerHTML = `
+  <div class="calendar-appointment-time">${formatTo12Hour(apt.time)}</div>
+  <div class="calendar-appointment-details">
+      <strong>${apt.petName}</strong> - ${apt.owner}
+      <div class="calendar-appointment-type calendar-type-${apt.type}">${getTypeDisplayName(apt.type)}</div>
+  </div>
+`;
+appointmentDiv.addEventListener('click', () => {
+    sessionStorage.setItem('selectedAppointmentId', apt.id); // Save appointment ID
+    window.location.href = 'custConfirm.html'; // Go to confirmation page
+});
+
             appointmentsListDiv.appendChild(appointmentDiv);
         });
+        
     } else {
         appointmentsListDiv.innerHTML = '<p style="text-align: center; color: #6c757d;">No appointments for this time slot</p>';
     }
@@ -561,10 +573,10 @@
                     return types[type] || type;
                 }
 
-                function showBookingModal() {
-                    const modal = document.getElementById('bookingModal');
-                    modal.style.display = 'block';
-                }
+                
+
+               
+
 
                 function hideBookingModal() {
                     const modal = document.getElementById('bookingModal');
@@ -908,6 +920,20 @@ showAddPetModal() {
       document.getElementById("appointmentForm").addEventListener("submit", (e) => this.submitAppointmentForm(e));
     }
   };
+
+
+ window.showBookingModal = function () {
+  if (!selectedDate || !selectedTimeSlot) {
+    alert("Please select a date and time slot first.");
+    return;
+  }
+
+  sessionStorage.setItem("selectedDate", formatDate(selectedDate));
+  sessionStorage.setItem("selectedTimeSlot", selectedTimeSlot);
+
+  window.location.href = "custConfirm.html";
+};
+
 
   document.addEventListener('DOMContentLoaded', () => {
     PetManager.init();
