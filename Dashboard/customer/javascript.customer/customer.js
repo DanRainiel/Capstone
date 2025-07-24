@@ -601,6 +601,23 @@ appointmentDiv.addEventListener('click', () => {
                 await loadAppointmentsFromFirestore();
                initCalendar();
 
+               document.getElementById('bookBtn').addEventListener('click', () => {
+    if (!selectedDate) return;
+
+    const dateStr = formatDate(selectedDate);
+    const dayAppointments = appointments[dateStr] || [];
+
+    if (dayAppointments.length > 0) {
+        // Get the first appointment (or you can change this logic to get latest, etc.)
+        const selectedAppointment = dayAppointments[0];
+        sessionStorage.setItem('selectedAppointmentId', selectedAppointment.id);
+        window.location.href = 'custConfirm.html';
+    } else {
+        alert("No appointments found on this date.");
+    }
+});
+
+
     // ⬅️➡️ Add these handlers to allow month navigation
               document.getElementById("prevMonthBtn").addEventListener("click", () => navigateMonth(-1));
               document.getElementById("nextMonthBtn").addEventListener("click", () => navigateMonth(1));
@@ -924,7 +941,7 @@ showAddPetModal() {
 
  window.showBookingModal = function () {
   if (!selectedDate || !selectedTimeSlot) {
-    alert("Please select a date and time slot first.");
+    
     return;
   }
 
