@@ -179,47 +179,23 @@
               <h2>Recent Appointments</h2>
               <button class ="btn"> View All</a>
             </div>
-
+           
+            <div class="table-container">
             <table>
               <thead>
                 <tr>
                   <td>Name</td>
-                  <td>Price</td>
-                  <td>Payment</td>
+                  <td>Pet Name</td>
+                  <td>Service</td>
                   <td>Status</td>
                 </tr>
               </thead>
 
-              <tbody>
-                <tr>
-                  <td>Grooming</td>
-                  <td>300</td>
-                  <td>DownPayment</td>
-                  <td><span class="status pending">Pending</span></td>
-                </tr>
-
-                <tr>
-                  <td>Laboratory</td>
-                  <td>300</td>
-                  <td>DownPayment</td>
-                  <td><span class="status pending">Pending</span></td>
-                </tr>
-
-                <tr>
-                  <td>Vaccination</td>
-                  <td>300</td>
-                  <td>DownPayment</td>
-                  <td><span class="status pending">Pending</span></td>
-                </tr>
-
-                <tr>
-                  <td>Consultation</td>
-                  <td>500</td>
-                  <td>Walk In</td>
-                  <td><span class="status completed">Completed</span></td>
-                </tr>
+              <tbody id="recent-appointments">
+                
               </tbody>  
             </table>
+          </div>
           </div>
 
           <!--=====New Customers=====-->
@@ -302,7 +278,7 @@
                   <h4>Luna<br> <span>Philippines</span></h4>
                 </td>
               </tr>
-
+          
             </table>
         </div>
 
@@ -312,6 +288,7 @@
 
 
 
-<script src="/Dashboard/admin/admin.js"></script>
+      <script type="module" src="./javascript.admin/admin.js" defer></script>
+
 </body>
 </html>
