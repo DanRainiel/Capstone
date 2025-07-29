@@ -317,40 +317,53 @@
 }
 
 
-   async function loadAppointmentsFromFirestore() {
-    appointments = {}; // reset
+ async function loadAppointmentsFromFirestore() {
+  appointments = {};
+  selectedDate = null;
+  selectedTimeSlot = null;
 
-    const currentUserUid = sessionStorage.getItem("userId");
-    if (!currentUserUid) {
-        console.error("No user ID found in sessionStorage.");
-        return;
+  const currentUserUid = sessionStorage.getItem("userId");
+  console.log("Loading appointments for UID:", currentUserUid);
+
+  if (!currentUserUid) {
+    console.error("No user ID found in sessionStorage.");
+    return;
+  }
+
+  const querySnapshot = await getDocs(collection(db, "Appointment"));
+  console.log("Total appointments in DB:", querySnapshot.size);
+
+  querySnapshot.forEach((docSnap) => {
+    const data = docSnap.data();
+    console.log("Checking doc:", data);
+
+    if (data.userId !== currentUserUid) {
+      console.log("Skipping non-matching appointment:", data.userId);
+      return;
     }
 
-    const querySnapshot = await getDocs(collection(db, "Appointment"));
-    querySnapshot.forEach(docSnap => {
-        const data = docSnap.data();
+    const dateStr = data.date;
 
-        // ✅ Only process appointments for the current user
-        if (data.userId !== currentUserUid) return;
+    if (!appointments[dateStr]) {
+      appointments[dateStr] = [];
+    }
 
-        const dateStr = data.date;
-
-        if (!appointments[dateStr]) {
-            appointments[dateStr] = [];
-        }
-
-        appointments[dateStr].push({
-            id: docSnap.id,
-            time: data.time,
-            petName: data.petName,
-            type: data.service,
-            owner: data.name || data.ownerName || "Unknown",
-            phone: data.number || data.ownerPhone || ""
-        });
+    appointments[dateStr].push({
+      id: docSnap.id,
+      time: data.time,
+      petName: data.petName,
+      type: data.service,
+      owner: data.name || data.ownerName || "Unknown",
+      phone: data.number || data.ownerPhone || ""
     });
+  });
 
-    updateCalendar(); // Re-render calendar with updated appointments
+  console.log("Filtered appointments:", appointments);
+
+  updateCalendar();
+  updateSidebar();
 }
+
 
 
                 const timeSlots = [
@@ -952,14 +965,32 @@ showAddPetModal() {
 };
 
 
-  document.addEventListener('DOMContentLoaded', () => {
-    PetManager.init();
-    document.getElementById("pet-tab").addEventListener("click", () => {
-      document.getElementById("petModal").style.display = "none";
-      document.getElementById("appointmentModal").style.display = "none";
-      document.getElementById("confirmModal").style.display = "none";
-    });
+document.addEventListener('DOMContentLoaded', async () => {
+  // Initialize pets
+  PetManager.init();
+  
+
+  // Hide all modals when switching to pet tab
+  document.getElementById("pet-tab").addEventListener("click", () => {
+    document.getElementById("petModal").style.display = "none";
+    document.getElementById("appointmentModal").style.display = "none";
+    document.getElementById("confirmModal").style.display = "none";
   });
+
+  // ✅ Check login session
+  const uid = sessionStorage.getItem("userId");
+
+  if (!uid) {
+    alert("Session expired. Please log in again.");
+    window.location.href = "../../login.html";
+    return;
+  }
+
+  // ✅ Load and render appointments
+  await loadAppointmentsFromFirestore();
+  initCalendar();
+});
+
 
   window.PetManager = PetManager;
   window.navigateMonth = navigateMonth;

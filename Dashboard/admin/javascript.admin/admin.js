@@ -1,20 +1,20 @@
-// ✅ Block access if not logged in
+
 if (!sessionStorage.getItem("isLoggedIn")) {
   location.replace("../../login.html");
 }
 
-// ✅ Block back button
+
 window.addEventListener("DOMContentLoaded", () => {
   history.pushState(null, "", location.href);
   window.addEventListener("popstate", () => {
     history.pushState(null, "", location.href);
   });
 
-  // Load all appointments for admin
+
   loadAllAppointments();
 });
 
-// ✅ Firebase Imports
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
 import {
   getFirestore,
@@ -22,11 +22,13 @@ import {
   query,
   where,
   getDocs,
+  getDoc,         // ✅ ← ADD THIS LINE
   doc,
   setDoc
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-// ✅ Firebase Config
+
+
 const firebaseConfig = {
   apiKey: "AIzaSyDtDApHuFcav9QIZaJ8CDIcyI_fxcO4Kzw",
   authDomain: "fir-demo-66ae2.firebaseapp.com",
@@ -37,11 +39,10 @@ const firebaseConfig = {
   measurementId: "G-JYDG36FQMX"
 };
 
-// ✅ Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// ✅ Function to load all appointments (no userId filter)
+
 async function loadAllAppointments() {
   const tableBody = document.getElementById("recent-appointments");
   tableBody.innerHTML = "";
@@ -71,3 +72,67 @@ async function loadAllAppointments() {
     tableBody.innerHTML = "<tr><td colspan='5'>Error loading appointments.</td></tr>";
   }
 }
+
+
+// Load recent customers who made appointments
+async function loadRecentCustomers() {
+  const table = document.getElementById("recentCustomersTable");
+  if (!table) return;
+  table.innerHTML = "";
+
+  try {
+    const appointmentsSnapshot = await getDocs(collection(db, "Appointment"));
+    const userIdsSet = new Set();
+
+    appointmentsSnapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+      if (data.userId) {
+        userIdsSet.add(data.userId);
+      }
+    });
+
+    for (const userId of userIdsSet) {
+      const userDoc = await getDoc(doc(db, "users", userId));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td width="60px">
+            <div class="imgBx">
+              <i class="fa-solid fa-user profile-icon"></i>
+            </div>
+          </td>
+          <td>
+            <h4>${userData.name || "Unknown"}<br> <span>Philippines</span></h4>
+          </td>
+        `;
+        table.insertBefore(row, table.firstChild);
+
+
+      }
+      
+    }
+  } catch (error) {
+    console.error("Error loading recent customers:", error);
+  }
+}
+
+
+window.addEventListener("DOMContentLoaded", () => {
+  loadRecentCustomers(); 
+});
+
+
+document.addEventListener("DOMContentLoaded", () => {
+  const toggle = document.querySelector(".toggle");
+  const navigation = document.querySelector(".navigation"); 
+  const main = document.querySelector(".main"); 
+
+  if (toggle && navigation && main) {
+    toggle.addEventListener("click", () => {
+      navigation.classList.toggle("active");
+      main.classList.toggle("active");
+    });
+  }
+});
