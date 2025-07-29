@@ -140,3 +140,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         };
     }
 });
+
+// Redirect on cancel
+const cancelBtn = document.getElementById('cancel-btn');
+if (cancelBtn) {
+    cancelBtn.addEventListener('click', () => {
+        sessionStorage.removeItem('selectedAppointmentId'); // optional: clear stored ID
+        window.location.href = 'customer.html'; // go back to main customer page
+    });
+}

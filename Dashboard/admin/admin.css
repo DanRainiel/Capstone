@@ -300,9 +300,17 @@ body{
     display: grid;
     min-height: 500px;
     background: var(--white);
-    padding: 20px;
+    padding: 10px 20px;
     box-shadow: 0 7px 25px rgba(0, 0, 0, 0.08);
     border-radius: 20px;
+    margin-top: 0;
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px; /* Reduce spacing */
 }
 
 .details .cardHeader{
@@ -314,6 +322,8 @@ body{
 .cardHeader h2{
     font-weight: 600;
     color: var(--background-color);
+   margin: 0;         /* remove default h2 spacing */
+  padding: 0;
 }
 
 .cardHeader .btn{
@@ -344,6 +354,7 @@ body{
 .details .recentOrders table tr{
     color: var(--black);
     border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    
 }
 
 .details .recentOrders table tr:last-child{
@@ -381,11 +392,9 @@ text-align: end;
 }
 
 .status.pending{
-    padding: 2px 4px;
-    background: red;
-    color: var(--white);
-    border-radius: 4px;
-    font-size: 14px;
+    
+    color: red;
+    
     font-weight: 500;
 }
 
@@ -446,6 +455,36 @@ text-align: end;
     font-size: 14px;
     color: var(--black2);
 }
+
+.table-container {
+  max-height: 600px;     /* Adjust height as needed */
+  overflow-y: auto;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+   margin-top: 0; 
+   border-collapse: collapse;
+}
+
+/* Optional: sticky table header */
+.table-container thead td {
+  position: sticky;
+  top: 0;
+  background-color: var(--white);
+  font-weight: bold;
+  z-index: 1;
+}
+
+/* Optional: style table to look cleaner */
+.table-container table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table-container td {
+  padding: 8px;
+  border-bottom: 1px solid #ddd;
+}
+
 
 @media (max-width: 991px ) {
     .navigation{
