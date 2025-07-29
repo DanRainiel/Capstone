@@ -201,101 +201,62 @@
             });
         });
         
+document.addEventListener("DOMContentLoaded", () => {
+    const form = document.getElementById("appointment-form");
 
-        // ✅ Appointment form submission logic
-        document.addEventListener("DOMContentLoaded", () => {
-        const submitBtn = document.getElementById("submit-appointment");
+    form.addEventListener("submit", (e) => {
+        e.preventDefault();
 
-        if (!submitBtn) return;
+        const appointmentData = {
+            name: document.getElementById("appt-name").value.trim(),
+            number: document.getElementById("appt-number").value.trim(),
+            petName: document.getElementById("appt-petname").value.trim(),
+            breed: document.getElementById("appt-breed").value.trim(),
+            petSize: document.getElementById("appt-size").value,
+            sex: document.getElementById("appt-sex").value,
+            service: document.getElementById("appt-service").value,
+            time: document.getElementById("appt-time").value,
+            date: document.getElementById("appt-date").value,
+            serviceFee: 0,
+            bloodWork: 0,
+            medication: 0,
+            selectedServices: [],
+            vaccines: [],
+        };
 
-        submitBtn.addEventListener("click", async (e) => {
-  e.preventDefault();
+        // 💰 Apply fee based on service
+        switch (appointmentData.service) {
+            case "grooming":
+                appointmentData.serviceFee = 500;
+                break;
+            case "vaccinations":
+                appointmentData.serviceFee = 700;
+                break;
+            case "dental-care":
+                appointmentData.serviceFee = 600;
+                break;
+            case "consultation":
+                appointmentData.serviceFee = 400;
+                break;
+            case "laboratory":
+                appointmentData.serviceFee = 800;
+                break;
+            case "treatment":
+                appointmentData.serviceFee = 1000;
+                break;
+        }
 
-  const userId = sessionStorage.getItem("userId");
-  if (!userId) {
-    alert("User not logged in.");
-    return;
-  }
+        // ✅ Store in sessionStorage
+        sessionStorage.setItem("appointment", JSON.stringify(appointmentData));
 
-  // Get form values
-  const name = document.getElementById("appt-name")?.value.trim();
-  const number = document.getElementById("appt-number")?.value.trim();
-  const petName = document.getElementById("appt-petname")?.value.trim();
-  const breed = document.getElementById("appt-breed")?.value.trim();
-  const size = document.getElementById("appt-size")?.value;
-  const sex = document.getElementById("appt-sex")?.value;
-  const service = document.getElementById("appt-service")?.value;
-  const time = document.getElementById("appt-time")?.value;
-  const date = document.getElementById("appt-date")?.value;
-
-  if (!name || !number || !petName || !breed || !size || !sex || !service || !time || !date) {
-    alert("Please fill in all appointment fields.");
-    return;
-  }
-
-  try {
-    const appointmentsRef = collection(db, "Appointment");
-
-    // Check for existing appointment at the same time and date
-    const q = query(
-      appointmentsRef,
-      where("time", "==", time),
-      where("date", "==", date)
-    );
-    const querySnapshot = await getDocs(q);
-
-    if (!querySnapshot.empty) {
-      alert("This time slot is already booked. Please choose another.");
-      return;
-    }
-
-    // ✅ Save appointment
-    const appointmentId = `${userId}_${Date.now()}`;
-    await setDoc(doc(db, "Appointment", appointmentId), {
-      userId:userId,
-      name,
-      number,
-      petName,
-      breed,
-      size,
-      sex,
-      service,
-      time,
-      date,
-      createdAt: new Date().toISOString()
+        // ✅ Redirect to confirmation page
+        window.location.href = "custConfirm.html";
     });
-
-    // ✅ Save pet (new entry)
-    const petId = `${userId}_${petName}_${Date.now()}`;
-    await setDoc(doc(db, "Pets", petId), {
-      userId:userId,
-      petName,
-      species: '',             // Optional: add species input field if needed
-      breed: breed,
-      age: null,               // Optional: add age input if needed
-      sex: sex,
-      size: size,
-      weight: null,            // Optional
-      color: '',               // Optional
-      medicalHistory: ''       // Optional
-    });
-
-    // ✅ Reload pet section
-    if (window.PetManager) {
-      await window.PetManager.loadPetsFromFirestore();
-    }
-
-    alert("Appointment and Pet registered successfully!");
-    await loadAppointmentsFromFirestore(); // Add this
-
-  } catch (error) {
-    console.error("Error submitting appointment and pet:", error);
-    alert("Something went wrong while submitting. Please try again.");
-  }
 });
 
- });
-    
+
+
+
 
         // CALENDAR //
 
@@ -363,7 +324,6 @@
   updateCalendar();
   updateSidebar();
 }
-
 
 
                 const timeSlots = [
@@ -528,9 +488,18 @@
                    ? dayAppointments.filter(apt => apt.time <= selectedTimeSlot)
                     : dayAppointments;
 
+                    // Remove duplicates (based on time, petName, owner, type)
+const seen = new Set();
+const uniqueAppointments = filteredAppointments.filter(apt => {
+    const key = `${apt.time}_${apt.petName}_${apt.owner}_${apt.type}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+});
 
-                   if (filteredAppointments.length > 0) {
-                  filteredAppointments.forEach(apt => {
+                   if (uniqueAppointments.length > 0) {
+                  uniqueAppointments.forEach(apt => {
+
                  const appointmentDiv = document.createElement('div');
                appointmentDiv.className = 'calendar-appointment';
                 appointmentDiv.innerHTML = `
@@ -610,25 +579,18 @@ appointmentDiv.addEventListener('click', () => {
                 });
 
                 // Initialize calendar when page loads
-                document.addEventListener('DOMContentLoaded', async function () {
-                await loadAppointmentsFromFirestore();
-               initCalendar();
+              document.addEventListener('DOMContentLoaded', async function () {
+  await loadAppointmentsFromFirestore();
+  initCalendar();
 
-               document.getElementById('bookBtn').addEventListener('click', () => {
-    if (!selectedDate) return;
+  const bookBtn = document.getElementById('bookBtn');
 
-    const dateStr = formatDate(selectedDate);
-    const dayAppointments = appointments[dateStr] || [];
+ bookBtn.addEventListener('click', () => {
+   window.location.href = 'customer.html';
+ });
 
-    if (dayAppointments.length > 0) {
-        // Get the first appointment (or you can change this logic to get latest, etc.)
-        const selectedAppointment = dayAppointments[0];
-        sessionStorage.setItem('selectedAppointmentId', selectedAppointment.id);
-        window.location.href = 'custConfirm.html';
-    } else {
-        alert("No appointments found on this date.");
-    }
-});
+
+
 
 
     // ⬅️➡️ Add these handlers to allow month navigation
@@ -951,18 +913,6 @@ showAddPetModal() {
     }
   };
 
-
- window.showBookingModal = function () {
-  if (!selectedDate || !selectedTimeSlot) {
-    
-    return;
-  }
-
-  sessionStorage.setItem("selectedDate", formatDate(selectedDate));
-  sessionStorage.setItem("selectedTimeSlot", selectedTimeSlot);
-
-  window.location.href = "custConfirm.html";
-};
 
 
 document.addEventListener('DOMContentLoaded', async () => {

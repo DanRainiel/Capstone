@@ -104,193 +104,96 @@
 
         </div>
 
+
+    <!-- Main Content -->
+    <div class="main">
+
       
+      <div class="topbar">
+        <div class="toggle">
+          <i class="fa-solid fa-bars"></i>
+        </div>
+        <div class="search">
+          <label>
+            <input type="text" placeholder="Search here" />
+            <i class="fa-solid fa-magnifying-glass"></i>
+          </label>
+        </div>
+        <div class="user">
+          <img src="/images/Staff2.jpg" alt="Staff" />
+        </div>
+      </div>
 
-      <!--Main-->
-      <div class="main">
-        <div class="topbar">
-          <div class="toggle">
-            <i class="fa-solid fa-bars"></i>
+     <div id="dashboard" class="content-section active">
+      <div class="cardBox">
+        <div class="card">
+          <div>
+            <div class="numbers">24</div>
+            <div class="cardName">Today Schedule</div>
           </div>
-
-          <div class="search">
-            <label>
-              <input type="text" placeholder="Search here">
-              <i class="fa-solid fa-magnifying-glass"></i>
-            </label>
+          <div class="iconBx"><i class="fa-solid fa-calendar"></i></div>
+        </div>
+        <div class="card">
+          <div>
+            <div class="numbers">18</div>
+            <div class="cardName">Finished Appointments</div>
           </div>
+          <div class="iconBx"><i class="fa-solid fa-check"></i></div>
+        </div>
+        <div class="card">
+          <div>
+            <div class="numbers">4</div>
+            <div class="cardName">Walk In</div>
+          </div>
+          <div class="iconBx"><i class="fa-solid fa-person-walking-arrow-right"></i></div>
+        </div>
+        <div class="card">
+          <div>
+            <div class="numbers">11,500 M</div>
+            <div class="cardName">Earning</div>
+          </div>
+          <div class="iconBx"><i class="fa-solid fa-money-bill"></i></div>
+        </div>
+      </div>
 
-          <div class="user">
-            <img src="/images/Staff2.jpg" alt="">
+      <!-- Details Section -->
+      <div class="details">
+        <!-- Recent Appointments -->
+        <div class="recentOrders">
+          <div class="cardHeader">
+            <h2>Recent Appointments</h2>
+            <button class="btn">View All</button>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <td>Name</td>
+                  <td>Pet Name</td>
+                  <td>Service</td>
+                  <td>Status</td>
+                </tr>
+              </thead>
+              <tbody id="recent-appointments"></tbody>
+            </table>
           </div>
         </div>
-        
 
-<<<<<<< HEAD
-            <table id="recentCustomersTable">
-              
-          
-=======
-       <div id="dashboard" class="content-section active">
-  <!--===== Cards =====-->
-  <div class="cardBox">
-    <div class="card">
-      <div>
-        <div class="numbers">24</div>
-        <div class="cardName">Today Schedule</div>
+        <!-- Recent Customers -->
+        <div class="recentCustomers">
+          <div class="cardHeader">
+            <h2>Recent Customers</h2>
+          </div>
+          <table id="recentCustomersTable"></table>
+        </div>
       </div>
-      <div class="iconBx">
-        <i class="fa-solid fa-calendar"></i>
-      </div>
-    </div>
-
-    <div class="card">
-      <div>
-        <div class="numbers">18</div>
-        <div class="cardName">Finished Appointments</div>
-      </div>
-      <div class="iconBx">
-        <i class="fa-solid fa-check"></i>
-      </div>
-    </div>
-    
-    <div class="card">
-      <div>
-        <div class="numbers">4</div>
-        <div class="cardName">Walk In</div>
-      </div>
-      <div class="iconBx">
-        <i class="fa-solid fa-person-walking-arrow-right"></i>
-      </div>
-    </div>
-
-    <div class="card">
-      <div>
-        <div class="numbers">11,500 M</div>
-        <div class="cardName">Earning</div>
-      </div>
-      <div class="iconBx">
-        <i class="fa-solid fa-money-bill"></i>
-      </div>
-    </div>
-  </div>
-
-  <!--===== Appointments Details List =====-->
-  <div class="details">
-    <div class="recentOrders">
-      <div class="cardHeader">
-        <h2>Recent Appointments</h2>
-        <button class="btn">View All</button>
-      </div>
-      <table>
-        <thead>
-          <tr>
-            <td>Name</td>
-            <td>Price</td>
-            <td>Payment</td>
-            <td>Status</td>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>Grooming</td>
-            <td>300</td>
-            <td>DownPayment</td>
-            <td><span class="status pending">Pending</span></td>
-          </tr>
-          <tr>
-            <td>Laboratory</td>
-            <td>300</td>
-            <td>DownPayment</td>
-            <td><span class="status pending">Pending</span></td>
-          </tr>
-          <tr>
-            <td>Vaccination</td>
-            <td>300</td>
-            <td>DownPayment</td>
-            <td><span class="status pending">Pending</span></td>
-          </tr>
-          <tr>
-            <td>Consultation</td>
-            <td>500</td>
-            <td>Walk In</td>
-            <td><span class="status completed">Completed</span></td>
-          </tr>
-        </tbody>  
-      </table>
-    </div>
-
-    <!--===== New Customers =====-->
-    <div class="recentCustomers">
-      <div class="cardHeader">
-        <h2>Recent Customers</h2>
-      </div> 
-      <table>
-        <tr>
-          <td width="60px">
-            <div class="imgBx"><i class="fa-solid fa-user profile-icon"></i></div>
-          </td>
-          <td><h4>Kenneth<br><span>Philippines</span></h4></td>
-        </tr>
-        <tr>
-          <td width="60px">
-            <div class="imgBx"><i class="fa-solid fa-user profile-icon"></i></div>
-          </td>
-          <td><h4>Dan<br><span>Philippines</span></h4></td>
-        </tr>
-        <tr>
-          <td width="60px">
-            <div class="imgBx"><i class="fa-solid fa-user profile-icon"></i></div>
-          </td>
-          <td><h4>Kyle<br><span>Philippines</span></h4></td>
-        </tr>
-        <tr>
-          <td width="60px">
-            <div class="imgBx"><i class="fa-solid fa-user profile-icon"></i></div>
-          </td>
-          <td><h4>Gen<br><span>Philippines</span></h4></td>
-        </tr>
-        <tr>
-          <td width="60px">
-            <div class="imgBx"><i class="fa-solid fa-user profile-icon"></i></div>
-          </td>
-          <td><h4>Sam<br><span>Philippines</span></h4></td>
-        </tr>
-        <tr>
-          <td width="60px">
-            <div class="imgBx"><i class="fa-solid fa-user profile-icon"></i></div>
-          </td>
-          <td><h4>Johnny<br><span>Philippines</span></h4></td>
-        </tr>
-        <tr>
-          <td width="60px">
-            <div class="imgBx"><i class="fa-solid fa-user profile-icon"></i></div>
-          </td>
-          <td><h4>Juan<br><span>Philippines</span></h4></td>
-        </tr>
-        <tr>
-          <td width="60px">
-            <div class="imgBx"><i class="fa-solid fa-user profile-icon"></i></div>
-          </td>
-          <td><h4>Luna<br><span>Philippines</span></h4></td>
-        </tr>
-      </table>
-    </div>
-  </div>
-</div>
-
-      
-    
-    
-    
-
-      <!----Appointment Section---->
-
+     </div>
+     
+      <!-- Appointment Section -->
       <div id="appointments" class="content-section">
         <h1>Appointment Management</h1>
         <div class="data-table">
           <table>
-
             <thead>
               <tr>
                 <th>Date</th>
@@ -302,7 +205,6 @@
                 <th>Action</th>
               </tr>
             </thead>
-
             <tbody>
               <tr>
                 <td>2025-07-25</td>
@@ -316,7 +218,6 @@
                   <button class="btn-primary">Cancel</button>
                 </td>
               </tr>
-
               <tr>
                 <td>2025-07-25</td>
                 <td>11:30 AM</td>
@@ -324,23 +225,18 @@
                 <td>Luna</td>
                 <td>Check up</td>
                 <td><span class="status completed">Completed</span></td>
-                <td>
-                  <button class="btn-primary">View</button>
-                </td>
+                <td><button class="btn-primary">View</button></td>
               </tr>
-
->>>>>>> 40e36730b43f0cf1a0edd56093388779090f11b9
-            </table>
-        </div>
-
+            </tbody>
+          </table>
         </div>
       </div>
-      </div>
-</div>
 
+    </div> 
 
+  </div> 
 
-      <script type="module" src="./javascript.admin/admin.js" defer></script>
+  <script type="module" src="./javascript.admin/admin.js" defer></script>
 
 </body>
 </html>

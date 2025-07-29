@@ -13,8 +13,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="stylesheet" href="/Dashboard/customer/customer.css" />
     <title>Customer</title>
-    <script type="module" src="/Dashboard/customer/javascript.customer/customer.js" defer></script>
-
+    
         
     </head>
     <body>
@@ -88,7 +87,7 @@
                     <img src="/images/petpeek.png" alt="Peeking Pet" class="peeking-pet">
                 </div>
                 
-            <form action="">
+            <form action="" id="appointment-form">
                 <h3>Appointment Details</h3>
                 
             <div class="form-scroll">
@@ -402,7 +401,7 @@
 
                         <div class="calendar-appointments-list" id="appointmentsList"></div>
 
-                        <button class="calendar-book-btn" id="bookBtn" onclick="showBookingModal()" disabled>
+                        <button class="calendar-book-btn" id="bookBtn">
                             Book New Appointment    
                         </button>
                     </div>
@@ -688,5 +687,10 @@
     </section>
               
    <script src="script.js"></script>
+   <body>
+  ...
+  <script type="module" src="/Dashboard/customer/javascript.customer/customer.js"></script>
+
+
     </body>
     </html>

@@ -2,8 +2,10 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebas
 import {
     getFirestore,
     doc,
-    getDoc
+    setDoc,
+    collection
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
 
 // Firebase config
 const firebaseConfig = {
@@ -18,77 +20,165 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-let baseServiceFee = 0; // Store base fee
 
-document.addEventListener("DOMContentLoaded", async () => {
-    const appointmentId = sessionStorage.getItem("selectedAppointmentId");
 
-    if (!appointmentId) {
-        console.error("No appointment ID found.");
+let baseServiceFee = 0;
+
+const servicePrices = {
+  vaccination: {
+    "5n1": { small: 500, medium: 500, large: 500 },
+    "8in1": { small: 600, medium: 600, large: 600 },
+    "Kennel Cough": { small: 500, medium: 500, large: 500 },
+    "4n1 (Feline)": { cat: 950 },
+    "Anti-Rabies": { small: 350, medium: 350, large: 350 }
+  },
+
+  grooming: {
+    basic: { small: 450, medium: 600, large: 800, cat: 600 }
+  },
+
+  consultation: {
+    regular: { small: 350, medium: 350, large: 350, cat: 350 }
+  },
+
+  treatment: {
+    tickFlea: { small: 600, medium: 800, large: 1000 },
+    heartwormPrevention: { small: 600, medium: 800, large: 1000 }
+  },
+
+  deworming: {
+    regular: { small: 300, medium: 600, large: 950 }
+  },
+
+  laboratory: {
+    "4 Way Test": 1200,
+    "CBC Bloodchem Package": 1500,
+    "Cat FIV/Felv Test": 1000,
+    "Leptospirosis Test": 950,
+    "Canine Distemper Test": 850,
+    "Canine Parvo Test": 859,
+    "Parvo/Corona Virus Test": 950,
+    "Earmite Test": 150,
+    "Skin Scraping": 150,
+    "Stool Exam": 300,
+    "Urinalysis": 950
+  }
+};
+
+
+document.addEventListener("DOMContentLoaded", () => {
+    const appointmentData = JSON.parse(sessionStorage.getItem("appointment"));
+
+    if (!appointmentData) {
+        alert("No appointment data found.");
+        window.location.href = "customer.html";
         return;
     }
 
     try {
-        const docRef = doc(db, "Appointment", appointmentId);
-        const docSnap = await getDoc(docRef);
+        // Update general info
+        document.getElementById("pet-name").textContent = appointmentData.petName || "";
+        document.getElementById("pet-size").value = appointmentData.petSize || "small";
+        document.getElementById("owner-name").textContent = appointmentData.name || "";
+        document.getElementById("appt-date").textContent = appointmentData.date || "";
+        document.getElementById("appt-time").textContent = appointmentData.time || "";
+        document.getElementById("main-service").textContent = appointmentData.service || "";
+        document.getElementById("veterinarian").textContent = "Dr. Donna Doll Diones";
+        document.getElementById("special-instructions").textContent = "Please bring any recent medical records";
 
-        if (docSnap.exists()) {
-            const data = docSnap.data();
+        // Display billing fields
+        const serviceFee = parseFloat(appointmentData.serviceFee) || 0;
+        const bloodWork = parseFloat(appointmentData.bloodWork) || 0;
+        const medication = parseFloat(appointmentData.medication) || 0;
+        const serviceFeeDisplay = document.getElementById("service-fee");
+const totalAmountDisplay = document.getElementById("total-amount");
+const selectedServicesList = document.getElementById("selected-services-list");
+const petSizeSelect = document.getElementById("pet-size");
 
-            // Update general info
-            document.getElementById("pet-name").textContent = data.petName || "";
-            document.getElementById("pet-size").value = data.petSize || "small";
-            document.getElementById("owner-name").textContent = data.name || "";
-            document.getElementById("appt-date").textContent = data.date || "";
-            document.getElementById("appt-time").textContent = data.time || "";
-            document.getElementById("main-service").textContent = data.service || "";
-            document.getElementById("veterinarian").textContent = "Dr. Donna Doll Diones";
-            document.getElementById("special-instructions").textContent = "Please bring any recent medical records";
+        baseServiceFee = serviceFee;
 
-            // Display billing fields
-            const serviceFee = parseFloat(data.serviceFee) || 0;
-            const bloodWork = parseFloat(data.bloodWork) || 0;
-            const medication = parseFloat(data.medication) || 0;
-            baseServiceFee = serviceFee;
+        document.getElementById("service-fee").textContent = `₱${serviceFee.toFixed(2)}`;
+        document.getElementById("blood-work").textContent = `₱${bloodWork.toFixed(2)}`;
+        document.getElementById("medication").textContent = `₱${medication.toFixed(2)}`;
+        document.getElementById("reservation-fee").textContent = `₱0.00`;
 
-            document.getElementById("service-fee").textContent = `₱${serviceFee.toFixed(2)}`;
-            document.getElementById("blood-work").textContent = `₱${bloodWork.toFixed(2)}`;
-            document.getElementById("medication").textContent = `₱${medication.toFixed(2)}`;
-            document.getElementById("reservation-fee").textContent = `₱0.00`;
+        function calculateServiceTotal() {
+  const checkboxes = document.querySelectorAll('input[name="services"]:checked');
+  const selectedSize = petSizeSelect.value;
+  let total = 0;
+  selectedServicesList.innerHTML = "";
 
-            // Selected services
-            if (Array.isArray(data.selectedServices)) {
-                const list = document.getElementById("selected-services-list");
-                list.innerHTML = "";
-                data.selectedServices.forEach(service => {
-                    const p = document.createElement("p");
-                    p.textContent = `• ${service}`;
-                    list.appendChild(p);
-                });
-            }
+  checkboxes.forEach(checkbox => {
+    const label = checkbox.getAttribute("data-service");
+    let price = 0;
 
-            // Vaccinations
-            if (Array.isArray(data.vaccines)) {
-                data.vaccines.forEach(v => {
-                    const id = v.toLowerCase().replace(/\s+/g, '-') + "-vax";
-                    const checkbox = document.getElementById(id);
-                    if (checkbox) checkbox.checked = true;
-                });
-            }
-
-            // Initial total calculation
-            updateTotalAmount();
+    // Check against servicePrices object
+    for (let category in servicePrices) {
+      const serviceEntry = servicePrices[category][label];
+      if (serviceEntry) {
+        if (typeof serviceEntry === "number") {
+          price = serviceEntry;
         } else {
-            console.warn("Appointment not found in Firestore.");
+          price = serviceEntry[selectedSize] || 0;
         }
-    } catch (error) {
-        console.error("Error retrieving appointment:", error);
+        break;
+      }
     }
 
-    // Dropdown change listener
-    const feeTypeDropdown = document.getElementById("Reservation-fee-type");
-    if (feeTypeDropdown) {
-        feeTypeDropdown.addEventListener("change", updateTotalAmount);
+    total += price;
+
+    // Update displayed selected service list
+    const item = document.createElement("p");
+    item.textContent = `${label}: ₱${price.toFixed(2)}`;
+    selectedServicesList.appendChild(item);
+  });
+
+  // Update display
+  serviceFeeDisplay.textContent = `₱${total.toFixed(2)}`;
+  totalAmountDisplay.textContent = `₱${total.toFixed(2)}`;
+}
+
+document.querySelectorAll('input[name="services"]').forEach(checkbox => {
+  checkbox.addEventListener("change", calculateServiceTotal);
+});
+
+petSizeSelect.addEventListener("change", calculateServiceTotal);
+
+window.addEventListener("DOMContentLoaded", calculateServiceTotal);
+
+
+
+        // Selected services
+        if (Array.isArray(appointmentData.selectedServices)) {
+            const list = document.getElementById("selected-services-list");
+            list.innerHTML = "";
+            appointmentData.selectedServices.forEach(service => {
+                const p = document.createElement("p");
+                p.textContent = `• ${service}`;
+                list.appendChild(p);
+            });
+        }
+
+        // Vaccinations
+        if (Array.isArray(appointmentData.vaccines)) {
+            appointmentData.vaccines.forEach(v => {
+                const id = v.toLowerCase().replace(/\s+/g, '-') + "-vax";
+                const checkbox = document.getElementById(id);
+                if (checkbox) checkbox.checked = true;
+            });
+        }
+
+        // Initial total calculation
+        updateTotalAmount();
+
+        // Dropdown change listener
+        const feeTypeDropdown = document.getElementById("Reservation-fee-type");
+        if (feeTypeDropdown) {
+            feeTypeDropdown.addEventListener("change", updateTotalAmount);
+        }
+
+    } catch (error) {
+        console.error("Error processing appointment data:", error);
     }
 
     function updateTotalAmount() {
@@ -102,10 +192,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         document.getElementById("total-amount").textContent = `₱${finalAmount.toFixed(2)}`;
-        document.getElementById("reservation-fee").textContent = type === "only"
-            ? `₱${(baseServiceFee * 0.10).toFixed(2)}`
-            : `₱0.00`;
+        document.getElementById("reservation-fee").textContent =
+            type === "only"
+                ? `₱${(baseServiceFee * 0.10).toFixed(2)}`
+                : `₱0.00`;
     }
+});
+
 
     // Modal and receipt
     const confirmBtn = document.getElementById('confirm-btn');
@@ -115,31 +208,55 @@ document.addEventListener("DOMContentLoaded", async () => {
     const bookBtn = document.getElementById('book-btn');
 
     if (confirmBtn && modal) {
-        confirmBtn.onclick = () => modal.style.display = "block";
-    }
+    confirmBtn.addEventListener('click', () => {
+        modal.style.display = "block";
+    });
+}
 
-    if (closeModal && modal) {
-        closeModal.onclick = () => modal.style.display = "none";
-    }
+if (closeModal && modal) {
+    closeModal.addEventListener('click', () => {
+        modal.style.display = "none";
+    });
+}
 
-    window.onclick = event => {
-        if (modal && event.target == modal) {
-            modal.style.display = "none";
+  if (receiptUpload && bookBtn) {
+    receiptUpload.onchange = () => {
+        if (receiptUpload.files.length > 0) {
+            bookBtn.disabled = false;
+            bookBtn.classList.add('enabled');
+        } else {
+            bookBtn.disabled = true;
+            bookBtn.classList.remove('enabled');
         }
     };
 
-    if (receiptUpload && bookBtn) {
-        receiptUpload.onchange = () => {
-            if (receiptUpload.files.length > 0) {
-                bookBtn.disabled = false;
-                bookBtn.classList.add('enabled');
-            } else {
-                bookBtn.disabled = true;
-                bookBtn.classList.remove('enabled');
-            }
-        };
-    }
-});
+    bookBtn.addEventListener("click", async () => {
+        const appointmentData = JSON.parse(sessionStorage.getItem("appointment"));
+        if (!appointmentData) {
+            alert("No appointment data found.");
+            return;
+        }
+
+        try {
+            // Add timestamp or unique identifier if needed
+            appointmentData.timestamp = new Date().toISOString();
+            appointmentData.status = "pending";
+
+            // Save to Firestore
+            const appointmentRef = doc(collection(db, "appointments"));
+            await setDoc(appointmentRef, appointmentData);
+
+            alert("Appointment booked successfully!");
+            sessionStorage.removeItem("appointment");
+            window.location.href = "customer.html"; // or success page
+        } catch (error) {
+            console.error("Failed to book appointment:", error);
+            alert("Something went wrong. Please try again.");
+        }
+    });
+}
+
+
 
 // Redirect on cancel
 const cancelBtn = document.getElementById('cancel-btn');
@@ -149,3 +266,5 @@ if (cancelBtn) {
         window.location.href = 'customer.html'; // go back to main customer page
     });
 }
+
+updateTotalAmount();

@@ -1,5 +1,11 @@
   import { db } from './db_config.js';
-  import { collection, getDocs } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+  import {
+  collection,
+  getDocs,
+  setDoc,  // <-- Needed
+  doc      // <-- Needed
+} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
 
   const loginButton = document.getElementById("SignInBtn");
 
@@ -67,3 +73,78 @@
       alert("Login failed. Please try again.");
     }
   });
+
+  
+ // REGISTER
+
+const signUpButton = document.getElementById("SignUpBtn");
+
+signUpButton.addEventListener("click", async (e) => {
+  e.preventDefault();
+
+  const name = document.getElementById("reg-name").value.trim();
+  const email = document.getElementById("reg-email").value.trim();
+  const password = document.getElementById("reg-pass").value.trim();
+  const agree = document.getElementById("agree").checked;
+  const loader = document.getElementById("loading-screen");
+
+  if (!name || !email || !password) {
+    alert("Please fill in all fields.");
+    return;
+  }
+
+  if (!agree) {
+    alert("You must agree to the terms and conditions.");
+    return;
+  }
+
+  loader.style.display = "flex";
+
+  try {
+    const usersRef = collection(db, "users");
+    const snapshot = await getDocs(usersRef);
+
+    // Check for duplicate email
+    const existingUser = snapshot.docs.find(doc => doc.data().email === email);
+    if (existingUser) {
+      loader.style.display = "none";
+      alert("Email is already registered.");
+      return;
+    }
+
+    // Generate custom doc ID (e.g., owner1, owner2, ...)
+    let index = 1;
+    let newId;
+    const existingIds = snapshot.docs.map(doc => doc.id);
+
+    while (true) {
+      newId = `owner${index}`;
+      if (!existingIds.includes(newId)) break;
+      index++;
+    }
+
+    await setDoc(doc(usersRef, newId), {
+      name,
+      email,
+      password
+    });
+
+
+
+    // Save session and redirect
+    sessionStorage.setItem("isLoggedIn", "true");
+    sessionStorage.setItem("userId", newId);
+    sessionStorage.setItem("role", "customer");
+    sessionStorage.setItem("userName", name);
+    sessionStorage.setItem("welcomeMessage", `Welcome, ${name}!`);
+
+    setTimeout(() => {
+      location.replace("../Dashboard/customer/customer.html");
+    }, 1500);
+
+  } catch (error) {
+    console.error("Registration error:", error);
+    loader.style.display = "none";
+    alert("Registration failed: " + error.message);
+  }
+});
