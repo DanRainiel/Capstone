@@ -1,31 +1,31 @@
 @import url('https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,100..900;1,100..900&display=swap');
 
 :root {
-  --green: #1efdf2;
-  --white: #fff;
-   --black: #2e2525;
-   --orange: #f8732b;
-   --background-color: #01949A;
-  --light-color: #28fa79;
-  --box-shadow: .5rem .5rem 0 rgba(0, 0, 0, 0.2);
-  --text-shadow: .2rem .2rem 0 rgba(0, 133, 129, 0.2);
-  --border:.2rem solid var(--green);
+    --green: #1efdf2;
+    --white: #fff;
+    --black: #2e2525;
+    --orange: #f8732b;
+    --background-color: #01949A;
+    --light-color: #28fa79;
+    --box-shadow: .5rem .5rem 0 rgba(0, 0, 0, 0.2);
+    --text-shadow: .2rem .2rem 0 rgba(0, 133, 129, 0.2);
+    --border:.2rem solid var(--green);
 }
 
 
 *{
-     font-family: "Raleway", sans-serif;
-  font-optical-sizing: auto;
-  font-weight: weight;
-  font-style: normal;
-  margin: 0;
-  padding:0;
-  box-sizing: border-box;
-  outline: none;
-  text-decoration: none;
-border:none;
-scroll-behavior: smooth;
-box-sizing: border-box;
+    font-family: "Raleway", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: weight;
+    font-style: normal;
+    margin: 0;
+    padding:0;
+    box-sizing: border-box;
+    outline: none;
+    text-decoration: none;
+    border:none;
+    scroll-behavior: smooth;
+    box-sizing: border-box;
 }
 
 body{
@@ -215,6 +215,10 @@ body{
     border-radius: 50%;
     overflow: hidden;
     cursor: pointer;
+    background: var(--background-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .user img{
@@ -235,6 +239,7 @@ body{
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     grid-gap: 30px;
+    margin-bottom: 10px;
 }
 
 .cardBox .card{
@@ -264,7 +269,7 @@ body{
 
 .cardBox .card .iconBx{
     font-size: 3.5rem;
-    color: var(--orange);
+    color: var(--background-color);
 }
 
 
@@ -287,7 +292,7 @@ body{
     display: grid;
     grid-template-columns: 2fr 1fr;
     grid-gap: 30px;
-    margin-top: 10px;
+    margin-top: 0px;
 }
 
 .details .recentOrders{
@@ -328,7 +333,7 @@ body{
 .details table{
     width: 100%;
     border-collapse: collapse;
-    margin-top: 10px;
+    margin-top: 0px;
 }
 
 .details table thead td{
@@ -512,3 +517,144 @@ text-align: end;
 }
 
 }
+
+/*Content Section*/
+
+.content-section{
+    display: none;
+    padding: 20px;
+    min-height: calc(100vh - 60px);
+}
+
+.content-section.active{
+    display: block;
+}
+
+.content-section h1{
+    color: var(--background-color);
+    margin-bottom: 20px;
+}
+
+/* Form Styles */
+
+.form-container{
+    background: var(--white);
+    padding: 30px;
+    border-radius: 20px;
+    box-shadow: 0 7px, 25px rgba(0, 0, 0, 0.08);
+    max-width: 800px;
+}
+
+.form-group{
+    margin-bottom: 20px;
+}
+
+.form-group label{
+    display: block;
+    margin-bottom: 5px;
+    color: var(--background-color);
+    font-weight: 500;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea{
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+.form-group textarea{
+    height: 100px;
+    resize: vertical;
+}
+
+.btn-primary{
+    background: var(--background-color);
+    color: var(--white);
+    padding: 12px 30px;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: var(--background-color) 0.3s;
+}
+
+.btn-primary:hover{
+    background: var(--orange);
+}
+
+/* Table Styles for other Section*/
+
+.data-table{
+    width: 100%;
+    background: var(--white);
+    border-radius: 20px;
+    box-shadow: 0 7px 25px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+}
+
+.data-table table{
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table th,
+.data-table td{
+    padding: 15px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.data-table th{
+    background: var(--background-color);
+    color: var(--white);
+    font-weight: 600;
+}
+
+.data-table tr:hover{
+    background: var(--orange);
+}
+
+/* Responsive */
+
+@media (max-width: 991px){
+    .navigation{
+        left: -300px;
+    }
+
+    .navigation.active{
+        width: 300px;
+        left: 0;
+    }
+
+    .main{
+        width: 100%;
+        left: 0;
+    }
+
+    .main.active{
+        left: 300px;
+    }
+
+    .cardBox{
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .details {
+        grid-template-columns: 1fr;
+    }
+
+    .cardBox{
+        grid-template-columns: 1fr;
+    }
+}
+
+.user i {
+      font-size: 1.5rem;
+      color: var(--white);
+    }

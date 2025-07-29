@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome-animation/1.1.0/font-awesome-animation.min.css" referrerpolicy="no-referrer" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <link rel ="stylesheet" href="/Dashboard/admin/admin.css">
+
   
   <title>Admin</title>
 </head>
@@ -23,21 +24,21 @@
           <ul>
 
             <li>
-              <a href ="">
+              <a href ="admin.html">
                 <span class ="icon"><i class="fa-solid fa-paw"></i></span>
                 <span class="title">PetStop Veterinary Clinic</span>
               </a>
             </li>
 
-            <li>
-              <a href ="">
+            <li class="hovered">
+              <a href ="#" data-section="dashboard">
                 <span class ="icon"><i class="fa-solid fa-house-user"></i></span>
                 <span class="title">Dashboard</span>
               </a>
             </li>
 
             <li>
-              <a href ="">
+              <a href="#" data-section="appointments">
                 <span class ="icon"><i class="fa-solid fa-calendar-check"></i></span>
                 <span class="title">Appointments</span>
               </a>
@@ -103,7 +104,7 @@
 
         </div>
 
-      </div>
+      
 
       <!--Main-->
       <div class="main">
@@ -123,192 +124,213 @@
             <img src="/images/Staff2.jpg" alt="">
           </div>
         </div>
-
-        <!--=====Cards=====-->
-        <div class="cardBox">
-          <div class="card">
-            <div>
-              <div class="numbers">24</div>
-              <div class="cardName">Today Schedule</div>
-            </div>
-
-            <div class="iconBx">
-              <i class="fa-solid fa-calendar"></i>
-            </div>
-          </div>
-
-          <div class="card">
-            <div>
-              <div class="numbers">18</div>
-              <div class="cardName">Finished Appointments</div>
-            </div>
-
-            <div class="iconBx">
-              <i class="fa-solid fa-check"></i>
-            </div>
-          </div>
-          
-          <div class="card">
-            <div>
-              <div class="numbers">4</div>
-              <div class="cardName">Walk In</div>
-            </div>
-
-            <div class="iconBx">
-              <i class="fa-solid fa-person-walking-arrow-right"></i>
-            </div>
-          </div>
-
-          <div class="card">
-            <div>
-              <div class="numbers">11,500 M</div>
-              <div class="cardName">Earning</div>
-            </div>
-
-            <div class="iconBx">
-              <i class="fa-solid fa-money-bill"></i>
-            </div>
-          </div>
-        </div>
-
-
-        <!--=====Order Details List=====-->
-        <div class="details">
-          <div class="recentOrders">
-            <div class="cardHeader">
-              <h2>Recent Appointments</h2>
-              <button class ="btn"> View All</a>
-            </div>
-
-            <table>
-              <thead>
-                <tr>
-                  <td>Name</td>
-                  <td>Price</td>
-                  <td>Payment</td>
-                  <td>Status</td>
-                </tr>
-              </thead>
-
-              <tbody>
-                <tr>
-                  <td>Grooming</td>
-                  <td>300</td>
-                  <td>DownPayment</td>
-                  <td><span class="status pending">Pending</span></td>
-                </tr>
-
-                <tr>
-                  <td>Laboratory</td>
-                  <td>300</td>
-                  <td>DownPayment</td>
-                  <td><span class="status pending">Pending</span></td>
-                </tr>
-
-                <tr>
-                  <td>Vaccination</td>
-                  <td>300</td>
-                  <td>DownPayment</td>
-                  <td><span class="status pending">Pending</span></td>
-                </tr>
-
-                <tr>
-                  <td>Consultation</td>
-                  <td>500</td>
-                  <td>Walk In</td>
-                  <td><span class="status completed">Completed</span></td>
-                </tr>
-              </tbody>  
-            </table>
-          </div>
-
-          <!--=====New Customers=====-->
         
-          <div class="recentCustomers">
-            <div class="cardHeader">
-              <h2>Recent Customers</h2>
-              
-            </div> 
 
-            <table>
+       <div id="dashboard" class="content-section active">
+  <!--===== Cards =====-->
+  <div class="cardBox">
+    <div class="card">
+      <div>
+        <div class="numbers">24</div>
+        <div class="cardName">Today Schedule</div>
+      </div>
+      <div class="iconBx">
+        <i class="fa-solid fa-calendar"></i>
+      </div>
+    </div>
+
+    <div class="card">
+      <div>
+        <div class="numbers">18</div>
+        <div class="cardName">Finished Appointments</div>
+      </div>
+      <div class="iconBx">
+        <i class="fa-solid fa-check"></i>
+      </div>
+    </div>
+    
+    <div class="card">
+      <div>
+        <div class="numbers">4</div>
+        <div class="cardName">Walk In</div>
+      </div>
+      <div class="iconBx">
+        <i class="fa-solid fa-person-walking-arrow-right"></i>
+      </div>
+    </div>
+
+    <div class="card">
+      <div>
+        <div class="numbers">11,500 M</div>
+        <div class="cardName">Earning</div>
+      </div>
+      <div class="iconBx">
+        <i class="fa-solid fa-money-bill"></i>
+      </div>
+    </div>
+  </div>
+
+  <!--===== Appointments Details List =====-->
+  <div class="details">
+    <div class="recentOrders">
+      <div class="cardHeader">
+        <h2>Recent Appointments</h2>
+        <button class="btn">View All</button>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <td>Name</td>
+            <td>Price</td>
+            <td>Payment</td>
+            <td>Status</td>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Grooming</td>
+            <td>300</td>
+            <td>DownPayment</td>
+            <td><span class="status pending">Pending</span></td>
+          </tr>
+          <tr>
+            <td>Laboratory</td>
+            <td>300</td>
+            <td>DownPayment</td>
+            <td><span class="status pending">Pending</span></td>
+          </tr>
+          <tr>
+            <td>Vaccination</td>
+            <td>300</td>
+            <td>DownPayment</td>
+            <td><span class="status pending">Pending</span></td>
+          </tr>
+          <tr>
+            <td>Consultation</td>
+            <td>500</td>
+            <td>Walk In</td>
+            <td><span class="status completed">Completed</span></td>
+          </tr>
+        </tbody>  
+      </table>
+    </div>
+
+    <!--===== New Customers =====-->
+    <div class="recentCustomers">
+      <div class="cardHeader">
+        <h2>Recent Customers</h2>
+      </div> 
+      <table>
+        <tr>
+          <td width="60px">
+            <div class="imgBx"><i class="fa-solid fa-user profile-icon"></i></div>
+          </td>
+          <td><h4>Kenneth<br><span>Philippines</span></h4></td>
+        </tr>
+        <tr>
+          <td width="60px">
+            <div class="imgBx"><i class="fa-solid fa-user profile-icon"></i></div>
+          </td>
+          <td><h4>Dan<br><span>Philippines</span></h4></td>
+        </tr>
+        <tr>
+          <td width="60px">
+            <div class="imgBx"><i class="fa-solid fa-user profile-icon"></i></div>
+          </td>
+          <td><h4>Kyle<br><span>Philippines</span></h4></td>
+        </tr>
+        <tr>
+          <td width="60px">
+            <div class="imgBx"><i class="fa-solid fa-user profile-icon"></i></div>
+          </td>
+          <td><h4>Gen<br><span>Philippines</span></h4></td>
+        </tr>
+        <tr>
+          <td width="60px">
+            <div class="imgBx"><i class="fa-solid fa-user profile-icon"></i></div>
+          </td>
+          <td><h4>Sam<br><span>Philippines</span></h4></td>
+        </tr>
+        <tr>
+          <td width="60px">
+            <div class="imgBx"><i class="fa-solid fa-user profile-icon"></i></div>
+          </td>
+          <td><h4>Johnny<br><span>Philippines</span></h4></td>
+        </tr>
+        <tr>
+          <td width="60px">
+            <div class="imgBx"><i class="fa-solid fa-user profile-icon"></i></div>
+          </td>
+          <td><h4>Juan<br><span>Philippines</span></h4></td>
+        </tr>
+        <tr>
+          <td width="60px">
+            <div class="imgBx"><i class="fa-solid fa-user profile-icon"></i></div>
+          </td>
+          <td><h4>Luna<br><span>Philippines</span></h4></td>
+        </tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+      
+    
+    
+    
+
+      <!----Appointment Section---->
+
+      <div id="appointments" class="content-section">
+        <h1>Appointment Management</h1>
+        <div class="data-table">
+          <table>
+
+            <thead>
               <tr>
-              <td width="60px">
-                  <div class="imgBx"><i class="fa-solid fa-user profile-icon" ></i></div>
-                </td>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Pet Owner</th>
+                <th>Pet Name</th>
+                <th>Service</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr>
+                <td>2025-07-25</td>
+                <td>10:00 AM</td>
+                <td>John Doe</td>
+                <td>Buddy</td>
+                <td>Vaccination</td>
+                <td><span class="status pending">Pending</span></td>
                 <td>
-                  <h4>Kenneth<br> <span>Philippines</span></h4>
+                  <button class="btn-primary">Edit</button>
+                  <button class="btn-primary">Cancel</button>
                 </td>
               </tr>
 
               <tr>
-              <td width="60px">
-                  <div class="imgBx"><i class="fa-solid fa-user profile-icon" ></i></div>
-                </td>
+                <td>2025-07-25</td>
+                <td>11:30 AM</td>
+                <td>Jane Smith</td>
+                <td>Luna</td>
+                <td>Check up</td>
+                <td><span class="status completed">Completed</span></td>
                 <td>
-                  <h4>Dan<br> <span>Philippines</span></h4>
+                  <button class="btn-primary">View</button>
                 </td>
               </tr>
+            </tbody>
 
-              <tr>
-              <td width="60px">
-                  <div class="imgBx"><i class="fa-solid fa-user profile-icon" ></i></div>
-                </td>
-                <td>
-                  <h4>Kyle<br> <span>Philippines</span></h4>
-                </td>
-              </tr>
-
-              <tr>
-              <td width="60px">
-                  <div class="imgBx"><i class="fa-solid fa-user profile-icon" ></i></div>
-                </td>
-                <td>
-                  <h4>Gen<br> <span>Philippines</span></h4>
-                </td>
-              </tr>
-
-              <tr>
-              <td width="60px">
-                  <div class="imgBx"><i class="fa-solid fa-user profile-icon" ></i></div>
-                </td>
-                <td>
-                  <h4>Sam<br> <span>Philippines</span></h4>
-                </td>
-              </tr>
-
-              <tr>
-              <td width="60px">
-                  <div class="imgBx"><i class="fa-solid fa-user profile-icon" ></i></div>
-                </td>
-                <td>
-                  <h4>Johnny<br> <span>Philippines</span></h4>
-                </td>
-              </tr>
-
-              <tr>
-              <td width="60px">
-                  <div class="imgBx"><i class="fa-solid fa-user profile-icon" ></i></div>
-                </td>
-                <td>
-                  <h4>Juan<br> <span>Philippines</span></h4>
-                </td>
-              </tr>
-
-              <tr>
-              <td width="60px">
-                  <div class="imgBx"><i class="fa-solid fa-user profile-icon" ></i></div>
-                </td>
-                <td>
-                  <h4>Luna<br> <span>Philippines</span></h4>
-                </td>
-              </tr>
-
-            </table>
-        </div>
+          </table>
 
         </div>
       </div>
-
+      </div>
+</div>
 
 
 
