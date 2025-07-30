@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
+  
   //for responsive navbar
   let menu = document.querySelector('#menu-btn');
   let navbar = document.querySelector('.navbar');

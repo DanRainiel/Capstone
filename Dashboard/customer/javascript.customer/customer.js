@@ -157,6 +157,7 @@
         });
 
 
+
         document.addEventListener("DOMContentLoaded", () => {
             // Open modal when clicking on the button
             document.getElementById("lm-1").addEventListener("click", () => {
@@ -201,6 +202,7 @@
             });
         });
         
+         //SUBMIT BUTTON LOGIC//       
 document.addEventListener("DOMContentLoaded", () => {
     const form = document.getElementById("appointment-form");
 
@@ -215,7 +217,7 @@ document.addEventListener("DOMContentLoaded", () => {
             petSize: document.getElementById("appt-size").value,
             sex: document.getElementById("appt-sex").value,
             service: document.getElementById("appt-service").value,
-            time: document.getElementById("appt-time").value,
+            time: formatTo12Hour(document.getElementById("appt-time").value),
             date: document.getElementById("appt-date").value,
             serviceFee: 0,
             bloodWork: 0,

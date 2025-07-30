@@ -76,6 +76,20 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
+
+              // 🟨 Show only relevant service options
+        const allServiceOptions = document.querySelectorAll('.service-options');
+        allServiceOptions.forEach(div => div.style.display = 'none'); // hide all
+
+        const selectedService = appointmentData.service.toLowerCase();
+
+        const matchingGroup = document.querySelector(`.service-options[data-service="${selectedService}"]`);
+        if (matchingGroup) {
+            matchingGroup.style.display = 'block';
+
+         
+        }
+
         // Update general info
         document.getElementById("pet-name").textContent = appointmentData.petName || "";
         document.getElementById("pet-size").value = appointmentData.petSize || "small";
@@ -91,9 +105,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const bloodWork = parseFloat(appointmentData.bloodWork) || 0;
         const medication = parseFloat(appointmentData.medication) || 0;
         const serviceFeeDisplay = document.getElementById("service-fee");
-const totalAmountDisplay = document.getElementById("total-amount");
-const selectedServicesList = document.getElementById("selected-services-list");
-const petSizeSelect = document.getElementById("pet-size");
+        const totalAmountDisplay = document.getElementById("total-amount");
+        const selectedServicesList = document.getElementById("selected-services-list");
+        const petSizeSelect = document.getElementById("pet-size");
 
         baseServiceFee = serviceFee;
 
