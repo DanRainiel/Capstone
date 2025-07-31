@@ -151,15 +151,8 @@ function activeLink(){
 list.forEach((item) => item.addEventListener("mouseover", activeLink));
 
 
- // Toggle sidebar
-    const toggle = document.querySelector('.toggle');
-    const navigation = document.querySelector('.navigation');
-    const main = document.querySelector('.main');
+ 
 
-    toggle.onclick = function() {
-      navigation.classList.toggle('active');
-      main.classList.toggle('active');
-    }
 
    // Navigation functionality
     const menuItems = document.querySelectorAll('.navigation ul li a[data-section]');

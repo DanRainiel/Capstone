@@ -30,24 +30,52 @@ const servicePrices = {
     "8in1": { small: 600, medium: 600, large: 600 },
     "Kennel Cough": { small: 500, medium: 500, large: 500 },
     "4n1 (Feline)": { cat: 950 },
-    "Anti-Rabies": { small: 350, medium: 350, large: 350 }
+    "Anti-Rabies": { small: 350, medium: 350, large: 350, cat: 350 }
   },
 
   grooming: {
-    basic: { small: 450, medium: 600, large: 800, cat: 600 }
+    basic: {
+      small: 450,
+      medium: 600,
+      large: 800,
+      cat: 600
+    }
   },
 
   consultation: {
-    regular: { small: 350, medium: 350, large: 350, cat: 350 }
+    regular: {
+      small: 350,
+      medium: 350,
+      large: 350,
+      cat: 350
+    }
   },
 
   treatment: {
-    tickFlea: { small: 600, medium: 800, large: 1000 },
-    heartwormPrevention: { small: 600, medium: 800, large: 1000 }
+    tickFlea: {
+      small: 650,
+      medium: 700,
+      large: 800
+    },
+    heartwormPrevention: {
+      small: 2000, // up to 10kg
+      medium: 2500, // 10–15kg
+      large: 3000, // 15–25kg
+      xl: 4500 // upper end for >25kg
+    },
+    catTickFleaDeworm: {
+      small: 650,
+      large: 750
+    }
   },
 
   deworming: {
-    regular: { small: 300, medium: 600, large: 950 }
+    regular: {
+      small: 200,
+      medium: 300,
+      large: 400,
+      cat: 300
+    }
   },
 
   laboratory: {
@@ -102,8 +130,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Display billing fields
         const serviceFee = parseFloat(appointmentData.serviceFee) || 0;
-        const bloodWork = parseFloat(appointmentData.bloodWork) || 0;
-        const medication = parseFloat(appointmentData.medication) || 0;
+     
         const serviceFeeDisplay = document.getElementById("service-fee");
         const totalAmountDisplay = document.getElementById("total-amount");
         const selectedServicesList = document.getElementById("selected-services-list");
@@ -112,8 +139,7 @@ document.addEventListener("DOMContentLoaded", () => {
         baseServiceFee = serviceFee;
 
         document.getElementById("service-fee").textContent = `₱${serviceFee.toFixed(2)}`;
-        document.getElementById("blood-work").textContent = `₱${bloodWork.toFixed(2)}`;
-        document.getElementById("medication").textContent = `₱${medication.toFixed(2)}`;
+       
         document.getElementById("reservation-fee").textContent = `₱0.00`;
 
         function calculateServiceTotal() {
@@ -214,6 +240,8 @@ window.addEventListener("DOMContentLoaded", calculateServiceTotal);
 });
 
 
+
+
     // Modal and receipt
     const confirmBtn = document.getElementById('confirm-btn');
     const modal = document.getElementById('paymentModal');
@@ -281,4 +309,9 @@ if (cancelBtn) {
     });
 }
 
-updateTotalAmount();
+// Initial total calculation
+
+baseServiceFee = total; // ✅ Update baseServiceFee
+updateTotalAmount();    // ✅ Also update reservation fee based on new baseServiceFee
+
+

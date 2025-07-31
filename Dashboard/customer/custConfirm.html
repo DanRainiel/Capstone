@@ -11,13 +11,14 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome-animation/1.1.0/font-awesome-animation.min.css" referrerpolicy="no-referrer" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="stylesheet" href="/Dashboard/customer/custConfirm.css">
-    <script src="/Dashboard/customer/javascript.customer/custConfirm.js"></script>
+    <script type="module" src="/Dashboard/customer/javascript.customer/custConfirm.js"></script>
+
     <title>Document</title>
 </head>
 <body>
 
     <header>
-        <div class="header">Here you can share the latest new
+        <div class="header">
             <h1><i class="fa fa-paw" aria-hidden="true"></i> PetStop Veterinary Clinic</h1>
             <p>Appointment Details and Receipt</p>
          </div>
@@ -42,40 +43,80 @@
                     </p>
                     <p><span>Owner Name:</span> <span id="owner-name">Kyle Pua</span></p>
                     <p><span>Appointment Date:</span> <span id="appt-date">June 15, 2023</span></p>
-                    <p><span>Appointment Time:</span> <span id="appt-date">10:30</span></p>
+                    <p><span>Appointment Time:</span> <span id="appt-time">10:30</span></p>
 
                     <div class="service-selection">
                         <p><span>Main Service:</span> <span id="main-service">Vaccination</span></p>
                          
-                        <div class="service-options">
+                        <div class="service-options-container">
                             <div class="service-category">
-                                <h3>Vaccination Services</h3>
 
-                                <div class="service-option">
-                                    <input type="checkbox" id="canine-vax" name="services" data-service="Canine Vaccination"
-                                        data-price-small="500.00"
-                                        data-price-medium="500.00"
-                                        data-price-large="600.00"
-                                        data-price-Xl="600.00">
-                                    <label for="canine-vax">Canine Vaccination (<span class ="price-display">₱500.00</span>)</label>
-                                </div>
+ <!-- Grooming -->
+    <div class="service-options" data-service="grooming" style="display: none;">
+      <h4>Grooming Options</h4>
+      <label><input type="checkbox" name="services" data-service="grooming-basic-small"> Small (₱450)</label><br>
+      <label><input type="checkbox" name="services" data-service="grooming-basic-medium"> Medium (₱600)</label><br>
+      <label><input type="checkbox" name="services" data-service="grooming-basic-large"> Large (₱800)</label><br>
+      <label><input type="checkbox" name="services" data-service="grooming-basic-cat"> Cat (₱600)</label>
+    </div>
 
-                                <div class="service-option">
-                                    <input type="checkbox" id="feline-vax" name="services" data-service="Feline Vaccination"
-                                        data-price-small="950.00"
-                                        data-price-medium="950.00"
-                                        data-price-large="950.00"
-                                        data-price-Xl="950.00">
-                                    <label for="canine-vax">Feline Vaccination (<span class ="price-display">₱950.00</span>)</label>
-                                </div>
+    <!-- Vaccinations -->
+    <div class="service-options" data-service="vaccination" style="display: none;">
+      <h4>Vaccination Options</h4>
+      <label><input type="checkbox" name="services" data-service="vaccination-5n1"> 5n1 (₱500)</label><br>
+      <label><input type="checkbox" name="services" data-service="vaccination-8in1"> 8in1 (₱600)</label><br>
+      <label><input type="checkbox" name="services" data-service="vaccination-Kennel Cough"> Kennel Cough (₱500)</label><br>
+      <label><input type="checkbox" name="services" data-service="vaccination-Anti-Rabies"> Anti-Rabies (₱350)</label><br>
+      <label><input type="checkbox" name="services" data-service="vaccination-4n1 (Feline)"> 4n1 (Feline) (₱950)</label>
+    </div>
 
-                                <div class="service-option">
-                                    <input type="checkbox" id="rabies-vax" name="services" data-service="Anti-Rabies Vaccination"
-                                        data-price-small="350.00"
-                                        data-price-medium="350.00"
-                                        data-price-large="350.00">
-                                    <label for="rabies-vax">Anti-Rabies Vaccination (<span class="price-display">₱350.00</span>)</label>
-                                </div>
+    <!-- Consultation -->
+    <div class="service-options" data-service="consultation" style="display: none;">
+      <h4>Consultation Options</h4>
+      <label><input type="checkbox" name="services" data-service="consultation-regular"> Regular Consultation (₱350)</label>
+    </div>
+
+    <!-- Treatment -->
+    <div class="service-options" data-service="treatment" style="display: none;">
+      <h4>Treatment Options</h4>
+      <label><input type="checkbox" name="services" data-service="treatment-tickFlea-small"> Tick & Flea Treatment - Small (₱650)</label><br>
+      <label><input type="checkbox" name="services" data-service="treatment-tickFlea-medium"> Tick & Flea Treatment - Medium (₱700)</label><br>
+      <label><input type="checkbox" name="services" data-service="treatment-tickFlea-large"> Tick & Flea Treatment - Large (₱800)</label><br>
+
+      <label><input type="checkbox" name="services" data-service="treatment-heartwormPrevention-small"> Heartworm Prevention - Small (₱2000)</label><br>
+      <label><input type="checkbox" name="services" data-service="treatment-heartwormPrevention-medium"> Heartworm Prevention - Medium (₱2500)</label><br>
+      <label><input type="checkbox" name="services" data-service="treatment-heartwormPrevention-large"> Heartworm Prevention - Large (₱3000)</label><br>
+      <label><input type="checkbox" name="services" data-service="treatment-heartwormPrevention-xl"> Heartworm Prevention - XL (₱4500)</label><br>
+
+      <label><input type="checkbox" name="services" data-service="treatment-catTickFleaDeworm-small"> Cat Tick/Flea + Deworm - Small (₱650)</label><br>
+      <label><input type="checkbox" name="services" data-service="treatment-catTickFleaDeworm-large"> Cat Tick/Flea + Deworm - Large (₱750)</label>
+    </div>
+
+    <!-- Deworming -->
+    <div class="service-options" data-service="deworming" style="display: none;">
+      <h4>Deworming Options</h4>
+      <label><input type="checkbox" name="services" data-service="deworming-regular-small"> Dog Deworming - Small (₱200)</label><br>
+      <label><input type="checkbox" name="services" data-service="deworming-regular-medium"> Dog Deworming - Medium (₱300)</label><br>
+      <label><input type="checkbox" name="services" data-service="deworming-regular-large"> Dog Deworming - Large (₱400)</label><br>
+      <label><input type="checkbox" name="services" data-service="deworming-regular-cat"> Cat Deworming (₱300)</label>
+    </div>
+
+    <!-- Laboratory -->
+    <div class="service-options" data-service="laboratory" style="display: none;">
+      <h4>Laboratory Tests</h4>
+      <label><input type="checkbox" name="services" data-service="laboratory-4 Way Test"> 4 Way Test (₱1200)</label><br>
+      <label><input type="checkbox" name="services" data-service="laboratory-CBC Bloodchem Package"> CBC Bloodchem Package (₱1500)</label><br>
+      <label><input type="checkbox" name="services" data-service="laboratory-Cat FIV/Felv Test"> Cat FIV/Felv Test (₱1000)</label><br>
+      <label><input type="checkbox" name="services" data-service="laboratory-Leptospirosis Test"> Leptospirosis Test (₱950)</label><br>
+      <label><input type="checkbox" name="services" data-service="laboratory-Canine Distemper Test"> Canine Distemper Test (₱850)</label><br>
+      <label><input type="checkbox" name="services" data-service="laboratory-Canine Parvo Test"> Canine Parvo Test (₱859)</label><br>
+      <label><input type="checkbox" name="services" data-service="laboratory-Parvo/Corona Virus Test"> Parvo/Corona Virus Test (₱950)</label><br>
+      <label><input type="checkbox" name="services" data-service="laboratory-Earmite Test"> Earmite Test (₱150)</label><br>
+      <label><input type="checkbox" name="services" data-service="laboratory-Skin Scraping"> Skin Scraping (₱150)</label><br>
+      <label><input type="checkbox" name="services" data-service="laboratory-Stool Exam"> Stool Exam (₱300)</label><br>
+      <label><input type="checkbox" name="services" data-service="laboratory-Urinalysis"> Urinalysis (₱950)</label>
+    </div>
+
 
                             </div>
                         </div>
@@ -133,7 +174,7 @@
 
             <input type="file" id="receipt-upload" accept="image/*">
 
-            <button id="book-btn" class="btn" disabbled>Book</button>
+            <button id="book-btn" class="btn" disabled>Book</button>
         </div>
     </div>
 
