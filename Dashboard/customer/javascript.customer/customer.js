@@ -79,13 +79,21 @@
         }
         loadUsername();
 
-        document.addEventListener("DOMContentLoaded", () => {
-        const welcomeMsg = sessionStorage.getItem("welcomeMessage");
-        if (welcomeMsg) {
-            alert(welcomeMsg);
-            sessionStorage.removeItem("welcomeMessage");
-        }
+document.addEventListener("DOMContentLoaded", () => {
+    const welcomeMsg = sessionStorage.getItem("welcomeMessage");
+    if (welcomeMsg) {
+        Swal.fire({
+            title: 'Welcome!',
+            text: welcomeMsg,
+            icon: 'info',
+            confirmButtonText: 'OK',
+            color: '#01949A',
+            iconColor:'#f8732b',
+            confirmButtonColor:'#f8732b',
         });
+        sessionStorage.removeItem("welcomeMessage");
+    }
+});
 
 
         if (sessionStorage.getItem("role") === "customer") {
@@ -975,3 +983,4 @@ document.addEventListener('DOMContentLoaded', async () => {
   window.closePetModal = () => PetManager.closePetModal();
   window.closeAppointmentModal = () => PetManager.closeAppointmentModal();
   window.closeConfirmModal = () => PetManager.closeConfirmModal();
+

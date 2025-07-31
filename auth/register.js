@@ -148,3 +148,5 @@ signUpButton.addEventListener("click", async (e) => {
     alert("Registration failed: " + error.message);
   }
 });
+
+
