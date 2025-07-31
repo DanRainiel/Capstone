@@ -33,6 +33,23 @@ body {
   justify-content: center;
 }
 
+.back-btn {
+  margin: 20px;
+  padding: 10px 20px;
+  font-size: 16px;
+  background-color: var(--white);
+  color: var(--background-color);
+  border: none;
+  border-radius: 5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.back-btn:hover {
+  background-color: var(--orange);
+}
+
+
 .invoice{
     background: var(--white);
     width: 1000px;

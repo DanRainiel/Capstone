@@ -1084,10 +1084,12 @@ hr{
         
 
         .calendar-type-checkup { background: #e3f2fd; color: #1976d2; }
-        .calendar-type-vaccination { background: #e8f5e8; color: #2e7d32; }
+        .calendar-type-vaccinations { background: #e8f5e8; color: #2e7d32; }
         .calendar-type-surgery { background: #ffebee; color: #d32f2f; }
         .calendar-type-grooming { background: #f3e5f5; color: #7b1fa2; }
-        .calendar-type-dental { background: #fff3e0; color: #f57c00; }
+        .calendar-type-consultation { background: #f3e5f5; color: #f57c00; }
+        .calendar-type-treatment { background: #ecd5f0; color: #09a09bb7; }
+
 
         .calendar-book-btn {
             background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);

@@ -305,7 +305,8 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    const dateStr = data.date;
+   const dateStr = formatDate(new Date(data.date));
+
 
     if (!appointments[dateStr]) {
       appointments[dateStr] = [];
@@ -364,6 +365,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
     const startingDayOfWeek = firstDay.getDay();
     const daysInMonth = lastDay.getDate();
+    
 
     for (let i = 0; i < startingDayOfWeek; i++) {
         const emptyCell = document.createElement('div');
@@ -376,6 +378,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const dayCell = document.createElement('div');
         const cellDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
         const dateStr = formatDate(cellDate);
+        const parsedDate = parseDateLocal(dateStr); // This makes parseDateLocal "read"
+
 
         dayCell.className = 'calendar-day-cell';
         dayCell.innerHTML = `<div class="calendar-day-number">${day}</div>`;
@@ -394,14 +398,23 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         // Show appointment count
-        const dayAppointments = appointments[dateStr] || [];
+        const dayAppointments = (appointments[dateStr] || []).filter((apt, index, self) =>
+  index === self.findIndex(t =>
+    t.time === apt.time &&
+    t.petName === apt.petName &&
+    t.owner === apt.owner &&
+    t.type === apt.type
+  )
+);
+
         if (dayAppointments.length > 0) {
-            dayCell.classList.add('has-appointments');
-            const countBadge = document.createElement('div');
-            countBadge.className = 'calendar-appointment-count';
-            countBadge.textContent = dayAppointments.length;
-            dayCell.appendChild(countBadge);
-        }
+    const countBadge = document.createElement('div');
+    countBadge.className = 'calendar-appointment-count';
+    countBadge.textContent = dayAppointments.length;
+    dayCell.classList.add('has-appointments');
+    dayCell.appendChild(countBadge);
+}
+
 
         // OPTIONAL: Add 'Available' badge even if booked
         const availableIndicator = document.createElement('div');
@@ -543,16 +556,27 @@ appointmentDiv.addEventListener('click', () => {
                 }
 
                 function formatDate(date) {
-                    return date.toISOString().split('T')[0];
-                }
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+
+                function parseDateLocal(dateStr) {
+                const [year, month, day] = dateStr.split('-').map(Number);
+               return new Date(year, month - 1, day); // Month is 0-indexed
+              }
+
 
                 function getTypeDisplayName(type) {
                     const types = {
                         checkup: 'General Checkup',
-                        vaccination: 'Vaccination',
+                        vaccinations: 'Vaccination',
                         surgery: 'Surgery',
                         grooming: 'Grooming',
-                        dental: 'Dental Care'
+                        treatment: 'Treatment',
+                        consultation: 'Consultation',
                     };
                     return types[type] || type;
                 }
