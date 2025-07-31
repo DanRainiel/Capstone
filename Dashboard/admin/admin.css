@@ -653,9 +653,7 @@ text-align: end;
     font-weight: 600;
 }
 
-.data-table tr:hover{
-    background: var(--orange);
-}
+
 
 /* Responsive */
 
