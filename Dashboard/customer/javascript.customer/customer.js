@@ -210,8 +210,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         });
         
-         //SUBMIT BUTTON LOGIC//       
-document.addEventListener("DOMContentLoaded", () => {
+    document.addEventListener("DOMContentLoaded", () => {
     const form = document.getElementById("appointment-form");
 
     form.addEventListener("submit", (e) => {
@@ -256,13 +255,28 @@ document.addEventListener("DOMContentLoaded", () => {
                 break;
         }
 
+        // ✅ Show SweetAlert loading spinner
+        Swal.fire({
+            title: 'Submitting...',
+            text: 'Please wait while we process your appointment.',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+            
+        });
+
         // ✅ Store in sessionStorage
         sessionStorage.setItem("appointment", JSON.stringify(appointmentData));
 
-        // ✅ Redirect to confirmation page
-        window.location.href = "custConfirm.html";
+        // ✅ Simulate a delay, then redirect
+        setTimeout(() => {
+            Swal.close(); // Optional: close alert before redirecting
+            window.location.href = "custConfirm.html";
+        }, 1500); // Delay to let user see the loading
     });
 });
+
 
 
 

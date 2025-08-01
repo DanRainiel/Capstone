@@ -89,15 +89,31 @@ signUpButton.addEventListener("click", async (e) => {
   const loader = document.getElementById("loading-screen");
 
   if (!name || !email || !password) {
-    alert("Please fill in all fields.");
+    Swal.fire({
+      icon: "warning",
+      title: "Missing Fields",
+      text: "Please fill in all fields.",
+      iconColor:'#f8732b',
+      confirmButtonColor: '#f8732b', // your orange theme
+      backdrop: `rgba(0, 0, 0, 0.5)` // darken background a bit
+    });
     return;
   }
 
   if (!agree) {
-    alert("You must agree to the terms and conditions.");
+    Swal.fire({
+      icon: "warning",
+      title: "Terms Required",
+      text: "You must agree to the terms and conditions.",
+      iconColor:'#f8732b',
+      confirmButtonColor: '#f8732b',
+      backdrop: `rgba(0, 0, 0, 0.5)`, // darken background a bit
+      confirmButtonText: "Got it!"
+    });
     return;
   }
 
+  // Show loading screen
   loader.style.display = "flex";
 
   try {

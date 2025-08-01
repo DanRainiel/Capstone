@@ -254,7 +254,12 @@ section:nth-child(even){
 }
 
 .modal-container .modal button:hover{
-    background-color: var(--orange);
+    background-color: var(--orange);   
+}
+
+.modal-container .modal button:hover i{
+    color:var(--white);
+    margin-left:3px;   
 }
 
 

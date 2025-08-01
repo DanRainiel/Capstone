@@ -1259,7 +1259,7 @@ body.modal-open {
 }
 
 #pet {
-  max-width: 1800px;
+  max-width: auto;
   margin: 0 auto;
   border-radius: 20px;
   padding: 30px;
