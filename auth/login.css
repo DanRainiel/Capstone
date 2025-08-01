@@ -28,7 +28,6 @@
      outline: none;
      text-decoration: none;
      border:none;
-     text-transform: capitalize;
      transition: all .2s ease-in-out;
      scroll-behavior: smooth;
      
@@ -43,8 +42,28 @@ body {
     justify-content: center;
     align-items: center;
     height: 100vh;
+    overflow: hidden;
     
 }
+
+
+body.swal2-shown {
+
+  height: 100vh !important;
+  overflow: hidden !important;
+  padding-right: 0 !important;
+
+}
+
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  position: relative;
+  z-index: 1;
+}
+
 .header{
     background-color: transparent;
     padding:2rem 9%;

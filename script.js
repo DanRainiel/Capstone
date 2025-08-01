@@ -144,7 +144,7 @@ news3.onclick = function () {
 
 // Hide modal
 exitModalBtn.onclick = function () {
-  modal.classList.remove("show");
+  window.location.href = "/auth/login.html"; // Adjust path if needed
 };
 
 // Optional: click outside modal to close
