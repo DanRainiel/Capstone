@@ -2,19 +2,23 @@
   import {
   collection,
   getDocs,
-  setDoc,  // <-- Needed
-  doc      // <-- Needed
+  setDoc,  
+  doc      
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
 
   const loginButton = document.getElementById("SignInBtn");
 
+ 
   loginButton.addEventListener("click", async (e) => {
     e.preventDefault();
 
     const email = document.getElementById("log-email").value.trim();
     const password = document.getElementById("log-pass").value.trim();
     const loader = document.getElementById("loading-screen");
+
+
+    loader.style.display = "none";
 
     if (!email || !password) {
       alert("Please fill in all fields.");

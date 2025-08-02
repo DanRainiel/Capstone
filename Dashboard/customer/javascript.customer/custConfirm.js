@@ -136,15 +136,13 @@ document.addEventListener("DOMContentLoaded", () => {
         const selectedServicesList = document.getElementById("selected-services-list");
         const petSizeSelect = document.getElementById("pet-size");
 
-        baseServiceFee = serviceFee;
-
-        document.getElementById("service-fee").textContent = `₱${serviceFee.toFixed(2)}`;
+        
        
         document.getElementById("reservation-fee").textContent = `₱0.00`;
 
-        function calculateServiceTotal() {
+      function calculateServiceTotal() {
   const checkboxes = document.querySelectorAll('input[name="services"]:checked');
-  const selectedSize = petSizeSelect.value;
+  const selectedSize = petSizeSelect.value.toLowerCase();
   let total = 0;
   selectedServicesList.innerHTML = "";
 
@@ -152,52 +150,65 @@ document.addEventListener("DOMContentLoaded", () => {
     const label = checkbox.getAttribute("data-service");
     let price = 0;
 
-    // Check against servicePrices object
-    for (let category in servicePrices) {
-      const serviceEntry = servicePrices[category][label];
-      if (serviceEntry) {
-        if (typeof serviceEntry === "number") {
-          price = serviceEntry;
-        } else {
-          price = serviceEntry[selectedSize] || 0;
-        }
-        break;
-      }
+    if (!label) return;
+
+    const parts = label.split('-');
+    const category = parts[0]; // e.g., "grooming"
+    const serviceKey = parts[1];
+    const remainder = parts.slice(2).join('-');
+
+    const catData = servicePrices[category];
+
+    if (!catData) return;
+
+    // Handle different service structures
+    if (category === "laboratory") {
+      price = catData[serviceKey + (remainder ? `-${remainder}` : "")] || 0;
+    } else if (typeof catData[serviceKey] === "object") {
+      price = catData[serviceKey][selectedSize] || 0;
+    } else if (catData[serviceKey]) {
+      price = catData[serviceKey]; // flat price
+    } else if (catData[remainder]) {
+      // fallback for e.g., vaccination["4n1 (Feline)"]
+      price = catData[remainder][selectedSize] || catData[remainder] || 0;
     }
 
     total += price;
 
-    // Update displayed selected service list
     const item = document.createElement("p");
     item.textContent = `${label}: ₱${price.toFixed(2)}`;
     selectedServicesList.appendChild(item);
   });
 
-  // Update display
+  baseServiceFee = total;
+
   serviceFeeDisplay.textContent = `₱${total.toFixed(2)}`;
   totalAmountDisplay.textContent = `₱${total.toFixed(2)}`;
+
+  updateTotalAmount();
 }
 
-document.querySelectorAll('input[name="services"]').forEach(checkbox => {
-  checkbox.addEventListener("change", calculateServiceTotal);
+
+// Bind changes to recalculate total
+document.querySelectorAll('input[name="services"]').forEach(cb => {
+  cb.addEventListener("change", calculateServiceTotal);
 });
 
 petSizeSelect.addEventListener("change", calculateServiceTotal);
 
-window.addEventListener("DOMContentLoaded", calculateServiceTotal);
+// Trigger once on load
+calculateServiceTotal();
 
 
 
-        // Selected services
-        if (Array.isArray(appointmentData.selectedServices)) {
-            const list = document.getElementById("selected-services-list");
-            list.innerHTML = "";
-            appointmentData.selectedServices.forEach(service => {
-                const p = document.createElement("p");
-                p.textContent = `• ${service}`;
-                list.appendChild(p);
-            });
-        }
+if (Array.isArray(appointmentData.selectedServices)) {
+    appointmentData.selectedServices.forEach(service => {
+        const id = service.toLowerCase().replace(/\s+/g, '-').replace(/[()]/g, '').replace(/\//g, '-') + '-cb';
+        const checkbox = document.getElementById(id);
+        if (checkbox) checkbox.checked = true;
+    });
+}
+
 
         // Vaccinations
         if (Array.isArray(appointmentData.vaccines)) {
@@ -221,22 +232,23 @@ window.addEventListener("DOMContentLoaded", calculateServiceTotal);
         console.error("Error processing appointment data:", error);
     }
 
-    function updateTotalAmount() {
-        const type = document.getElementById("Reservation-fee-type")?.value;
-        let finalAmount = 0;
+   function updateTotalAmount() {
+    const type = document.getElementById("Reservation-fee-type")?.value;
+    let reservationFee = 0;
 
-        if (type === "only") {
-            finalAmount = baseServiceFee * 0.10;
-        } else if (type === "with-downpayment") {
-            finalAmount = baseServiceFee;
-        }
-
-        document.getElementById("total-amount").textContent = `₱${finalAmount.toFixed(2)}`;
-        document.getElementById("reservation-fee").textContent =
-            type === "only"
-                ? `₱${(baseServiceFee * 0.10).toFixed(2)}`
-                : `₱0.00`;
+    if (type === "only") {
+        reservationFee = 40;
+    } else if (type === "with-downpayment") {
+        reservationFee = 350;
     }
+
+    const grandTotal = baseServiceFee + reservationFee;
+
+    document.getElementById("reservation-fee").textContent = `₱${reservationFee.toFixed(2)}`;
+    document.getElementById("total-amount").textContent = `₱${grandTotal.toFixed(2)}`;
+}
+
+
 });
 
 
@@ -310,8 +322,6 @@ if (cancelBtn) {
 }
 
 // Initial total calculation
-
-baseServiceFee = total; // ✅ Update baseServiceFee
-updateTotalAmount();    // ✅ Also update reservation fee based on new baseServiceFee
-
+calculateServiceTotal();  // <-- FIX: triggers price refresh based on selections
+updateTotalAmount();
 
