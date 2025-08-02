@@ -99,6 +99,15 @@ background: url(/images/bg_login.png)no-repeat center/cover;
 
 }
 
+.container{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  position: relative;
+  z-index: 1;
+}
+
 .profile-card {
   display: flex;
   flex-direction: column;

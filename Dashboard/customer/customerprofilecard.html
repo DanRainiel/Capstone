@@ -8,10 +8,12 @@
     <link rel="stylesheet" href="customerprofilecard.css">
     <script type="module" src="/Dashboard/customer/javascript.customer/customer.js" defer></script>
     <script type="module" src="/Dashboard/customer/javascript.customer/customerprofilecard.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <title>Customer Profile Page</title>
 </head>
 <body>
   
+
   <header class="profile-page-header">
     <a href="customer.html" class="back-button">
       <i class="fa-solid fa-arrow-left"></i> Back
@@ -19,10 +21,12 @@
     <h1 class="header-title">Customer Profile</h1>
   </header>
 
+<div class="container">
  <section class="profile-card">
   <div class="icon">
     <i class="fa-solid fa-user profile-icon"></i>
   </div>
+
   <div class="text-data">
     <span class="name"> <strong id="profilepage-username"> Username</strong></span>
   </div>
@@ -36,6 +40,7 @@
     </div>
   </div>
   </section>
+  </div>
 
 </body>
 </html>

@@ -110,38 +110,58 @@ document.addEventListener("DOMContentLoaded", () => {
         };
 
         // Logout modal logic
-        document.addEventListener('DOMContentLoaded', () => {
-        const logoutBtn = document.getElementById("logout-btn");
-        const logoutModal = document.getElementById("logoutModal");
-        const confirmLogout = document.getElementById("confirmLogout");
-        const cancelLogout = document.getElementById("cancelLogout");
+document.addEventListener('DOMContentLoaded', () => {
+  const logoutBtn = document.getElementById("logout-btn");
+  const logoutModal = document.getElementById("logoutModal");
+  const confirmLogout = document.getElementById("confirmLogout");
+  const cancelLogout = document.getElementById("cancelLogout");
 
-        if (logoutBtn) {
-            logoutBtn.addEventListener("click", (e) => {
-            e.preventDefault();
-            logoutModal.style.display = "flex";
-            });
-        }
+  // Show logout modal
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      logoutModal.style.display = "flex";
+    });
+  }
 
-        if (cancelLogout) {
-            cancelLogout.addEventListener("click", () => {
-            logoutModal.style.display = "none";
-            });
-        }
+  // Cancel button hides modal
+  if (cancelLogout) {
+    cancelLogout.addEventListener("click", () => {
+      logoutModal.style.display = "none";
+    });
+  }
 
-        if (confirmLogout) {
-            confirmLogout.addEventListener("click", () => {
-            sessionStorage.clear();
-            location.replace("/index.html");
-            });
-        }
+  // Confirm logout with SweetAlert loading
+  if (confirmLogout) {
+    confirmLogout.addEventListener("click", () => {
+      // Hide modal first
+      logoutModal.style.display = "none";
 
-        window.addEventListener("click", (e) => {
-            if (e.target === logoutModal) {
-            logoutModal.style.display = "none";
-            }
-        });
-        });
+      // Show SweetAlert loading screen
+      Swal.fire({
+        title: 'Logging out...',
+        didOpen: () => {
+          Swal.showLoading();
+        },
+        allowOutsideClick: false,
+        allowEscapeKey: false
+      });
+
+      // Simulate delay and logout
+      setTimeout(() => {
+        sessionStorage.clear();
+        location.replace("/index.html");
+      }, 1500); // Adjust delay as needed
+    });
+  }
+
+  // Hide modal if clicking outside of it
+  window.addEventListener("click", (e) => {
+    if (e.target === logoutModal) {
+      logoutModal.style.display = "none";
+    }
+  });
+});
 
         // Navbar tab logic
         document.addEventListener("DOMContentLoaded", () => {

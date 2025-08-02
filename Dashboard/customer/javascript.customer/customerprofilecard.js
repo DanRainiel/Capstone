@@ -9,9 +9,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
 document.addEventListener('DOMContentLoaded', () => {
   const accountBtn = document.getElementById("account-setting-btn");
+
   if (accountBtn) {
     accountBtn.addEventListener("click", () => {
-      window.location.href = "profilepage.html";
+      Swal.fire({
+        title: 'Redirecting...',
+        text: 'Please wait while we load your profile.',
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
+      setTimeout(() => {
+        window.location.href = "profilepage.html";
+      }, 2000);
     });
   }
 });
+
