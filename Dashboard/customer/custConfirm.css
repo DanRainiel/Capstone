@@ -317,6 +317,7 @@ footer {
 
 #book-btn.enabled {
     opacity: 1;
+    pointer-events: auto;
 }
 
 #clase-modal {

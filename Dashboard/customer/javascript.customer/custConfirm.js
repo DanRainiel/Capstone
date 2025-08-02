@@ -29,7 +29,7 @@ const servicePrices = {
     "5n1": { small: 500, medium: 500, large: 500 },
     "8in1": { small: 600, medium: 600, large: 600 },
     "Kennel Cough": { small: 500, medium: 500, large: 500 },
-    "4n1 (Feline)": { cat: 950 },
+    "4n1": { small: 950, medium: 950, large: 950, cat: 950 },
     "Anti-Rabies": { small: 350, medium: 350, large: 350, cat: 350 }
   },
 
@@ -129,8 +129,7 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("special-instructions").textContent = "Please bring any recent medical records";
 
         // Display billing fields
-        const serviceFee = parseFloat(appointmentData.serviceFee) || 0;
-     
+
         const serviceFeeDisplay = document.getElementById("service-fee");
         const totalAmountDisplay = document.getElementById("total-amount");
         const selectedServicesList = document.getElementById("selected-services-list");
@@ -140,7 +139,7 @@ document.addEventListener("DOMContentLoaded", () => {
        
         document.getElementById("reservation-fee").textContent = `₱0.00`;
 
-      function calculateServiceTotal() {
+    function calculateServiceTotal() {
   const checkboxes = document.querySelectorAll('input[name="services"]:checked');
   const selectedSize = petSizeSelect.value.toLowerCase();
   let total = 0;
@@ -152,25 +151,49 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!label) return;
 
-    const parts = label.split('-');
-    const category = parts[0]; // e.g., "grooming"
-    const serviceKey = parts[1];
-    const remainder = parts.slice(2).join('-');
+    const [categoryRaw, ...rest] = label.split("-");
+    const category = categoryRaw.toLowerCase();
+    const key = rest.join("-");
 
     const catData = servicePrices[category];
-
     if (!catData) return;
 
-    // Handle different service structures
-    if (category === "laboratory") {
-      price = catData[serviceKey + (remainder ? `-${remainder}` : "")] || 0;
-    } else if (typeof catData[serviceKey] === "object") {
-      price = catData[serviceKey][selectedSize] || 0;
-    } else if (catData[serviceKey]) {
-      price = catData[serviceKey]; // flat price
-    } else if (catData[remainder]) {
-      // fallback for e.g., vaccination["4n1 (Feline)"]
-      price = catData[remainder][selectedSize] || catData[remainder] || 0;
+    const serviceNames = Object.keys(catData);
+    let matchedKey = null;
+    let nestedKey = null;
+
+    for (const serviceKey of serviceNames) {
+      const priceData = catData[serviceKey];
+      if (typeof priceData === "object") {
+        const sizeKeys = Object.keys(priceData);
+        for (const sizeKey of sizeKeys) {
+          const combined = `${serviceKey}-${sizeKey}`.toLowerCase();
+          if (combined === key.toLowerCase()) {
+            matchedKey = serviceKey;
+            nestedKey = sizeKey;
+            break;
+          }
+        }
+      } else {
+        const cleaned = serviceKey.toLowerCase().replace(/\s+/g, '').replace(/[()\/]/g, '');
+        if (cleaned === key.toLowerCase().replace(/\s+/g, '').replace(/[()\/]/g, '')) {
+          matchedKey = serviceKey;
+          break;
+        }
+      }
+
+      if (matchedKey) break;
+    }
+
+    if (matchedKey) {
+      const priceData = catData[matchedKey];
+      if (typeof priceData === "object" && nestedKey) {
+        price = priceData[nestedKey] || 0;
+      } else if (typeof priceData === "object") {
+        price = priceData[selectedSize] || 0;
+      } else {
+        price = priceData || 0;
+      }
     }
 
     total += price;
@@ -187,6 +210,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   updateTotalAmount();
 }
+
+
 
 
 // Bind changes to recalculate total
@@ -242,19 +267,19 @@ if (Array.isArray(appointmentData.selectedServices)) {
         reservationFee = 350;
     }
 
-    const grandTotal = baseServiceFee + reservationFee;
+    // Do NOT include reservationFee in total
+    const grandTotal = baseServiceFee;
 
+    // Show reservation/downpayment separately
     document.getElementById("reservation-fee").textContent = `₱${reservationFee.toFixed(2)}`;
     document.getElementById("total-amount").textContent = `₱${grandTotal.toFixed(2)}`;
 }
-
 
 });
 
 
 
-
-    // Modal and receipt
+document.addEventListener("DOMContentLoaded", () => {
     const confirmBtn = document.getElementById('confirm-btn');
     const modal = document.getElementById('paymentModal');
     const closeModal = document.getElementById('clase-modal');
@@ -262,66 +287,119 @@ if (Array.isArray(appointmentData.selectedServices)) {
     const bookBtn = document.getElementById('book-btn');
 
     if (confirmBtn && modal) {
-    confirmBtn.addEventListener('click', () => {
-        modal.style.display = "block";
-    });
-}
+        confirmBtn.addEventListener('click', () => {
+            modal.style.display = "block";
+        });
+    }
 
-if (closeModal && modal) {
-    closeModal.addEventListener('click', () => {
-        modal.style.display = "none";
-    });
-}
+    if (closeModal && modal) {
+        closeModal.addEventListener('click', () => {
+            modal.style.display = "none";
+        });
+    }
 
-  if (receiptUpload && bookBtn) {
-    receiptUpload.onchange = () => {
-        if (receiptUpload.files.length > 0) {
-            bookBtn.disabled = false;
-            bookBtn.classList.add('enabled');
-        } else {
-            bookBtn.disabled = true;
-            bookBtn.classList.remove('enabled');
-        }
-    };
+    if (receiptUpload && bookBtn) {
+        receiptUpload.onchange = () => {
+            if (receiptUpload.files.length > 0) {
+                bookBtn.disabled = false;
+                bookBtn.classList.add('enabled');
+            } else {
+                bookBtn.disabled = true;
+                bookBtn.classList.remove('enabled');
+            }
+        };
 
-    bookBtn.addEventListener("click", async () => {
-        const appointmentData = JSON.parse(sessionStorage.getItem("appointment"));
-        if (!appointmentData) {
-            alert("No appointment data found.");
-            return;
-        }
+        bookBtn.addEventListener("click", async () => {
+            try {
+                const petName = document.getElementById("pet-name")?.textContent.trim() || "";
+                const petSize = document.getElementById("pet-size")?.value || "";
+                const petSex = document.getElementById("pet-sex")?.value || "";
+                const petBreed = document.getElementById("pet-breed")?.value || "";
+                const petAge = document.getElementById("pet-age")?.value || "";
+                const petSpecies = document.getElementById("pet-species")?.value || "";
+                const petWeight = document.getElementById("pet-weight")?.value || "";
 
-        try {
-            // Add timestamp or unique identifier if needed
-            appointmentData.timestamp = new Date().toISOString();
-            appointmentData.status = "pending";
+                const ownerName = document.getElementById("owner-name")?.textContent.trim() || "";
+                const ownerNumber = document.getElementById("appt-number")?.value.trim() || "";
 
-            // Save to Firestore
-            const appointmentRef = doc(collection(db, "appointments"));
-            await setDoc(appointmentRef, appointmentData);
+                const appointmentDate = document.getElementById("appt-date")?.textContent.trim() || "";
+                const appointmentTime = document.getElementById("appt-time")?.textContent.trim() || "";
+                const mainService = document.getElementById("main-service")?.textContent.trim() || "";
+                const veterinarian = document.getElementById("veterinarian")?.textContent.trim() || "";
+                const specialInstructions = document.getElementById("special-instructions")?.textContent.trim() || "";
+                const reservationType = document.getElementById("Reservation-fee-type")?.value || "";
+                const serviceFee = document.getElementById("service-fee")?.textContent.trim() || "";
+                const reservationFee = document.getElementById("reservation-fee")?.textContent.trim() || "";
+                const totalAmount = document.getElementById("total-amount")?.textContent.trim() || "";
 
-            alert("Appointment booked successfully!");
-            sessionStorage.removeItem("appointment");
-            window.location.href = "customer.html"; // or success page
-        } catch (error) {
-            console.error("Failed to book appointment:", error);
-            alert("Something went wrong. Please try again.");
-        }
-    });
-}
+                const selectedServices = Array.from(document.querySelectorAll("input[name='services']:checked"))
+                    .map((checkbox) => checkbox.getAttribute("data-service"));
+
+                const appointmentData = {
+                    ownerName,
+                    ownerNumber,
+                    service: mainService,
+                    time: appointmentTime,
+                    date: appointmentDate,
+                    timestamp: new Date().toISOString(),
+                    status: "pending",
+                    owner: ownerName,
+                    petName,
+                    petSize,
+                    petId: `${ownerName}_${petName}`.replace(/\s+/g, '_'),
+                    vet: veterinarian,
+                    instructions: specialInstructions,
+                    reservationType,
+                    serviceFee,
+                    reservationFee,
+                    totalAmount,
+                    selectedServices
+                };
+
+                // Save to Firestore
+        const userId = sessionStorage.getItem("userId"); // ✅ retrieve userId
+
+const timestamp = new Date().toISOString();
+const appointmentId = `${userId}_${timestamp}`.replace(/[:.]/g, '-');
+const appointmentRef = doc(db, "Appointment", appointmentId);
+
+appointmentData.appointmentId = appointmentId;
+appointmentData.userId = userId; // include in data to support Firestore queries
 
 
+                await setDoc(appointmentRef, appointmentData);
 
-// Redirect on cancel
-const cancelBtn = document.getElementById('cancel-btn');
-if (cancelBtn) {
-    cancelBtn.addEventListener('click', () => {
-        sessionStorage.removeItem('selectedAppointmentId'); // optional: clear stored ID
-        window.location.href = 'customer.html'; // go back to main customer page
-    });
-}
+                const petData = {
+                    petId: appointmentData.petId,
+                    petName,
+                    petSize,
+                    sex: petSex,
+                    breed: petBreed,
+                    age: petAge,
+                    species: petSpecies,
+                    weight: petWeight,
+                    ownerId: ownerName,
+                    createdAt: new Date().toISOString()
+                };
 
-// Initial total calculation
-calculateServiceTotal();  // <-- FIX: triggers price refresh based on selections
-updateTotalAmount();
+              const petTimestamp = new Date().toISOString();
+const petId = `${userId}_${petName}_${petTimestamp}`.replace(/[:.]/g, '-'); // Unique ID with user + pet name
+const petRef = doc(db, "Pets", petId);
 
+                await setDoc(petRef, petData, { merge: true });
+
+                alert("Appointment and pet saved successfully!");
+                sessionStorage.removeItem("appointment");
+                window.location.href = "customer.html";
+
+            } catch (error) {
+                console.error("Failed to book appointment:", error);
+                alert("Something went wrong. Please try again.");
+            }
+        });
+    }
+
+    // Safely call functions if they exist
+    if (typeof calculateServiceTotal === "function") calculateServiceTotal();
+    if (typeof updateTotalAmount === "function") updateTotalAmount();
+});

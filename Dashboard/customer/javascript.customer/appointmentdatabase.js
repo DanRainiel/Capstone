@@ -23,7 +23,10 @@ const firebaseConfig = {
 
 // ✅ Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app); // make sure this exists here!
+const db = getFirestore(app); // make sure this exists here!d
+
+const userDocRef = doc(db, "users", userId);
+const userSnap = await getDoc(userDocRef);
 
 
 async function loadAppointments() {
