@@ -42,23 +42,36 @@ async function loadAppointments() {
     const q = query(collection(db, "Appointment"), where("userId", "==", userId));
     const querySnapshot = await getDocs(q);
 
-    if (querySnapshot.empty) {
-      tableBody.innerHTML = "<tr><td colspan='6'>No History found.</td></tr>";
-    } else {
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${data.name || ""}</td>
-          <td>${data.petName || ""}</td>
-          <td>${data.service || ""}</td>
-          <td>${data.date || ""}</td>
-          
-          <td><button class="btn" onclick="location.href='invoice.html'">View Invoice</button></td>
-        `;
-        tableBody.appendChild(row);
-      });
-    }
+    querySnapshot.forEach((doc) => {
+  const data = doc.data();
+  const row = document.createElement("tr");
+  row.innerHTML = `
+    <td>${data.name || ""}</td>
+    <td>${data.petName || ""}</td>
+    <td>${data.service || ""}</td>
+    <td>${data.date || ""}</td>
+    <td><button class="btn view-invoice-btn">View Invoice</button></td>
+  `;
+  tableBody.appendChild(row);
+
+  // ✅ Add SweetAlert loader for "View Invoice" button
+  const button = row.querySelector(".view-invoice-btn");
+  button.addEventListener("click", () => {
+    Swal.fire({
+      title: "Loading Invoice...",
+      html: "Please wait while we load your invoice.",
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
+    setTimeout(() => {
+      window.location.href = "invoice.html";
+    }, 1500); // 1.2 second delay before redirect
+  });
+});
+
   } catch (error) {
     console.error("Error fetching appointments:", error);
     tableBody.innerHTML = "<tr><td colspan='6'>Error loading appointments.</td></tr>";

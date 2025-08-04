@@ -11,7 +11,7 @@ import {
 const firebaseConfig = {
   apiKey: "AIzaSyDtDApHuFcav9QIZaJ8CDIcyI_fxcO4Kzw",
   authDomain: "fir-demo-66ae2.firebaseapp.com",
-  projectId: "fir-demo-66ae2",
+  projectId: "fir-demo-66ae2",  
   storageBucket: "fir-demo-66ae2.appspot.com",  
   messagingSenderId: "505962707376",    
   appId: "1:505962707376:web:4fb32e2e4b04e9bca93e75"
@@ -278,7 +278,7 @@ if (Array.isArray(appointmentData.selectedServices)) {
 });
 
 
-
+//Confirm Button//
 document.addEventListener("DOMContentLoaded", () => {
     const confirmBtn = document.getElementById('confirm-btn');
     const modal = document.getElementById('paymentModal');
@@ -370,6 +370,7 @@ appointmentData.userId = userId; // include in data to support Firestore queries
                 await setDoc(appointmentRef, appointmentData);
 
                 const petData = {
+                    userId,
                     petId: appointmentData.petId,
                     petName,
                     petSize,
@@ -388,9 +389,21 @@ const petRef = doc(db, "Pets", petId);
 
                 await setDoc(petRef, petData, { merge: true });
 
-                alert("Appointment and pet saved successfully!");
-                sessionStorage.removeItem("appointment");
-                window.location.href = "customer.html";
+if (window.PetManager && typeof window.PetManager.loadPetsFromFirestore === "function") {
+    await window.PetManager.loadPetsFromFirestore();
+}
+
+
+
+            // Show success message
+alert("Appointment booked and pet saved!");
+sessionStorage.removeItem("appointment");
+// Give DOM time to refresh before redirecting
+setTimeout(() => {
+  window.location.href = "customer.html";
+}, 1500); // 1.5 seconds delay
+
+                
 
             } catch (error) {
                 console.error("Failed to book appointment:", error);

@@ -83,13 +83,18 @@ document.addEventListener("DOMContentLoaded", () => {
     const welcomeMsg = sessionStorage.getItem("welcomeMessage");
     if (welcomeMsg) {
         Swal.fire({
-            title: 'Welcome!',
-            text: welcomeMsg,
+            title: '👋 Welcome!',
+            html: `<p style="font-size: 16px; color: #01949A;">${welcomeMsg}</p>`,
+            background: '#ffffff',
             icon: 'info',
-            confirmButtonText: 'OK',
-            color: '#01949A',
-            iconColor:'#f8732b',
-            confirmButtonColor:'#f8732b',
+            iconColor: '#f8732b',
+            confirmButtonText: 'Let’s Go!',
+            confirmButtonColor: '#f8732b',
+            customClass: {
+                popup: 'rounded-xl shadow-md',
+                title: 'mt-2 text-lg',
+                confirmButton: 'px-4 py-2'
+            }
         });
         sessionStorage.removeItem("welcomeMessage");
     }
@@ -110,57 +115,68 @@ document.addEventListener("DOMContentLoaded", () => {
         };
 
         // Logout modal logic
-document.addEventListener('DOMContentLoaded', () => {
-  const logoutBtn = document.getElementById("logout-btn");
-  const logoutModal = document.getElementById("logoutModal");
-  const confirmLogout = document.getElementById("confirmLogout");
-  const cancelLogout = document.getElementById("cancelLogout");
+        document.addEventListener('DOMContentLoaded', () => {
+    const logoutBtn = document.getElementById("logout-btn");
+    const logoutModal = document.getElementById("logoutModal");
+    const confirmLogout = document.getElementById("confirmLogout");
+    const cancelLogout = document.getElementById("cancelLogout");
 
-  // Show logout modal
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      logoutModal.style.display = "flex";
-    });
-  }
-
-  // Cancel button hides modal
-  if (cancelLogout) {
-    cancelLogout.addEventListener("click", () => {
-      logoutModal.style.display = "none";
-    });
-  }
-
-  // Confirm logout with SweetAlert loading
-  if (confirmLogout) {
-    confirmLogout.addEventListener("click", () => {
-      // Hide modal first
-      logoutModal.style.display = "none";
-
-      // Show SweetAlert loading screen
-      Swal.fire({
-        title: 'Logging out...',
-        didOpen: () => {
-          Swal.showLoading();
-        },
-        allowOutsideClick: false,
-        allowEscapeKey: false
-      });
-
-      // Simulate delay and logout
-      setTimeout(() => {
-        sessionStorage.clear();
-        location.replace("/index.html");
-      }, 1500); // Adjust delay as needed
-    });
-  }
-
-  // Hide modal if clicking outside of it
-  window.addEventListener("click", (e) => {
-    if (e.target === logoutModal) {
-      logoutModal.style.display = "none";
+    if (logoutBtn) {
+        logoutBtn.addEventListener("click", (e) => {
+            e.preventDefault();
+            logoutModal.style.display = "flex";
+        });
     }
-  });
+
+    if (cancelLogout) {
+        cancelLogout.addEventListener("click", () => {
+            logoutModal.style.display = "none";
+        });
+    }
+if (confirmLogout) {
+    confirmLogout.addEventListener("click", () => {
+        // Hide the modal first
+        logoutModal.style.display = "none";
+
+        // Then show SweetAlert loading
+        Swal.fire({
+  title: "Logging you out...",
+  html: `
+    <div style="display: flex; flex-direction: column; align-items: center;">
+      <div class="custom-loader" style="
+          width: 50px;
+          height: 50px;
+          border: 5px solid #ccc;
+          border-top: 5px solid var(--background-color);
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+          margin-bottom: 15px;">
+      </div>
+      <span style="font-size: 14px; color: #ccc;">Please wait a moment</span>
+    </div>
+  `,
+  background: "#fffff",
+  color: "#1e1e1e",
+  showConfirmButton: false,
+  allowOutsideClick: false,
+  customClass: {
+    popup: 'rounded-xl shadow-lg'
+  },
+ 
+});
+        // Proceed with logout after delay
+        setTimeout(() => {
+            sessionStorage.clear();
+            location.replace("/index.html");
+        }, 1200);
+    });
+} 
+
+    window.addEventListener("click", (e) => {
+        if (e.target === logoutModal) {
+            logoutModal.style.display = "none";
+        }
+    });
 });
 
         // Navbar tab logic
@@ -230,7 +246,8 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
         
-    document.addEventListener("DOMContentLoaded", () => {
+         //SUBMIT BUTTON LOGIC//       
+document.addEventListener("DOMContentLoaded", () => {
     const form = document.getElementById("appointment-form");
 
     form.addEventListener("submit", (e) => {
@@ -247,8 +264,6 @@ document.addEventListener('DOMContentLoaded', () => {
             time: formatTo12Hour(document.getElementById("appt-time").value),
             date: document.getElementById("appt-date").value,
             serviceFee: 0,
-            bloodWork: 0,
-            medication: 0,
             selectedServices: [],
             vaccines: [],
         };
@@ -275,28 +290,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
         }
 
-        // ✅ Show SweetAlert loading spinner
-        Swal.fire({
-            title: 'Submitting...',
-            text: 'Please wait while we process your appointment.',
-            allowOutsideClick: false,
-            didOpen: () => {
-                Swal.showLoading();
-            }
-            
-        });
-
         // ✅ Store in sessionStorage
         sessionStorage.setItem("appointment", JSON.stringify(appointmentData));
 
-        // ✅ Simulate a delay, then redirect
-        setTimeout(() => {
-            Swal.close(); // Optional: close alert before redirecting
-            window.location.href = "custConfirm.html";
-        }, 1500); // Delay to let user see the loading
+        // ✅ Redirect to confirmation page
+        window.location.href = "custConfirm.html";
     });
 });
-
 
 
 
@@ -814,6 +814,9 @@ appointmentDiv.addEventListener('click', () => {
       `).join('');
     },
 
+    
+    
+
 showAddPetModal() {
     this.currentEditId = null;
     document.getElementById('petForm').reset();
@@ -1018,3 +1021,5 @@ document.addEventListener('DOMContentLoaded', async () => {
   window.closeAppointmentModal = () => PetManager.closeAppointmentModal();
   window.closeConfirmModal = () => PetManager.closeConfirmModal();
 
+
+  
