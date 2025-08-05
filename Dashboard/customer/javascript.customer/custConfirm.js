@@ -24,78 +24,87 @@ const db = getFirestore(app);
 
 let baseServiceFee = 0;
 
-const servicePrices = {
-  vaccination: {
-    "5n1": { small: 500, medium: 500, large: 500 },
-    "8in1": { small: 600, medium: 600, large: 600 },
-    "Kennel Cough": { small: 500, medium: 500, large: 500 },
-    "4n1": { small: 950, medium: 950, large: 950, cat: 950 },
-    "Anti-Rabies": { small: 350, medium: 350, large: 350, cat: 350 }
-  },
-
-  grooming: {
-    basic: {
-      small: 450,
-      medium: 600,
-      large: 800,
-      cat: 600
-    }
-  },
-
-  consultation: {
-    regular: {
-      small: 350,
-      medium: 350,
-      large: 350,
-      cat: 350
-    }
-  },
-
-  treatment: {
-    tickFlea: {
-      small: 650,
-      medium: 700,
-      large: 800
+  const servicePrices = {
+    vaccination: {
+      "5n1": { small: 500, medium: 500, large: 500 },
+      "8in1": { small: 600, medium: 600, large: 600 },
+      "Kennel Cough": { small: 500, medium: 500, large: 500 },
+      "4n1": { small: 950, medium: 950, large: 950, cat: 950 },
+      "Anti-Rabies": { small: 350, medium: 350, large: 350, cat: 350 }
     },
-    heartwormPrevention: {
-      small: 2000, // up to 10kg
-      medium: 2500, // 10–15kg
-      large: 3000, // 15–25kg
-      xl: 4500 // upper end for >25kg
+
+    grooming: {
+      basic: {
+        small: 450,
+        medium: 600,
+        large: 800,
+        cat: 600
+      }
     },
-    catTickFleaDeworm: {
-      small: 650,
-      large: 750
-    }
-  },
 
-  deworming: {
-    regular: {
-      small: 200,
-      medium: 300,
-      large: 400,
-      cat: 300
-    }
-  },
+    consultation: {
+      regular: {
+        small: 350,
+        medium: 350,
+        large: 350,
+        cat: 350
+      }
+    },
 
-  laboratory: {
-    "4 Way Test": 1200,
-    "CBC Bloodchem Package": 1500,
-    "Cat FIV/Felv Test": 1000,
-    "Leptospirosis Test": 950,
-    "Canine Distemper Test": 850,
-    "Canine Parvo Test": 859,
-    "Parvo/Corona Virus Test": 950,
-    "Earmite Test": 150,
-    "Skin Scraping": 150,
-    "Stool Exam": 300,
-    "Urinalysis": 950
-  }
-};
+    treatment: {
+      tickFlea: {
+        small: 650,
+        medium: 700,
+        large: 800
+      },
+      heartwormPrevention: {
+        small: 2000, // up to 10kg
+        medium: 2500, // 10–15kg
+        large: 3000, // 15–25kg
+        xl: 4500 // upper end for >25kg
+      },
+      catTickFleaDeworm: {
+        small: 650,
+        large: 750
+      }
+    },
+
+    deworming: {
+      regular: {
+        small: 200,
+        medium: 300,
+        large: 400,
+        cat: 300
+      }
+    },
+
+    laboratory: {
+      "4 Way Test": 1200,
+      "CBC Bloodchem Package": 1500,
+      "Cat FIV/Felv Test": 1000,
+      "Leptospirosis Test": 950,
+      "Canine Distemper Test": 850,
+      "Canine Parvo Test": 859,
+      "Parvo/Corona Virus Test": 950,
+      "Earmite Test": 150,
+      "Skin Scraping": 150,
+      "Stool Exam": 300,
+      "Urinalysis": 950
+    }
+  };
 
 
 document.addEventListener("DOMContentLoaded", () => {
     const appointmentData = JSON.parse(sessionStorage.getItem("appointment"));
+
+    const cancelBtn = document.getElementById("cancel-btn");
+if (cancelBtn) {
+    cancelBtn.addEventListener("click", () => {
+        sessionStorage.removeItem("appointment"); // optional: clean up
+        window.location.href = "customer.html";
+    });
+}
+
 
     if (!appointmentData) {
         alert("No appointment data found.");
@@ -139,7 +148,7 @@ document.addEventListener("DOMContentLoaded", () => {
        
         document.getElementById("reservation-fee").textContent = `₱0.00`;
 
-    function calculateServiceTotal() {
+function calculateServiceTotal() {
   const checkboxes = document.querySelectorAll('input[name="services"]:checked');
   const selectedSize = petSizeSelect.value.toLowerCase();
   let total = 0;
@@ -147,69 +156,39 @@ document.addEventListener("DOMContentLoaded", () => {
 
   checkboxes.forEach(checkbox => {
     const label = checkbox.getAttribute("data-service");
-    let price = 0;
-
     if (!label) return;
 
-    const [categoryRaw, ...rest] = label.split("-");
-    const category = categoryRaw.toLowerCase();
-    const key = rest.join("-");
+    const [category, rawServiceKey, rawSize] = label.split("-");
+    const serviceKey = rawServiceKey;
+    const sizeKey = (rawSize || selectedSize)?.toLowerCase(); // fallback to pet size
+    let price = 0;
 
-    const catData = servicePrices[category];
-    if (!catData) return;
-
-    const serviceNames = Object.keys(catData);
-    let matchedKey = null;
-    let nestedKey = null;
-
-    for (const serviceKey of serviceNames) {
-      const priceData = catData[serviceKey];
-      if (typeof priceData === "object") {
-        const sizeKeys = Object.keys(priceData);
-        for (const sizeKey of sizeKeys) {
-          const combined = `${serviceKey}-${sizeKey}`.toLowerCase();
-          if (combined === key.toLowerCase()) {
-            matchedKey = serviceKey;
-            nestedKey = sizeKey;
-            break;
-          }
-        }
-      } else {
-        const cleaned = serviceKey.toLowerCase().replace(/\s+/g, '').replace(/[()\/]/g, '');
-        if (cleaned === key.toLowerCase().replace(/\s+/g, '').replace(/[()\/]/g, '')) {
-          matchedKey = serviceKey;
-          break;
-        }
-      }
-
-      if (matchedKey) break;
-    }
-
-    if (matchedKey) {
-      const priceData = catData[matchedKey];
-      if (typeof priceData === "object" && nestedKey) {
-        price = priceData[nestedKey] || 0;
-      } else if (typeof priceData === "object") {
-        price = priceData[selectedSize] || 0;
-      } else {
-        price = priceData || 0;
+    const categoryData = servicePrices[category];
+    if (categoryData) {
+      const serviceData = categoryData[serviceKey];
+      if (typeof serviceData === "object") {
+        // Sized pricing (vaccination, grooming, etc.)
+        price = serviceData[sizeKey] || 0;
+      } else if (typeof serviceData === "number") {
+        // Flat pricing (lab tests)
+        price = serviceData;
       }
     }
 
     total += price;
 
     const item = document.createElement("p");
-    item.textContent = `${label}: ₱${price.toFixed(2)}`;
+    item.textContent = `${serviceKey} (${sizeKey}): ₱${price.toFixed(2)}`;
     selectedServicesList.appendChild(item);
   });
 
   baseServiceFee = total;
-
   serviceFeeDisplay.textContent = `₱${total.toFixed(2)}`;
   totalAmountDisplay.textContent = `₱${total.toFixed(2)}`;
 
   updateTotalAmount();
 }
+
 
 
 
@@ -370,18 +349,19 @@ appointmentData.userId = userId; // include in data to support Firestore queries
                 await setDoc(appointmentRef, appointmentData);
 
                 const petData = {
-                    userId,
-                    petId: appointmentData.petId,
-                    petName,
-                    petSize,
-                    sex: petSex,
-                    breed: petBreed,
-                    age: petAge,
-                    species: petSpecies,
-                    weight: petWeight,
-                    ownerId: ownerName,
-                    createdAt: new Date().toISOString()
-                };
+    userId,
+    petId: appointmentData.petId,
+    petName,
+    species: petSpecies,
+    breed: petBreed,
+    age: petAge,
+    sex: petSex,
+    size: petSize, // ✅ match the expected Firestore field
+    weight: petWeight,
+    ownerId: ownerName,
+    createdAt: new Date().toISOString()
+};
+
 
               const petTimestamp = new Date().toISOString();
 const petId = `${userId}_${petName}_${petTimestamp}`.replace(/[:.]/g, '-'); // Unique ID with user + pet name
@@ -410,6 +390,8 @@ setTimeout(() => {
                 alert("Something went wrong. Please try again.");
             }
         });
+
+        
     }
 
     // Safely call functions if they exist
