@@ -1090,6 +1090,7 @@ hr{
         .calendar-type-grooming { background: #f3e5f5; color: #7b1fa2; }
         .calendar-type-consultation { background: #f3e5f5; color: #f57c00; }
         .calendar-type-treatment { background: #ecd5f0; color: #09a09bb7; }
+         .calendar-type-laboratory { background: #ecd5f0; color: #560cccb7; }
 
 
         .calendar-book-btn {
