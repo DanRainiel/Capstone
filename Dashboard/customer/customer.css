@@ -776,6 +776,7 @@ hr{
     color:#3f3f3f;
     text-shadow: rgba(0, 0, 0, 0.2) .3rem .4rem;
     letter-spacing: .5rem;
+    margin-top: 50px;
 }
 
 #calendar .heading span{
@@ -794,11 +795,11 @@ hr{
             border-radius: 20px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
             overflow: hidden;
-            margin-top: 20px;
+            margin-top: 50px;
         }
 
         .calendar-header-banner {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            background:var(--background-color);
             color: white;
             padding: 20px;
             text-align: center;
@@ -867,11 +868,11 @@ hr{
         .calendar-month-year {
             font-size: 1.8rem;
             font-weight: 700;
-            color: #2c3e50;
+            color: var(--orange);
         }
 
         .calendar-nav-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--background-color);
             color: white;
             border: none;
             width: 45px;
