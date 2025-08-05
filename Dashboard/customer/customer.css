@@ -45,6 +45,7 @@ html, body {
   color: var(--white);
   display: flex;
   flex-direction: column;
+  position:relative;
 }
 
 nav{
@@ -887,6 +888,7 @@ hr{
         .calendar-nav-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+            background-color: var(--orange);
         }
 
         .calendar-grid {
@@ -1005,7 +1007,7 @@ hr{
         }
 
         .calendar-selected-date {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            background: var(--background-color);
             color: white;
             padding: 15px;
             border-radius: 10px;
@@ -1567,7 +1569,7 @@ body.modal-open {
 }
 
 .btn-primary {
-  background: linear-gradient(45deg, #667eea, #764ba2);
+  background: var(--background-color);
   color: white;
 }
 
