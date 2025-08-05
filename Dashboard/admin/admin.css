@@ -347,6 +347,7 @@
     }
 
     .data-table {
+        height: auto;
         width: 100%;
         background: var(--white);
         border-radius: 20px;
@@ -359,6 +360,22 @@
         width: 100%;
         border-collapse: collapse;
     }
+
+
+    .data-table tbody {
+        display: block;
+        max-height: 250px; 
+        overflow-y: auto;
+        width: 100%;
+    }
+
+
+    .data-table thead,
+    .data-table tbody tr {
+        display: table;
+        table-layout: fixed;
+        width: 100%;
+}
 
     .data-table th,
     .data-table td {
@@ -398,7 +415,7 @@
     .status.cancelled {
         background: #f8d7da;
         color: #721c24;
-    }
+}
 
     .btn-primary {
         background: var(--background-color);
@@ -680,3 +697,8 @@
             left: initial;
         }
     }
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

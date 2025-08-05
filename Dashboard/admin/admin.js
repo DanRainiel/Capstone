@@ -68,11 +68,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Welcome message
       const welcomeMsg = sessionStorage.getItem("welcomeMessage");
-      if (welcomeMsg) {
-        alert(welcomeMsg);
-        sessionStorage.removeItem("welcomeMessage");
-      }
-
+if (welcomeMsg) {
+  Swal.fire({
+    title: 'Welcome!',
+    text: welcomeMsg,
+    icon: 'info',
+    iconColor: '#f8732b',
+    confirmButtonText: 'OK',
+    confirmButtonColor: '#f8732b'
+  });
+  sessionStorage.removeItem("welcomeMessage");
+}
       // Form submission handlers
       document.addEventListener('submit', function(e) {
         e.preventDefault();
@@ -314,14 +320,52 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // Logout function
-    function logout() {
-      if (confirm('Are you sure you want to logout?')) {
-        sessionStorage.clear();
-        alert('Logged out successfully!');
-        // In a real application, redirect to login page
-        // window.location.href = '/login.html';
-      }
+function logout() {
+  Swal.fire({
+    title: 'Are you sure you want to logout?',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#f8732b',
+    cancelButtonColor: '#aaa',
+    confirmButtonText: 'Yes, logout',
+    cancelButtonText: 'Cancel'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      sessionStorage.clear();
+
+      // Show compact, styled loader just like customer version
+      Swal.fire({
+        title: "Logging you out...",
+        html: `
+          <div style="display: flex; flex-direction: column; align-items: center;">
+            <div class="custom-loader" style="
+                width: 50px;
+                height: 50px;
+                border: 5px solid #ccc;
+                border-top: 5px solid var(--background-color);
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+                margin-bottom: 15px;">
+            </div>
+            <span style="font-size: 14px; color: #ccc;">Please wait a moment</span>
+          </div>
+        `,
+        background: "#ffffff",
+        color: "#1e1e1e",
+        showConfirmButton: false,
+        allowOutsideClick: false,
+        customClass: {
+          popup: 'rounded-xl shadow-lg'
+        },
+      });
+
+      // Proceed with logout after delay
+      setTimeout(() => {
+        window.location.href = '/index.html';
+      }, 1200);
     }
+  });
+}
 
     // Additional utility functions
     function formatCurrency(amount) {
