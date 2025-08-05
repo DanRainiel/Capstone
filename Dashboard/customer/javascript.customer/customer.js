@@ -290,11 +290,28 @@ document.addEventListener("DOMContentLoaded", () => {
                 break;
         }
 
-        // ✅ Store in sessionStorage
-        sessionStorage.setItem("appointment", JSON.stringify(appointmentData));
+        Swal.fire({
+            title: 'Processing...',
+            text: 'Please wait while we submit your appointment.',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
 
-        // ✅ Redirect to confirmation page
-        window.location.href = "custConfirm.html";
+        // ⏳ Simulate a short delay (e.g. 1.5 seconds)
+        setTimeout(() => {
+            Swal.fire({
+                title: 'Appointment Submitted!',
+                text: 'Your appointment has been saved. Redirecting to confirmation page...',
+                icon: 'success',
+                confirmButtonText: 'Continue',
+                confirmButtonColor: '#f8732b'
+            }).then(() => {
+                window.location.href = "custConfirm.html";
+            });
+        }, 1500);
     });
 });
 
