@@ -214,10 +214,4 @@ list.forEach((item) => item.addEventListener("mouseover", activeLink));
       }
     });
 
-    // Search functionality (basic implementation)
-    const searchInput = document.querySelector('.search input');
-    searchInput.addEventListener('input', function() {
-      const searchTerm = this.value.toLowerCase();
-      // You can implement search logic here
-      console.log('Searching for:', searchTerm);
-    });
+    

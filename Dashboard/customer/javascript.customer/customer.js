@@ -82,9 +82,9 @@
 document.addEventListener("DOMContentLoaded", () => {
     const welcomeMsg = sessionStorage.getItem("welcomeMessage");
     if (welcomeMsg) {
-        Swal.fire({
+        l.fire({
             title: '👋 Welcome!',
-            html: `<p style="font-size: 16px; color: #01949A;">${welcomeMsg}</p>`,
+            html:Swa `<p style="font-size: 16px; color: #01949A;">${welcomeMsg}</p>`,
             background: '#ffffff',
             icon: 'info',
             iconColor: '#f8732b',
