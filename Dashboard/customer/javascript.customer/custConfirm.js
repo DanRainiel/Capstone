@@ -1,10 +1,15 @@
+
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
 import {
     getFirestore,
     doc,
+      addDoc,
     setDoc,
+     serverTimestamp,
     collection
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
 
 
 // Firebase config
@@ -19,6 +24,22 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+
+// 🔸 Log Activity to Firestore
+async function logActivity(userId, action, details) {
+  try {
+    await addDoc(collection(db, "ActivityLog"), {
+      userId: userId || "anonymous",
+      action,
+      details,
+      timestamp: serverTimestamp()
+    });
+    console.log("Activity logged:", action);
+  } catch (error) {
+    console.error("Error logging activity:", error);
+  }
+}
+
 
 
 
@@ -298,7 +319,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const petSpecies = document.getElementById("pet-species")?.value || "";
                 const petWeight = document.getElementById("pet-weight")?.value || "";
 
-                const ownerName = document.getElementById("owner-name")?.textContent.trim() || "";
+                const name = document.getElementById("owner-name")?.textContent.trim() || "";
                 const ownerNumber = document.getElementById("appt-number")?.value.trim() || "";
 
                 const appointmentDate = document.getElementById("appt-date")?.textContent.trim() || "";
@@ -315,17 +336,18 @@ document.addEventListener("DOMContentLoaded", () => {
                     .map((checkbox) => checkbox.getAttribute("data-service"));
 
                 const appointmentData = {
-                    ownerName,
+                    name,
                     ownerNumber,
                     service: mainService,
                     time: appointmentTime,
                     date: appointmentDate,
                     timestamp: new Date().toISOString(),
                     status: "pending",
-                    owner: ownerName,
+                  
                     petName,
                     petSize,
-                    petId: `${ownerName}_${petName}`.replace(/\s+/g, '_'),
+                   petId: `${name}_${petName}`.replace(/\s+/g, '_'),
+
                     vet: veterinarian,
                     instructions: specialInstructions,
                     reservationType,
@@ -358,7 +380,8 @@ appointmentData.userId = userId; // include in data to support Firestore queries
     sex: petSex,
     size: petSize, // ✅ match the expected Firestore field
     weight: petWeight,
-    ownerId: ownerName,
+   ownerId: name, // ✅ 'name' is already defined as the owner's name
+
     createdAt: new Date().toISOString()
 };
 
@@ -369,11 +392,14 @@ const petRef = doc(db, "Pets", petId);
 
                 await setDoc(petRef, petData, { merge: true });
 
+             
+
 if (window.PetManager && typeof window.PetManager.loadPetsFromFirestore === "function") {
     await window.PetManager.loadPetsFromFirestore();
 }
 
 
+await logActivity(name, "Booked Appointment", `Booked ${mainService} for ${petName}`);
 
             // Show success message
 alert("Appointment booked and pet saved!");
@@ -398,3 +424,4 @@ setTimeout(() => {
     if (typeof calculateServiceTotal === "function") calculateServiceTotal();
     if (typeof updateTotalAmount === "function") updateTotalAmount();
 });
+
