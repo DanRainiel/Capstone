@@ -158,8 +158,17 @@
             </div>
             <div class="data-table">
               <table>
-                <thead id="table-dashboard">
-                
+                 <thead>
+                  <tr>
+                    <th>Pet Owner</th>
+                    <th>Pet Name</th>
+                    <th>Service</th>
+                    <th>Time</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="table-dashboard">
+
                 </tbody>
               </table>
             </div>
@@ -169,33 +178,7 @@
             <div class="cardHeader">
               <h2>Recent Activity</h2>
             </div>
-            <div class="activity-item">
-              <div class="activity-icon">
-                <i class="fa-solid fa-user-plus"></i>
-              </div>
-              <div class="activity-content">
-                <h4>New User Registered</h4>
-                <p>Carlos Mendoza joined 2 minutes ago</p>
-              </div>
-            </div>
-            <div class="activity-item">
-              <div class="activity-icon">
-                <i class="fa-solid fa-calendar-check"></i>
-              </div>
-              <div class="activity-content">
-                <h4>Appointment Completed</h4>
-                <p>Vaccination for Fluffy - 15 minutes ago</p>
-              </div>
-            </div>
-            <div class="activity-item">
-              <div class="activity-icon">
-                <i class="fa-solid fa-money-bill"></i>
-              </div>
-              <div class="activity-content">
-                <h4>Payment Received</h4>
-                <p>₱1,200 from Maria Santos - 30 minutes ago</p>
-              </div>
-            </div>
+          
           </div>
         </div>
       </div>
@@ -232,59 +215,9 @@
                 <th>Actions</th>
               </tr>
             </thead>
-            <tbody>
-              <tr>
-                <td>2025-08-02</td>
-                <td>9:00 AM</td>
-                <td>Maria Santos</td>
-                <td>09123456789</td>
-                <td>Fluffy</td>
-                <td>Vaccination</td>
-                <td><span class="status completed">Completed</span></td>
-                <td>
-                  <button class="btn-primary">View</button>
-                  <button class="btn-primary">Edit</button>
-                </td>
-              </tr>
-              <tr>
-                <td>2025-08-02</td>
-                <td>10:30 AM</td>
-                <td>John Dela Cruz</td>
-                <td>09187654321</td>
-                <td>Max</td>
-                <td>General Check-up</td>
-                <td><span class="status pending">In Progress</span></td>
-                <td>
-                  <button class="btn-primary">Complete</button>
-                  <button class="btn-danger">Cancel</button>
-                </td>
-              </tr>
-              <tr>
-                <td>2025-08-02</td>
-                <td>2:00 PM</td>
-                <td>Anna Garcia</td>
-                <td>09198765432</td>
-                <td>Bella</td>
-                <td>Surgery</td>
-                <td><span class="status pending">Scheduled</span></td>
-                <td>
-                  <button class="btn-primary">Start</button>
-                  <button class="btn-primary">Reschedule</button>
-                </td>
-              </tr>
-              <tr>
-                <td>2025-08-02</td>
-                <td>3:30 PM</td>
-                <td>Roberto Cruz</td>
-                <td>09156781234</td>
-                <td>Charlie</td>
-                <td>Dental Cleaning</td>
-                <td><span class="status pending">Scheduled</span></td>
-                <td>
-                  <button class="btn-primary">Edit</button>
-                  <button class="btn-danger">Cancel</button>
-                </td>
-              </tr>
+            <tbody id="appointmentTable">
+            
+             
             </tbody>
           </table>
         </div>

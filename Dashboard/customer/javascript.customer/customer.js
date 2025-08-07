@@ -10,6 +10,7 @@
         collection,      // <-- ADD THIS
         getDocs,         // <-- AND THIS
         query,
+        serverTimestamp,
         where
         } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
@@ -27,6 +28,21 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+
+         async function logActivity(userId, action, details) {
+    try {
+      await addDoc(collection(db, "ActivityLog"), {
+        userId: userId || "anonymous",
+        action,
+        details,
+        timestamp: serverTimestamp()
+      });
+      console.log("Activity logged:", action);
+    } catch (error) {
+      console.error("Error logging activity:", error);
+    }
+  }
+
 
         async function loadUsername() {
         const userId = sessionStorage.getItem("userId");
@@ -82,9 +98,9 @@
 document.addEventListener("DOMContentLoaded", () => {
     const welcomeMsg = sessionStorage.getItem("welcomeMessage");
     if (welcomeMsg) {
-        l.fire({
+        Swal.fire({
             title: '👋 Welcome!',
-            html:Swa `<p style="font-size: 16px; color: #01949A;">${welcomeMsg}</p>`,
+            html: `<p style="font-size: 16px; color: #01949A;">${welcomeMsg}</p>`,
             background: '#ffffff',
             icon: 'info',
             iconColor: '#f8732b',
@@ -763,7 +779,7 @@ appointmentDiv.addEventListener('click', () => {
           color: petData.color,
           medicalHistory: petData.medicalHistory
         });
-
+  await logActivity(userId, "Pet Added", `User ${userId} added pet ${petData.petName}.`);
         this.closePetModal();
         await this.loadPetsFromFirestore();
       } catch (error) {
@@ -774,6 +790,7 @@ appointmentDiv.addEventListener('click', () => {
     async updatePetInFirestore(petId, petData) {
       try {
         await updateDoc(doc(db, "Pets", petId), petData);
+        await logActivity(userId, "Pet Updated", `User ${userId} updated pet ${petData.petName}.`);
         this.closePetModal();
         await this.loadPetsFromFirestore();
       } catch (error) {
@@ -785,6 +802,7 @@ appointmentDiv.addEventListener('click', () => {
       if (!this.currentDeleteId) return;
       try {
         await deleteDoc(doc(db, "Pets", this.currentDeleteId));
+        await logActivity(userId, "Pet Deleted", `User ${userId} deleted pet ${this.currentDeleteId}.`);
         this.closeConfirmModal();
         await this.loadPetsFromFirestore();
       } catch (error) {
