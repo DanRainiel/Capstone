@@ -167,6 +167,8 @@ function timeSince(date) {
   return "just now";
 }
 
+// ✅ Navigation and Sidebar Functionality
+
   loadRecentActivity();
 
 

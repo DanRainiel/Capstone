@@ -158,17 +158,8 @@
             </div>
             <div class="data-table">
               <table>
-                <thead>
-                  <tr>
-                    <th>Pet Owner</th>
-                    <th>Pet Name</th>
-                    <th>Service</th>
-                    <th>Time</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody id="table-dashboard">
-                 
+                <thead id="table-dashboard">
+                
                 </tbody>
               </table>
             </div>
@@ -178,7 +169,35 @@
             <div class="cardHeader">
               <h2>Recent Activity</h2>
             </div>
-            
+            <div class="activity-item">
+              <div class="activity-icon">
+                <i class="fa-solid fa-user-plus"></i>
+              </div>
+              <div class="activity-content">
+                <h4>New User Registered</h4>
+                <p>Carlos Mendoza joined 2 minutes ago</p>
+              </div>
+            </div>
+            <div class="activity-item">
+              <div class="activity-icon">
+                <i class="fa-solid fa-calendar-check"></i>
+              </div>
+              <div class="activity-content">
+                <h4>Appointment Completed</h4>
+                <p>Vaccination for Fluffy - 15 minutes ago</p>
+              </div>
+            </div>
+            <div class="activity-item">
+              <div class="activity-icon">
+                <i class="fa-solid fa-money-bill"></i>
+              </div>
+              <div class="activity-content">
+                <h4>Payment Received</h4>
+                <p>₱1,200 from Maria Santos - 30 minutes ago</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Appointments Section -->
@@ -1150,6 +1169,6 @@
   </div>
 
   <script src="/Dashboard/admin/admin.js"></script>
-  <script type="module" src="./javascript.admin/admindatabase.js" defer></script>
+   <script type="module" src="./javascript.admin/admindatabase.js" defer></script>
 </body>
 </html>

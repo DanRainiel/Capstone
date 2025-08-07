@@ -3,9 +3,24 @@
   collection,
   getDocs,
   setDoc,  
-  doc      
+  doc,
+  serverTimestamp
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
+
+async function logActivity(userId, action, details) {
+  try {
+    await addDoc(collection(db, "ActivityLog"), {
+      userId: userId || "anonymous",
+      action,
+      details,
+      timestamp: serverTimestamp()
+    });
+    console.log("Activity logged:", action);
+  } catch (error) {
+    console.error("Error logging activity:", error);
+  }
+}
 
   const loginButton = document.getElementById("SignInBtn");
 
@@ -39,6 +54,8 @@
           sessionStorage.setItem("userId", docItem.id);
           sessionStorage.setItem("role", "customer");
           sessionStorage.setItem("userName", data.name);
+          
+          await logActivity(name, "Logged In");
           sessionStorage.setItem("welcomeMessage", `Welcome back, ${data.name}!`);
 
           // wait 2 seconds, then redirect
@@ -117,22 +134,21 @@ signUpButton.addEventListener("click", async (e) => {
     return;
   }
 
-  // Show loading screen
   loader.style.display = "flex";
 
   try {
     const usersRef = collection(db, "users");
     const snapshot = await getDocs(usersRef);
 
-    // Check for duplicate email
     const existingUser = snapshot.docs.find(doc => doc.data().email === email);
     if (existingUser) {
       loader.style.display = "none";
+      await logActivity(name, "Registered an Account");
       alert("Email is already registered.");
       return;
     }
 
-    // Generate custom doc ID (e.g., owner1, owner2, ...)
+   
     let index = 1;
     let newId;
     const existingIds = snapshot.docs.map(doc => doc.id);
