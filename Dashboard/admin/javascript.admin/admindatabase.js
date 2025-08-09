@@ -119,6 +119,87 @@ async function loadAllAppointments() {
   }
 }
 
+// 👥 Load all users
+async function loadAllUsers() {
+  const userTable = document.getElementById("userTable");
+  userTable.innerHTML = "";
+
+  try {
+    const snapshot = await getDocs(collection(db, "users"));
+
+    if (snapshot.empty) {
+      userTable.innerHTML = "<tr><td colspan='8'>No users found.</td></tr>";
+      return;
+    }
+
+    for (const userDoc of snapshot.docs) {
+      const userData = userDoc.data();
+      const userId = userDoc.id;
+      const name = userData.name || "";
+      const email = userData.email || "";
+      const contact = userData.contact || "";
+      const joinedDate = userData.joinedDate || "";
+      const status = userData.status || "Active";
+
+      // Count pets
+      const petSnapshot = await getDocs(
+        query(collection(db, "Pets"), where("userId", "==", userId))
+      );
+      const petCount = petSnapshot.size;
+
+      // Action buttons
+      let actions = `
+        <button class="btn view" data-id="${userId}">View</button>
+        <button class="btn edit" data-id="${userId}">Edit</button>
+      `;
+      actions += status === "Active"
+        ? `<button class="btn deactivate" data-id="${userId}">Deactivate</button>`
+        : `<button class="btn activate" data-id="${userId}">Activate</button>`;
+
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${userId}</td>
+        <td>${name}</td>
+        <td>${email}</td>
+        <td>${contact}</td>
+        <td>${petCount}</td>
+        <td>${joinedDate}</td>
+        <td class="status">${status}</td>
+        <td>${actions}</td>
+      `;
+      userTable.appendChild(row);
+    }
+
+    attachUserStatusListeners();
+  } catch (error) {
+    console.error("Error loading users:", error);
+    userTable.innerHTML = "<tr><td colspan='8'>Error loading users.</td></tr>";
+  }
+}
+
+// 🔄 Update user status
+async function updateUserStatus(userId, newStatus) {
+  try {
+    await updateDoc(doc(db, "users", userId), {
+      status: newStatus
+    });
+    await logActivity("admin", `User ${newStatus}`, `User ${userId} set to ${newStatus}`);
+    loadAllUsers();
+  } catch (error) {
+    console.error("Failed to update status:", error);
+  }
+}
+
+// 🧩 Bind buttons after rendering
+function attachUserStatusListeners() {
+  document.querySelectorAll(".btn.deactivate").forEach(btn =>
+    btn.addEventListener("click", () => updateUserStatus(btn.dataset.id, "Inactive"))
+  );
+  document.querySelectorAll(".btn.activate").forEach(btn =>
+    btn.addEventListener("click", () => updateUserStatus(btn.dataset.id, "Active"))
+  );
+}
+
 // 🕓 Load recent activities
 async function loadRecentActivity() {
   const activityContainer = document.querySelector(".recent-activity");
@@ -195,3 +276,4 @@ function timeSince(date) {
 // 🚀 Initialize on page load
 loadRecentActivity();
 loadAllAppointments();
+loadAllUsers();
