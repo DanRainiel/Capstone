@@ -790,7 +790,7 @@ appointmentDiv.addEventListener('click', () => {
     async updatePetInFirestore(petId, petData) {
       try {
         await updateDoc(doc(db, "Pets", petId), petData);
-        await logActivity(userId, "Pet Updated", `User ${userId} updated pet ${petData.petName}.`);
+     
         this.closePetModal();
         await this.loadPetsFromFirestore();
       } catch (error) {
@@ -802,7 +802,7 @@ appointmentDiv.addEventListener('click', () => {
       if (!this.currentDeleteId) return;
       try {
         await deleteDoc(doc(db, "Pets", this.currentDeleteId));
-        await logActivity(userId, "Pet Deleted", `User ${userId} deleted pet ${this.currentDeleteId}.`);
+     
         this.closeConfirmModal();
         await this.loadPetsFromFirestore();
       } catch (error) {
@@ -1049,6 +1049,75 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ✅ Load and render appointments
   await loadAppointmentsFromFirestore();
   initCalendar();
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+    const newsContainer = document.querySelector('.cards');
+    if (!newsContainer) return;
+
+    const defaultNews = [
+        {
+            title: "Local Labrador Becomes Hero After Alerting Family to House Fire",
+            category: "Community",
+            priority: "High",
+            content: "A Labrador named Max is being praised as a hero after alerting his family to a house fire...",
+            publishDate: "2025-07-22",
+            image: "/images/news2.webp"
+        },
+        {
+            title: "Clinic Welcomes First-Ever Pet Wellness Fair with Free Checkups and Treats",
+            category: "Events",
+            priority: "Medium",
+            content: "Our clinic is hosting a Pet Wellness Fair offering free checkups, treats, and pet care tips...",
+            publishDate: "2025-08-12",
+            image: "/images/news2.webp"
+        },
+        {
+            title: "Senior Cat Celebrates 20th Birthday with Clinic Surprise Party",
+            category: "Community",
+            priority: "Low",
+            content: "A senior cat named Whiskers celebrated her 20th birthday with a surprise party at the clinic...",
+            publishDate: "2025-01-02",
+            image: "/images/news2.webp"
+        }
+    ];
+
+    function renderNews() {
+        let newsList = JSON.parse(localStorage.getItem('newsList')) || [];
+
+        // If no news stored, use defaults
+        if (newsList.length === 0) {
+            newsList = defaultNews;
+        }
+
+        newsContainer.innerHTML = '';
+
+        newsList.forEach(news => {
+            const card = document.createElement('div');
+            card.classList.add('card');
+            card.innerHTML = `
+                <div class="image-section">
+                    <img src="${news.image}" alt="${news.title}">
+                </div>
+                <div class="content">
+                    <h4>${news.title}</h4>
+                    <p>${news.content}</p>
+                </div>
+                <div class="posted-date">
+                    <p>${news.publishDate ? new Date(news.publishDate).toLocaleDateString() : ''}</p>
+                </div>
+            `;
+            newsContainer.appendChild(card);
+        });
+    }
+
+    renderNews();
+
+    window.addEventListener('storage', (event) => {
+        if (event.key === 'newsList') {
+            renderNews();
+        }
+    });
 });
 
 

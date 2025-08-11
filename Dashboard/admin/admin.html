@@ -164,6 +164,7 @@
                     <th>Pet Name</th>
                     <th>Service</th>
                     <th>Time</th>
+                    <th>Mode</th>
                     <th>Status</th>
                   </tr>
                 </thead>
@@ -329,6 +330,7 @@
           </form>
         </div>
       </div>
+    
 
       <!-- User Management Section -->
       <div id="user-management" class="content-section">
@@ -355,9 +357,9 @@
                 <th>User ID</th>
                 <th>Name</th>
                 <th>Email</th>
-                <th>Contact</th>
+                
                 <th>Pets</th>
-                <th>Joined Date</th>
+               
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
@@ -402,59 +404,17 @@
             <thead>
               <tr>
                 <th>Date</th>
+                <th>Time</th>
                 <th>Pet Owner</th>
                 <th>Pet Name</th>
                 <th>Service</th>
-                <th>Veterinarian</th>
-                <th>Diagnosis</th>
-                <th>Treatment</th>
+                
                 <th>Cost</th>
                 <th>Actions</th>
               </tr>
             </thead>
-            <tbody>
-              <tr>
-                <td>2025-08-01</td>
-                <td>Maria Santos</td>
-                <td>Fluffy</td>
-                <td>Vaccination</td>
-                <td>Dr. Rodriguez</td>
-                <td>Routine Vaccination</td>
-                <td>Rabies Vaccine</td>
-                <td>₱800</td>
-                <td>
-                  <button class="btn-primary">View Details</button>
-                  <button class="btn-primary">Print</button>
-                </td>
-              </tr>
-              <tr>
-                <td>2025-07-30</td>
-                <td>John Dela Cruz</td>
-                <td>Max</td>
-                <td>Surgery</td>
-                <td>Dr. Martinez</td>
-                <td>Tumor Removal</td>
-                <td>Surgical Removal</td>
-                <td>₱15,000</td>
-                <td>
-                  <button class="btn-primary">View Details</button>
-                  <button class="btn-primary">Print</button>
-                </td>
-              </tr>
-              <tr>
-                <td>2025-07-28</td>
-                <td>Anna Garcia</td>
-                <td>Bella</td>
-                <td>Check-up</td>
-                <td>Dr. Rodriguez</td>
-                <td>Healthy</td>
-                <td>General Examination</td>
-                <td>₱500</td>
-                <td>
-                  <button class="btn-primary">View Details</button>
-                  <button class="btn-primary">Print</button>
-                </td>
-              </tr>
+            <tbody id="historytable">
+              
             </tbody>
           </table>
         </div>
@@ -722,6 +682,58 @@
           </div>
         </div>
 
+        <!-- Edit Service Modal -->
+  <div id="editServiceModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Edit Service Pricing</h2>
+        <span class="close">&times;</span>
+      </div>
+      <div class="modal-body">
+        <form id="editServiceForm">
+          <div class="form-group">
+            <label>Service Name</label>
+            <input type="text" id="editServiceName" readonly style="background-color: #f8f9fa;">
+          </div>
+          
+          <div class="form-group">
+            <label>Base Price (₱) *</label>
+            <input type="number" id="editBasePrice" step="0.01" min="0" required>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label>Senior Citizen Discount (%)</label>
+              <input type="number" id="editSeniorDiscount" min="0" max="100" step="0.1">
+            </div>
+            <div class="form-group">
+              <label>PWD Discount (%)</label>
+              <input type="number" id="editPwdDiscount" min="0" max="100" step="0.1">
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label>Loyalty Discount (%)</label>
+            <input type="number" id="editLoyaltyDiscount" min="0" max="100" step="0.1">
+          </div>
+          
+          <div class="form-group">
+            <label>Notes (Optional)</label>
+            <textarea id="editNotes" rows="3" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; resize: vertical;" placeholder="Add any special notes or conditions..."></textarea>
+          </div>
+        </form>
+      </div>
+      <div id="specialDiscountsList" style="margin-top: 15px;"></div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" id="cancelEdit">Cancel</button>
+        <button type="button" class="btn-success" id="saveServiceChanges">Save Changes</button>
+        
+      </div>
+    </div>
+  </div>
+        
+ <!-- PUBLISH NEW DISCOUNT -->
         <div class="form-container">
           <h2 style="color: var(--background-color); margin-bottom: 20px;">Create Special Discount</h2>
           <form id="discountForm">
@@ -768,6 +780,8 @@
           </form>
         </div>
       </div>
+
+
 
       <!-- Calendar Management Section -->
       <div id="calendar-management" class="content-section">

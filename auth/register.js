@@ -161,12 +161,13 @@
         index++;
       }
 
-      await setDoc(doc(usersRef, newId), {
-        name,
-        email,
-        password
-      });
-
+     await setDoc(doc(usersRef, newId), {
+  name,
+  email,
+  password, // ✅ comma added
+  joinedDate: serverTimestamp(),  // ✅ will now actually save
+  status: "Active"       
+});
 
 
       // Save session and redirect
