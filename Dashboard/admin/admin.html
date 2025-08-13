@@ -636,12 +636,18 @@
             <table>
               <thead>
                 <tr>
+                  <thead>
+                <tr>
                   <th>Service</th>
                   <th>Base Price</th>
                   <th>Senior Discount</th>
                   <th>PWD Discount</th>
                   <th>Loyalty Discount</th>
+                  <th>Special Discounts</th> 
                   <th>Actions</th>
+                </tr>
+              </thead>
+
                 </tr>
               </thead>
               <tbody>
@@ -723,6 +729,7 @@
           </div>
         </form>
       </div>
+      
       <div id="specialDiscountsList" style="margin-top: 15px;"></div>
 
       <div class="modal-footer">
@@ -792,7 +799,7 @@
             <h2 id="currentMonth">August 2025</h2>
             <button class="calendar-nav" id="nextMonth">&gt;</button>
           </div>
-          <div class="calendar-grid">
+          <div class="calendar-grid" id="calendarGrid">
             <div style="font-weight: bold; padding: 10px;">Sun</div>
             <div style="font-weight: bold; padding: 10px;">Mon</div>
             <div style="font-weight: bold; padding: 10px;">Tue</div>
@@ -801,20 +808,7 @@
             <div style="font-weight: bold; padding: 10px;">Fri</div>
             <div style="font-weight: bold; padding: 10px;">Sat</div>
             
-            <div class="calendar-day">28</div>
-            <div class="calendar-day">29</div>
-            <div class="calendar-day">30</div>
-            <div class="calendar-day">31</div>
-            <div class="calendar-day">1</div>
-            <div class="calendar-day today has-appointment">2</div>
-            <div class="calendar-day">3</div>
-            <div class="calendar-day has-appointment">4</div>
-            <div class="calendar-day">5</div>
-            <div class="calendar-day has-appointment">6</div>
-            <div class="calendar-day">7</div>
-            <div class="calendar-day">8</div>
-            <div class="calendar-day">9</div>
-            <div class="calendar-day">10</div>
+        
           </div>
         </div>
 
@@ -847,19 +841,22 @@
             </select>
           </div>
           <div class="form-group">
-            <label>Block Time Slots (for maintenance, etc.)</label>
-            <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-top: 10px;">
-              <div style="display: flex; gap: 5px; align-items: center;">
-                <input type="date" style="width: auto;">
-                <input type="time" style="width: auto;">
-                <span>to</span>
-                <input type="time" style="width: auto;">
-                <button class="btn-primary">Block</button>
-              </div>
-            </div>
-          </div>
-          <button class="btn-primary">Update Schedule Settings</button>
+  <label>Block Time Slots (for maintenance, etc.)</label>
+  <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-top: 10px;">
+    <div style="display: flex; gap: 5px; align-items: center;">
+      <input type="date" id="blockDate" style="width: auto;" required>
+      <input type="time" id="blockStartTime" style="width: auto;" required>
+
+      <span>to</span>
+      <input type="time" id="blockEndTime" style="width: auto;" required>
+      <input type="text" id="blockReason" placeholder="Reason" style="flex-grow: 1;" required>
+      <button type="button" class="btn-primary" id="addBlockBtn">Block</button>
+    </div>
+  </div>
+</div>
+<button class="btn-primary" id="updateScheduleBtn">Update Schedule Settings</button>
         </div>
+
 
         <div class="data-table">
           <table>

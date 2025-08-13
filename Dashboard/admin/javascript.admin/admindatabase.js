@@ -43,244 +43,130 @@
   }
 
 
-document.addEventListener('DOMContentLoaded', () => {
-  const STORAGE_KEY_SERVICES = 'servicesData';
-  const STORAGE_KEY_DISCOUNTS = 'specialDiscounts';
+document.addEventListener("DOMContentLoaded", () => {
+  const STORAGE_KEY = "servicesData";
 
-  let services = JSON.parse(localStorage.getItem(STORAGE_KEY_SERVICES)) || [
-    { name: "General Consultation", basePrice: 500, seniorDiscount: 20, pwdDiscount: 20, loyaltyDiscount: 10, notes: '' },
-    { name: "Vaccination", basePrice: 800, seniorDiscount: 15, pwdDiscount: 15, loyaltyDiscount: 5, notes: '' },
-    { name: "Surgery (Minor)", basePrice: 3000, seniorDiscount: 10, pwdDiscount: 10, loyaltyDiscount: 5, notes: '' },
-    { name: "Grooming", basePrice: 800, seniorDiscount: 15, pwdDiscount: 15, loyaltyDiscount: 10, notes: '' },
+  // Load from localStorage or use defaults
+  let services = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [
+    { name: "General Consultation", basePrice: 500, seniorDiscount: 20, pwdDiscount: 20, loyaltyDiscount: 10, notes: '', discounts: [] },
+    { name: "Vaccination", basePrice: 800, seniorDiscount: 15, pwdDiscount: 15, loyaltyDiscount: 5, notes: '', discounts: [] },
+    { name: "Surgery (Minor)", basePrice: 3000, seniorDiscount: 10, pwdDiscount: 10, loyaltyDiscount: 5, notes: '', discounts: [] },
+    { name: "Grooming", basePrice: 800, seniorDiscount: 15, pwdDiscount: 15, loyaltyDiscount: 10, notes: '', discounts: [] }
   ];
 
-  let specialDiscounts = JSON.parse(localStorage.getItem(STORAGE_KEY_DISCOUNTS)) || [];
+  let specialDiscounts = [];
 
-  const table = document.querySelector('#fee-discount table');
-  const tableHead = table.querySelector('thead tr');
-  const tableBody = table.querySelector('tbody');
+  const tableBody = document.querySelector("#fee-discount table tbody");
+  const editModal = document.getElementById("editServiceModal");
+  const specialDiscountsList = document.getElementById("specialDiscountsList");
+  let currentServiceIndex = null;
 
-  const editServiceModal = document.getElementById('editServiceModal');
-  const closeModalBtn = editServiceModal.querySelector('.close');
-  const cancelEditBtn = document.getElementById('cancelEdit');
-  const saveServiceBtn = document.getElementById('saveServiceChanges');
-  const deleteServiceBtn = document.getElementById('deleteService');
-
-  const editServiceName = document.getElementById('editServiceName');
-  const editBasePrice = document.getElementById('editBasePrice');
-  const editSeniorDiscount = document.getElementById('editSeniorDiscount');
-  const editPwdDiscount = document.getElementById('editPwdDiscount');
-  const editLoyaltyDiscount = document.getElementById('editLoyaltyDiscount');
-  const editNotes = document.getElementById('editNotes');
-
-  // A container inside modal to list special discounts for that service
-  // Add this div inside your modal body in HTML:
-  // <div id="specialDiscountsList" style="margin-top: 15px;"></div>
-  const specialDiscountsList = document.getElementById('specialDiscountsList');
-
-  let currentEditingIndex = null;
-
-  function saveServices() {
-    localStorage.setItem(STORAGE_KEY_SERVICES, JSON.stringify(services));
+  function saveToStorage() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(services));
   }
 
-  function saveSpecialDiscounts() {
-    localStorage.setItem(STORAGE_KEY_DISCOUNTS, JSON.stringify(specialDiscounts));
-  }
-
+  // Render services table
   function renderServices() {
-    tableHead.innerHTML = `
-      <th>Service</th>
-      <th>Base Price</th>
-      <th>Senior Discount</th>
-      <th>PWD Discount</th>
-      <th>Loyalty Discount</th>
-    `;
-    specialDiscounts.forEach(discount => {
-      tableHead.insertAdjacentHTML('beforeend', `<th>${discount.name}</th>`);
-    });
-    tableHead.insertAdjacentHTML('beforeend', `<th>Actions</th>`);
+    tableBody.innerHTML = "";
+    services.forEach((s, index) => {
+      const discountList = s.discounts.length > 0
+        ? s.discounts.map(d => `${d.name} (${d.type === "percentage" ? d.value + "%" : "₱" + d.value})`).join(", ")
+        : "None";
 
-    tableBody.innerHTML = '';
-    services.forEach((service, idx) => {
-      let rowHTML = `
-        <td>${service.name}</td>
-        <td>₱${service.basePrice?.toLocaleString() ?? '-'}</td>
-        <td>${service.seniorDiscount ?? '-'}%</td>
-        <td>${service.pwdDiscount ?? '-'}%</td>
-        <td>${service.loyaltyDiscount ?? '-'}%</td>
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${s.name}</td>
+        <td>₱${s.basePrice}</td>
+        <td>${s.seniorDiscount}%</td>
+        <td>${s.pwdDiscount}%</td>
+        <td>${s.loyaltyDiscount}%</td>
+        <td>${discountList}</td>
+        <td><button class="btn-primary" data-index="${index}">Edit</button></td>
       `;
-
-      specialDiscounts.forEach(discount => {
-        const applies = discount.applicableServices.includes('all') || discount.applicableServices.includes(service.name.toLowerCase().replace(/\s+/g, ''));
-        if (applies) {
-          if (discount.type === 'percentage') {
-            rowHTML += `<td>${discount.value}%</td>`;
-          } else {
-            rowHTML += `<td>₱${discount.value.toLocaleString()}</td>`;
-          }
-        } else {
-          rowHTML += `<td>-</td>`;
-        }
-      });
-
-      rowHTML += `<td><button class="btn-primary edit-btn" data-index="${idx}">Edit</button></td>`;
-
-      const tr = document.createElement('tr');
-      tr.innerHTML = rowHTML;
-      tableBody.appendChild(tr);
-    });
-
-    attachEditListeners();
-  }
-
-  function attachEditListeners() {
-    document.querySelectorAll('.edit-btn').forEach(button => {
-      button.addEventListener('click', e => {
-        const idx = e.target.dataset.index;
-        openEditModal(idx);
-      });
+      tableBody.appendChild(row);
     });
   }
 
-  // Open modal & fill form with service data
-  function openEditModal(idx) {
-    currentEditingIndex = idx;
-    const service = services[idx];
+  // Open edit modal
+  tableBody.addEventListener("click", (e) => {
+    if (e.target.tagName === "BUTTON") {
+      currentServiceIndex = e.target.dataset.index;
+      const service = services[currentServiceIndex];
+      
+      document.getElementById("editServiceName").value = service.name;
+      document.getElementById("editBasePrice").value = service.basePrice;
+      document.getElementById("editSeniorDiscount").value = service.seniorDiscount;
+      document.getElementById("editPwdDiscount").value = service.pwdDiscount;
+      document.getElementById("editLoyaltyDiscount").value = service.loyaltyDiscount;
+      document.getElementById("editNotes").value = service.notes;
 
-    editServiceName.value = service.name;
-    editBasePrice.value = service.basePrice;
-    editSeniorDiscount.value = service.seniorDiscount;
-    editPwdDiscount.value = service.pwdDiscount;
-    editLoyaltyDiscount.value = service.loyaltyDiscount;
-    editNotes.value = service.notes || '';
+      renderServiceDiscounts(service);
+      editModal.style.display = "block";
+    }
+  });
 
-    // Show special discounts applicable to this service inside modal
-    renderSpecialDiscountsList(service);
+  // Render service-specific discounts in modal
+  function renderServiceDiscounts(service) {
+    specialDiscountsList.innerHTML = "<h3>Applied Special Discounts</h3>";
+    service.discounts.forEach((d, idx) => {
+      const div = document.createElement("div");
+      div.innerHTML = `
+        ${d.name} - ${d.type === "percentage" ? d.value + "%" : "₱" + d.value} 
+        <button data-discount-index="${idx}">Delete</button>
+      `;
+      specialDiscountsList.appendChild(div);
+    });
 
-    editServiceModal.style.display = 'block';
+    specialDiscountsList.onclick = (e) => {
+      if (e.target.tagName === "BUTTON") {
+        const discountIndex = e.target.dataset.discountIndex;
+        service.discounts.splice(discountIndex, 1);
+        saveToStorage();
+        renderServiceDiscounts(service);
+        renderServices();
+      }
+    };
   }
 
-  // Render list of special discounts with delete buttons for this service
-  function renderSpecialDiscountsList(service) {
-    specialDiscountsList.innerHTML = '<h4>Special Discounts for this Service:</h4>';
+  // Save service changes
+  document.getElementById("saveServiceChanges").addEventListener("click", () => {
+    if (currentServiceIndex !== null) {
+      const service = services[currentServiceIndex];
+      service.basePrice = parseFloat(document.getElementById("editBasePrice").value);
+      service.seniorDiscount = parseFloat(document.getElementById("editSeniorDiscount").value);
+      service.pwdDiscount = parseFloat(document.getElementById("editPwdDiscount").value);
+      service.loyaltyDiscount = parseFloat(document.getElementById("editLoyaltyDiscount").value);
+      service.notes = document.getElementById("editNotes").value;
 
-    let foundAny = false;
-    specialDiscounts.forEach((discount, i) => {
-      const applies = discount.applicableServices.includes('all') || discount.applicableServices.includes(service.name.toLowerCase().replace(/\s+/g, ''));
-      if (applies) {
-        foundAny = true;
-        specialDiscountsList.insertAdjacentHTML('beforeend', `
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; padding: 6px; border: 1px solid #ccc; border-radius: 5px;">
-            <span>${discount.name} (${discount.type === 'percentage' ? discount.value + '%' : '₱' + discount.value.toLocaleString()})</span>
-            <button class="btn-delete" data-discount-index="${i}" style="background-color: #e74c3c; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Delete</button>
-          </div>
-        `);
+      saveToStorage();
+      renderServices();
+      editModal.style.display = "none";
+    }
+  });
+
+  // Publish new discount
+  document.getElementById("discountForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const discount = {
+      name: formData.get("discountName"),
+      type: formData.get("discountType"),
+      value: parseFloat(formData.get("discountValue")),
+      applicableServices: formData.getAll("applicableServices"),
+    };
+
+    specialDiscounts.push(discount);
+
+    services.forEach(s => {
+      if (discount.applicableServices.includes("all") ||
+          discount.applicableServices.includes(s.name.toLowerCase().split(" ")[0])) {
+        s.discounts.push(discount);
       }
     });
 
-    if (!foundAny) {
-      specialDiscountsList.insertAdjacentHTML('beforeend', '<p>No special discounts applied to this service.</p>');
-    }
-
-    // Attach delete listeners for special discounts inside modal
-    specialDiscountsList.querySelectorAll('button.btn-delete').forEach(btn => {
-      btn.addEventListener('click', e => {
-        const discountIndex = Number(e.target.dataset.discountIndex);
-        if (confirm(`Delete the special discount "${specialDiscounts[discountIndex].name}"? This will remove it for ALL services.`)) {
-          specialDiscounts.splice(discountIndex, 1);
-          saveSpecialDiscounts();
-          renderSpecialDiscountsList(services[currentEditingIndex]);
-          renderServices();
-        }
-      });
-    });
-  }
-
-  // Close modal helpers
-  function closeModal() {
-    editServiceModal.style.display = 'none';
-    currentEditingIndex = null;
-  }
-  closeModalBtn.addEventListener('click', closeModal);
-  cancelEditBtn.addEventListener('click', closeModal);
-
-  window.addEventListener('click', (e) => {
-    if (e.target === editServiceModal) closeModal();
-  });
-
-  // Save changes from modal
-  saveServiceBtn.addEventListener('click', () => {
-    if (currentEditingIndex === null) return;
-
-    // Validate fields
-    const basePrice = Number(editBasePrice.value);
-    const senior = Number(editSeniorDiscount.value);
-    const pwd = Number(editPwdDiscount.value);
-    const loyalty = Number(editLoyaltyDiscount.value);
-
-    if (isNaN(basePrice) || basePrice < 0) {
-      alert('Base price must be 0 or more');
-      return;
-    }
-    if ([senior, pwd, loyalty].some(d => isNaN(d) || d < 0 || d > 100)) {
-      alert('Discounts must be between 0 and 100%');
-      return;
-    }
-
-    // Update service
-    services[currentEditingIndex].basePrice = basePrice;
-    services[currentEditingIndex].seniorDiscount = senior;
-    services[currentEditingIndex].pwdDiscount = pwd;
-    services[currentEditingIndex].loyaltyDiscount = loyalty;
-    services[currentEditingIndex].notes = editNotes.value.trim();
-
-    saveServices();
+    saveToStorage();
     renderServices();
-    closeModal();
-  });
-
-  // Delete service button (optional, deletes the whole service)
-  deleteServiceBtn.addEventListener('click', () => {
-    if (currentEditingIndex === null) return;
-
-    if (confirm(`Delete the service "${services[currentEditingIndex].name}"?`)) {
-      services.splice(currentEditingIndex, 1);
-      saveServices();
-      renderServices();
-      closeModal();
-    }
-  });
-
-  // Handle "Create Special Discount" form submission (your existing code)
-  const discountForm = document.getElementById('discountForm');
-  discountForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-
-    const formData = new FormData(discountForm);
-    const discountName = formData.get('discountName').trim();
-    const discountType = formData.get('discountType');
-    const discountValue = Number(formData.get('discountValue'));
-    let applicableServices = formData.getAll('applicableServices');
-
-    if (!discountName || isNaN(discountValue)) {
-      alert('Please fill in the required fields correctly.');
-      return;
-    }
-
-    applicableServices = applicableServices.length ? applicableServices.map(s => s.toLowerCase()) : ['all'];
-
-    specialDiscounts.push({
-      name: discountName,
-      type: discountType,
-      value: discountValue,
-      applicableServices
-    });
-
-    saveSpecialDiscounts();
-    renderServices();
-
-    discountForm.reset();
+    e.target.reset();
   });
 
   renderServices();
@@ -874,6 +760,80 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 });
 
+//CALENDAR//
+document.addEventListener("DOMContentLoaded", () => {
+  const currentMonthEl = document.getElementById("currentMonth");
+  const calendarGrid = document.getElementById("calendarGrid");
+  const prevBtn = document.getElementById("prevMonth");
+  const nextBtn = document.getElementById("nextMonth");
+
+  let currentDate = new Date();
+
+  function renderCalendar(date) {
+    calendarGrid.innerHTML = `
+      <div style="font-weight: bold; padding: 10px;">Sun</div>
+      <div style="font-weight: bold; padding: 10px;">Mon</div>
+      <div style="font-weight: bold; padding: 10px;">Tue</div>
+      <div style="font-weight: bold; padding: 10px;">Wed</div>
+      <div style="font-weight: bold; padding: 10px;">Thu</div>
+      <div style="font-weight: bold; padding: 10px;">Fri</div>
+      <div style="font-weight: bold; padding: 10px;">Sat</div>
+    `;
+
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDayOfMonth = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    currentMonthEl.textContent = date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+
+    // Add blank cells for days before month start
+    for(let i = 0; i < firstDayOfMonth; i++) {
+      const emptyCell = document.createElement("div");
+      emptyCell.classList.add("calendar-day", "empty");
+      calendarGrid.appendChild(emptyCell);
+    }
+
+    // Add actual days
+    for(let day = 1; day <= daysInMonth; day++) {
+      const dayCell = document.createElement("div");
+      dayCell.classList.add("calendar-day");
+      dayCell.textContent = day;
+
+      // Highlight today if in current month/year
+      const today = new Date();
+      if(day === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
+        dayCell.classList.add("today");
+      }
+
+      calendarGrid.appendChild(dayCell);
+    }
+
+    // Fill remaining cells to complete last week row (optional)
+    const totalCells = calendarGrid.querySelectorAll(".calendar-day, .empty").length;
+    const remainder = totalCells % 7;
+    if (remainder !== 0) {
+      const blanksToAdd = 7 - remainder;
+      for(let i = 0; i < blanksToAdd; i++) {
+        const emptyCell = document.createElement("div");
+        emptyCell.classList.add("calendar-day", "empty");
+        calendarGrid.appendChild(emptyCell);
+      }
+    }
+  }
+
+  prevBtn.addEventListener("click", () => {
+    currentDate.setMonth(currentDate.getMonth() - 1);
+    renderCalendar(currentDate);
+  });
+
+  nextBtn.addEventListener("click", () => {
+    currentDate.setMonth(currentDate.getMonth() + 1);
+    renderCalendar(currentDate);
+  });
+
+  renderCalendar(currentDate);
+});
 
 
 // 🕓 Load recent activities
@@ -954,3 +914,4 @@ loadRecentActivity();
 loadAllAppointments();
 loadAllUsers();
 
+// 🐾 Load services and special discounts

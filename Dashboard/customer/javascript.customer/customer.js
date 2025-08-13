@@ -696,14 +696,10 @@ appointmentDiv.addEventListener('click', () => {
 
 
 
-
-
     // ⬅️➡️ Add these handlers to allow month navigation
               document.getElementById("prevMonthBtn").addEventListener("click", () => navigateMonth(-1));
               document.getElementById("nextMonthBtn").addEventListener("click", () => navigateMonth(1));
            });
-
-
 
 
   //PETS//
