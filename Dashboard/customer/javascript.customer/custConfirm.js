@@ -398,16 +398,26 @@ if (window.PetManager && typeof window.PetManager.loadPetsFromFirestore === "fun
     await window.PetManager.loadPetsFromFirestore();
 }
 
-
+            // Show success message
 await logActivity(name, "Booked Appointment", `Booked ${mainService} for ${petName}`);
 
-            // Show success message
-alert("Appointment booked and pet saved!");
-sessionStorage.removeItem("appointment");
-// Give DOM time to refresh before redirecting
-setTimeout(() => {
+// ✅ Hide booking modal before showing SweetAlert
+if (modal) {
+    modal.style.display = "none";
+}
+
+// Show success message
+Swal.fire({
+  icon: 'success',
+  title: 'Appointment booked!',
+  text: 'Your pet has been saved successfully.',
+  iconColor: 'var(--orange)',
+  showConfirmButton: false,
+  timer: 1500
+}).then(() => {
+  sessionStorage.removeItem("appointment");
   window.location.href = "customer.html";
-}, 1500); // 1.5 seconds delay
+});
 
                 
 
