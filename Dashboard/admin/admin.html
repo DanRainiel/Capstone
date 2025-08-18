@@ -24,7 +24,7 @@
         <li class="hovered">
           <a href="#" data-section="dashboard">
             <span class="icon"><i class="fa-solid fa-house-user"></i></span>
-            <span class="title">Dashboard</span>
+            <span class="title">Home</span>
           </a>
         </li>
 
@@ -356,10 +356,8 @@
               <tr>
                 <th>User ID</th>
                 <th>Name</th>
-                <th>Email</th>
-                
-                <th>Pets</th>
-               
+                <th>Email</th>            
+                <th>Pets</th>        
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
@@ -420,27 +418,28 @@
         </div>
       </div>
 
-      <!-- Sales Report Section -->
-      <div id="sales-report" class="content-section">
-        <h1>Sales Report & Analytics</h1>
+        <!-- Sales Report Section -->
+        <div id="sales-report" class="content-section">
+          <h1>Sales Report & Analytics</h1>
         <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-number">₱45,200</div>
-            <div class="stat-label">Today's Revenue</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-number">₱312,500</div>
-            <div class="stat-label">This Week's Revenue</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-number">₱1,250,000</div>
-            <div class="stat-label">This Month's Revenue</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-number">186</div>
-            <div class="stat-label">Services Completed</div>
-          </div>
-        </div>
+  <div class="stat-card">
+    <div class="stat-number" id="todayRevenue"></div>
+    <div class="stat-label">Today's Revenue</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-number" id="weekRevenue"></div>
+    <div class="stat-label">This Week's Revenue</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-number" id="monthRevenue"></div>
+    <div class="stat-label">This Month's Revenue</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-number" id="servicesCompleted"></div>
+    <div class="stat-label">Services Completed</div>
+  </div>
+  </div>
+
 
         <div class="form-container" style="max-width: none;">
           <h2 style="color: var(--background-color); margin-bottom: 20px;">Generate Report</h2>
@@ -477,7 +476,8 @@
               <input type="date" id="reportDateTo">
             </div>
           </div>
-          <button class="btn-primary">Generate Report</button>
+        <button id="generateReportBtn" type="button" class="btn-primary">Generate Report</button>
+
           <button class="btn-primary">Export to PDF</button>
           <button class="btn-primary">Export to Excel</button>
         </div>
@@ -494,31 +494,8 @@
                 <th>Growth %</th>
               </tr>
             </thead>
-            <tbody>
-              <tr>
-                <td>2025-08-02</td>
-                <td>All Services</td>
-                <td>24</td>
-                <td>₱45,200</td>
-                <td>₱1,883</td>
-                <td>+12.5%</td>
-              </tr>
-              <tr>
-                <td>2025-08-01</td>
-                <td>All Services</td>
-                <td>18</td>
-                <td>₱32,800</td>
-                <td>₱1,822</td>
-                <td>+8.3%</td>
-              </tr>
-              <tr>
-                <td>2025-07-31</td>
-                <td>All Services</td>
-                <td>22</td>
-                <td>₱41,500</td>
-                <td>₱1,886</td>
-                <td>+15.2%</td>
-              </tr>
+            <tbody id="reportTableBody">
+             
             </tbody>
           </table>
         </div>
@@ -850,7 +827,7 @@
       <span>to</span>
       <input type="time" id="blockEndTime" style="width: auto;" required>
       <input type="text" id="blockReason" placeholder="Reason" style="flex-grow: 1;" required>
-      <button type="button" class="btn-primary" id="addBlockBtn">Block</button>
+     
     </div>
   </div>
 </div>
@@ -869,21 +846,9 @@
                 <th>Actions</th>
               </tr>
             </thead>
-            <tbody>
-              <tr>
-                <td>2025-08-05</td>
-                <td>12:00 PM - 1:00 PM</td>
-                <td><span class="status cancelled">Blocked</span></td>
-                <td>Lunch Break</td>
-                <td><button class="btn-danger">Remove Block</button></td>
-              </tr>
-              <tr>
-                <td>2025-08-10</td>
-                <td>2:00 PM - 5:00 PM</td>
-                <td><span class="status cancelled">Blocked</span></td>
-                <td>Equipment Maintenance</td>
-                <td><button class="btn-danger">Remove Block</button></td>
-              </tr>
+            <tbody  id="blockedSlotsTableBody">
+              
+              
             </tbody>
           </table>
         </div>
@@ -978,49 +943,11 @@
                 <th>Batch #</th>
                 <th>Next Due</th>
                 <th>Veterinarian</th>
-                <th>Actions</th>
+               
               </tr>
             </thead>
-            <tbody>
-              <tr>
-                <td>2025-08-02</td>
-                <td>Maria Santos</td>
-                <td>Fluffy</td>
-                <td>Rabies</td>
-                <td>RB2025080201</td>
-                <td>2026-08-02</td>
-                <td>Dr. Rodriguez</td>
-                <td>
-                  <button class="btn-primary">Reprint Label</button>
-                  <button class="btn-primary">View Record</button>
-                </td>
-              </tr>
-              <tr>
-                <td>2025-08-01</td>
-                <td>John Dela Cruz</td>
-                <td>Max</td>
-                <td>5-in-1 (DHPPL)</td>
-                <td>DH2025080101</td>
-                <td>2025-11-01</td>
-                <td>Dr. Martinez</td>
-                <td>
-                  <button class="btn-primary">Reprint Label</button>
-                  <button class="btn-primary">View Record</button>
-                </td>
-              </tr>
-              <tr>
-                <td>2025-07-30</td>
-                <td>Anna Garcia</td>
-                <td>Bella</td>
-                <td>Feline 3-in-1</td>
-                <td>FC2025073001</td>
-                <td>2025-10-30</td>
-                <td>Dr. Santos</td>
-                <td>
-                  <button class="btn-primary">Reprint Label</button>
-                  <button class="btn-primary">View Record</button>
-                </td>
-              </tr>
+            <tbody id="vaccinationRecordsBody">
+
             </tbody>
           </table>
         </div>
@@ -1036,35 +963,12 @@
                   <th>Vaccine Due</th>
                   <th>Due Date</th>
                   <th>Days Overdue</th>
-                  <th>Contact</th>
+                
                   <th>Actions</th>
                 </tr>
               </thead>
-              <tbody>
-                <tr>
-                  <td>Carlos Mendoza</td>
-                  <td>Rocky</td>
-                  <td>Rabies Booster</td>
-                  <td>2025-07-28</td>
-                  <td style="color: red; font-weight: bold;">5 days</td>
-                  <td>09156781234</td>
-                  <td>
-                    <button class="btn-primary">Send Reminder</button>
-                    <button class="btn-primary">Book Appointment</button>
-                  </td>
-                </tr>
-                <tr>
-                  <td>Lisa Torres</td>
-                  <td>Princess</td>
-                  <td>5-in-1 Booster</td>
-                  <td>2025-08-05</td>
-                  <td style="color: orange; font-weight: bold;">Due in 3 days</td>
-                  <td>09198765432</td>
-                  <td>
-                    <button class="btn-primary">Send Reminder</button>
-                    <button class="btn-primary">Book Appointment</button>
-                  </td>
-                </tr>
+              <tbody id="RemindersBody">
+                
               </tbody>
             </table>
           </div>
@@ -1073,7 +977,8 @@
     </div>
   </div>
 
-  <script src="/Dashboard/admin/admin.js"></script>
-   <script type="module" src="./javascript.admin/admindatabase.js" defer></script>
+  <script src="/Dashboard/admin/admin.js" defer></script>
+<script type="module" src="./javascript.admin/admindatabase.js" defer></script>
+
 </body>
 </html>

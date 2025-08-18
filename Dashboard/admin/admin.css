@@ -632,6 +632,11 @@
         color: white;
     }
 
+    #appointments .data-table table {
+        border-collapse:collapse;
+        width:100%;
+    }
+
 /*modal-content*/
 
 .modal {

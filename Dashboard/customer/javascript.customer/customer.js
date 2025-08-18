@@ -11,6 +11,7 @@
         getDocs,         // <-- AND THIS
         query,
         serverTimestamp,
+        onSnapshot,      // <-- ADD THIS FOR REAL-TIME UPDATES
         where
         } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
@@ -336,10 +337,43 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 
+const opHoursEl = document.querySelector(".opHours");
 
+// Load hours from Firestore
+async function loadClinicHours() {
+  const settingsDocRef = doc(db, "ClinicSettings", "schedule");
 
+  // listen in real-time so changes reflect immediately
+  onSnapshot(settingsDocRef, (docSnap) => {
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      const weekday = data.weekdayHours 
+        ? `${formatTime(data.weekdayHours.start)} - ${formatTime(data.weekdayHours.end)}`
+        : "Closed";
+      const saturday = data.saturdayHours 
+        ? `${formatTime(data.saturdayHours.start)} - ${formatTime(data.saturdayHours.end)}`
+        : "Closed";
 
-        // CALENDAR //
+      opHoursEl.textContent = `Mon-Fri: ${weekday} | Sat: ${saturday}`;
+    } else {
+      opHoursEl.textContent = "Hours not set";
+    }
+  });
+}
+
+// helper to format time nicely
+function formatTime(time) {
+  if (!time) return "";
+  const [h, m] = time.split(":");
+  const hour = parseInt(h, 10);
+  const ampm = hour >= 12 ? "PM" : "AM";
+  const formattedHour = ((hour + 11) % 12 + 1);
+  return `${formattedHour}:${m} ${ampm}`;
+}
+
+// run on load
+loadClinicHours();
+// CALENDAR //
 
                 let currentDate = new Date();
                 let selectedDate = null;
@@ -424,12 +458,20 @@ document.addEventListener("DOMContentLoaded", () => {
                     updateSidebar();
                 }
 
+                let blockedSlots = [];
+
+// Listen to admin's blocked slots in real-time
+const blockedCollection = collection(db, "BlockedSlots");
+onSnapshot(blockedCollection, (snapshot) => {
+  blockedSlots = snapshot.docs.map(doc => doc.data());
+  updateCalendar(); // re-render when blocks change
+});
+
                 function updateCalendar() {
     const monthYear = document.getElementById('monthYear');
     const calendarGrid = document.getElementById('calendarGrid');
 
     monthYear.textContent = `${months[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
-
     calendarGrid.innerHTML = '';
 
     const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -444,66 +486,76 @@ document.addEventListener("DOMContentLoaded", () => {
     const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
     const startingDayOfWeek = firstDay.getDay();
     const daysInMonth = lastDay.getDate();
-    
 
+    // Empty cells for previous month days
     for (let i = 0; i < startingDayOfWeek; i++) {
         const emptyCell = document.createElement('div');
-        emptyCell.className = 'calendar-day-cell';
+        emptyCell.className = 'calendar-day-cell empty';
         calendarGrid.appendChild(emptyCell);
     }
 
     const today = new Date();
     for (let day = 1; day <= daysInMonth; day++) {
-        const dayCell = document.createElement('div');
         const cellDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
         const dateStr = formatDate(cellDate);
-        const parsedDate = parseDateLocal(dateStr); // This makes parseDateLocal "read"
 
-
+        const dayCell = document.createElement('div');
         dayCell.className = 'calendar-day-cell';
         dayCell.innerHTML = `<div class="calendar-day-number">${day}</div>`;
+
+        // Blocked days
+        if (blockedSlots.some(b => b.date === dateStr)) {
+            dayCell.classList.add('blocked-day');
+            dayCell.style.pointerEvents = 'none';
+            const blockedBadge = document.createElement('div');
+            blockedBadge.className = 'calendar-blocked-badge';
+            blockedBadge.textContent = 'Blocked';
+            dayCell.appendChild(blockedBadge);
+        }
 
         // Today highlight
         if (cellDate.toDateString() === today.toDateString()) {
             dayCell.classList.add('today');
         }
 
-        // Make ALL dates clickable (past dates too if needed)
-        dayCell.addEventListener('click', () => selectDate(cellDate));
-
-        // Highlight selected date
+        // Selected date highlight
         if (selectedDate && cellDate.toDateString() === selectedDate.toDateString()) {
             dayCell.classList.add('selected');
         }
 
-        // Show appointment count
+        // Appointment count badge
         const dayAppointments = (appointments[dateStr] || []).filter((apt, index, self) =>
-  index === self.findIndex(t =>
-    t.time === apt.time &&
-    t.petName === apt.petName &&
-    t.owner === apt.owner &&
-    t.type === apt.type
-  )
-);
+            index === self.findIndex(t =>
+                t.time === apt.time &&
+                t.petName === apt.petName &&
+                t.owner === apt.owner &&
+                t.type === apt.type
+            )
+        );
 
         if (dayAppointments.length > 0) {
-    const countBadge = document.createElement('div');
-    countBadge.className = 'calendar-appointment-count';
-    countBadge.textContent = dayAppointments.length;
-    dayCell.classList.add('has-appointments');
-    dayCell.appendChild(countBadge);
-}
+            const countBadge = document.createElement('div');
+            countBadge.className = 'calendar-appointment-count';
+            countBadge.textContent = dayAppointments.length;
+            dayCell.classList.add('has-appointments');
+            dayCell.appendChild(countBadge);
+        }
 
-
-        // OPTIONAL: Add 'Available' badge even if booked
+        // Available indicator
         const availableIndicator = document.createElement('div');
         availableIndicator.className = 'calendar-available-indicator';
         availableIndicator.textContent = 'Available';
         dayCell.appendChild(availableIndicator);
 
+        // Clickable if not blocked
+        if (!dayCell.classList.contains('blocked-day')) {
+            dayCell.addEventListener('click', () => selectDate(cellDate));
+        }
+
         calendarGrid.appendChild(dayCell);
     }
 }
+
 
 
                 function navigateMonth(direction) {
@@ -661,10 +713,6 @@ appointmentDiv.addEventListener('click', () => {
                 }
 
                 
-
-               
-
-
                 function hideBookingModal() {
                     const modal = document.getElementById('bookingModal');
                     modal.style.display = 'none';
@@ -1053,28 +1101,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const defaultNews = [
         {
-            title: "Local Labrador Becomes Hero After Alerting Family to House Fire",
-            category: "Community",
-            priority: "High",
-            content: "A Labrador named Max is being praised as a hero after alerting his family to a house fire...",
-            publishDate: "2025-07-22",
-            image: "/images/news2.webp"
-        },
-        {
-            title: "Clinic Welcomes First-Ever Pet Wellness Fair with Free Checkups and Treats",
-            category: "Events",
-            priority: "Medium",
-            content: "Our clinic is hosting a Pet Wellness Fair offering free checkups, treats, and pet care tips...",
-            publishDate: "2025-08-12",
-            image: "/images/news2.webp"
-        },
-        {
-            title: "Senior Cat Celebrates 20th Birthday with Clinic Surprise Party",
-            category: "Community",
-            priority: "Low",
-            content: "A senior cat named Whiskers celebrated her 20th birthday with a surprise party at the clinic...",
-            publishDate: "2025-01-02",
-            image: "/images/news2.webp"
+            title: "NO NEWS AVAILABLE",
+            content: "Stay tuned for updates!",
+           
         }
     ];
 
