@@ -67,36 +67,53 @@
             return;
           }
         }
+        
+// Check admin (optional, remove if not needed)
+const adminRef = collection(db, "Admin");
+const adminSnapshot = await getDocs(adminRef);
 
-        // Check admin (optional, remove if not needed)
-        const adminRef = collection(db, "Admin");
-        const adminSnapshot = await getDocs(adminRef);
+for (const docItem of adminSnapshot.docs) {
+  const data = docItem.data();
+  if (data.email === email && data.password === password) {
+    sessionStorage.setItem("isLoggedIn", "true");
+    sessionStorage.setItem("userId", docItem.id);
+    sessionStorage.setItem("role", "admin");
+    sessionStorage.setItem("userName", data.name);
+    sessionStorage.setItem("welcomeMessage", `Welcome back, Admin ${data.name}!`);
 
-        for (const docItem of adminSnapshot.docs) {
-          const data = docItem.data();
-          if (data.email === email && data.password === password) {
-            sessionStorage.setItem("isLoggedIn", "true");
-            sessionStorage.setItem("userId", docItem.id);
-            sessionStorage.setItem("role", "admin");
-            sessionStorage.setItem("userName", data.name);
-            sessionStorage.setItem("welcomeMessage", `Welcome back, Admin ${data.name}!`);
-
-            setTimeout(() => {
-              location.replace("../Dashboard/admin/admin.html");
-            }, 2000);
-            return;
-          }
-        }
-
-        loader.style.display = "none";
-        alert("Account not found or incorrect credentials.");
-      } catch (error) {
-        console.error("Login error:", error);
-        loader.style.display = "none";
-        alert("Login failed. Please try again.");
-      }
+    Swal.fire({
+      icon: "success",
+      title: "Login Successful",
+      text: `Welcome back, Admin ${data.name}!`,
+      timer: 2000,
+      showConfirmButton: false
     });
 
+    setTimeout(() => {
+      location.replace("../Dashboard/admin/admin.html");
+    }, 2000);
+    return;
+  }
+}
+
+loader.style.display = "none";
+Swal.fire({
+  icon: "error",
+  title: "Login Failed",
+  text: "Account not found or incorrect credentials.",
+  confirmButtonColor: "#ff8800" // Orange OK button
+});
+} catch (error) {
+console.error("Login error:", error);
+loader.style.display = "none";
+Swal.fire({
+  icon: "error",
+  title: "Login Failed",
+  text: "Please try again.",
+  confirmButtonColor: "#ff8800" // Orange OK button
+});
+}
+});
     
   // REGISTER
 

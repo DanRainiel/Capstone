@@ -549,7 +549,7 @@ form {
 
 .dog-cartoon {
   position: absolute;
-  top: 100px;
+  top: 80px;
   left: 50%;
   transform: translateX(-50%);
   width: 150px; 
@@ -560,7 +560,7 @@ form {
 
 .dog-cartoon2 {
   position: absolute;
-  top: 60px; 
+  top: 50px; 
   left: 50%;
   transform: translateX(-50%);
   width: 200px; 
@@ -571,7 +571,7 @@ form {
 
 .dog-cartoon3{
   position: absolute;
-  top: 40px; 
+  top: .5px; 
   left: 50%;
   transform: translateX(-50%);
   width: 250px; 
@@ -582,7 +582,7 @@ form {
 
 .dog-cartoon4{
   position: absolute;
-  top: 20px; 
+  top: 50px; 
   left: 50%;
   transform: translateX(-50%);
   width: 250px; 
