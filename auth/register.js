@@ -36,10 +36,17 @@
 
       loader.style.display = "none";
 
-      if (!email || !password) {
-        alert("Please fill in all fields.");
-        return;
-      }
+     if (!email || !password) {
+       Swal.fire({
+        icon: "warning",
+        title: "Missing Fields",
+        text: "Please fill in all fields.",
+        iconColor:'#f8732b',
+        confirmButtonColor: '#f8732b', // your orange theme
+        backdrop: `rgba(0, 0, 0, 0.5)` // darken background a bit
+      });
+      return;
+    }
 
       loader.style.display = "flex";
 

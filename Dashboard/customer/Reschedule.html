@@ -89,35 +89,49 @@
             <div class="recentOrders">
                 <div class="cardHeader">
                     <h2>Reschedule </h2>
+                    <p>(Click a certain row if you want to reschedule an appointment)</p>
                     <a href="#" class="btn">View All</a>
                 </div>  
 
+            
                <table class="table">
                 <thead>
                    <tr>
                      <td>Customer Name</td>
                      <td>Pet Name</td>
                      <td>Service</td>
-                     <td>Date</td>
-                     <td></td>
-                    
+                     <td>Date&Time</td>
                    </tr>
                  </thead>
                  <tbody id="reschedule">
-                   <!-- Rows will be added here -->
+                   
                  </tbody>
                </table>
 
         </div>
     </div>
-</div>
-</body>
-</html>
 
-</table>
+   <div id="detailsModal" class="modal">
+  <div class="modal-content">
+    <span class="close-btn" onclick="closeDetailsModal()">&times;</span>
+    <h2>Appointment Details</h2>
+    <p><strong>Customer:</strong> <span id="detailName"></span></p>
+    <p><strong>Pet:</strong> <span id="detailPet"></span></p>
+    <p><strong>Service:</strong> <span id="detailService"></span></p>
+    <p><strong>Current Date:</strong> <span id="detailDate"></span></p>
 
-        </div>
+    <!-- ✨ Reschedule Input -->
+    <label for="newDate"><strong>Preferred New Date & Time:</strong></label>
+    <input type="datetime-local" id="newDate" />
+
+    <div class="modal-actions">
+      <button class="btn" onclick="closeDetailsModal()">Close</button>
+      <button class="btn resched-btn">Reschedule</button>
     </div>
+  </div>
 </div>
+
 </body>
 </html>
+
+
