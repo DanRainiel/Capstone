@@ -7,7 +7,7 @@ import {
   where,
   getDocs,
   doc,
-  setDoc
+  updateDoc
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
 // ✅ Your Firebase config
@@ -23,12 +23,13 @@ const firebaseConfig = {
 
 // ✅ Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app); // make sure this exists here!
+const db = getFirestore(app);
 
-
+// ================== LOAD APPOINTMENTS ==================
 async function loadAppointments() {
   const userId = sessionStorage.getItem("userId");
   console.log("Loaded userId from sessionStorage:", userId);
+
   const tableBody = document.getElementById("reschedule");
   tableBody.innerHTML = "";
 
@@ -38,24 +39,28 @@ async function loadAppointments() {
   }
 
   try {
-    // ✅ Query all appointments where userId == current userId
     const q = query(collection(db, "Appointment"), where("userId", "==", userId));
     const querySnapshot = await getDocs(q);
 
     if (querySnapshot.empty) {
       tableBody.innerHTML = "<tr><td colspan='6'>No History found.</td></tr>";
     } else {
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
+      querySnapshot.forEach((docSnap) => {
+        const data = docSnap.data();
         const row = document.createElement("tr");
+
         row.innerHTML = `
           <td>${data.name || ""}</td>
           <td>${data.petName || ""}</td>
           <td>${data.service || ""}</td>
           <td>${data.date || ""}</td>
-          
-          <td><button class="btn" onclick="location.href='">Reschedule</button></td>
         `;
+
+        // ✅ Make row clickable
+        row.addEventListener("click", () => {
+          openDetailsModal(docSnap.id, data);
+        });
+
         tableBody.appendChild(row);
       });
     }
@@ -65,6 +70,83 @@ async function loadAppointments() {
   }
 }
 
+// ================== OPEN MODAL ==================
+function openDetailsModal(docId, data) {
+  const modal = document.getElementById("detailsModal");
+  modal.style.display = "block";
+
+  // Fill modal with data
+  document.getElementById("detailName").textContent = data.name || "";
+  document.getElementById("detailPet").textContent = data.petName || "";
+  document.getElementById("detailService").textContent = data.service || "";
+  document.getElementById("detailDate").textContent = data.date || "";
+
+  // store docId in modal
+  modal.setAttribute("data-docid", docId);
+}
+
+// ================== CLOSE MODAL ==================
+function closeDetailsModal() {
+  document.getElementById("detailsModal").style.display = "none";
+}
+
+window.addEventListener("click", (e) => {
+  const modal = document.getElementById("detailsModal");
+  if (e.target === modal) {
+    closeDetailsModal();
+  }
+});
+
+// ================== RESCHEDULE ==================
+async function rescheduleAppointment() {
+  const modal = document.getElementById("detailsModal");
+  const docId = modal.getAttribute("data-docid");
+  const newDateTime = document.getElementById("newDate").value;
+
+  if (!docId || !newDateTime) {
+    alert("Please select a new date & time.");
+    return;
+  }
+
+  // Convert to Date object
+  const dateObj = new Date(newDateTime);
+
+  // Extract parts manually
+  const year = dateObj.getFullYear();
+  const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+  const day = String(dateObj.getDate()).padStart(2, "0");
+
+  let hours = dateObj.getHours();
+  const minutes = String(dateObj.getMinutes()).padStart(2, "0");
+  const ampm = hours >= 12 ? "PM" : "AM";
+
+  // Convert to 12-hour format
+  hours = hours % 12;
+  hours = hours ? hours : 12; // 0 should be 12
+
+  // ✅ Final format: YYYY-MM-DD hh:mm AM/PM
+  const formattedDateTime = `${year}-${month}-${day} ${hours}:${minutes} ${ampm}`;
+
+  try {
+    const docRef = doc(db, "Appointment", docId);
+    await updateDoc(docRef, { date: formattedDateTime });
+
+    alert("Appointment rescheduled successfully!");
+    closeDetailsModal();
+    loadAppointments(); // refresh table
+  } catch (error) {
+    console.error("Error updating appointment:", error);
+    alert("Failed to reschedule.");
+  }
+}
+
+// ================== EVENT LISTENERS ==================
 window.addEventListener("DOMContentLoaded", () => {
   loadAppointments();
+
+  // Hook modal close button
+  document.querySelector(".close-btn").addEventListener("click", closeDetailsModal);
+
+  // Hook reschedule button
+  document.querySelector(".resched-btn").addEventListener("click", rescheduleAppointment);
 });
