@@ -48,25 +48,34 @@
         const usersRef = collection(db, "users");
         const userSnapshot = await getDocs(usersRef);
 
-        for (const docItem of userSnapshot.docs) {
-          const data = docItem.data();
-          if (data.email === email && data.password === password) {
-            sessionStorage.setItem("isLoggedIn", "true");
-            sessionStorage.setItem("userId", docItem.id);
-            sessionStorage.setItem("role", "customer");
-            sessionStorage.setItem("userName", data.name);
-            
-            await logActivity(docItem.id, "Logged In", `User ${data.name} logged in.`);
+       for (const docItem of userSnapshot.docs) {
+  const data = docItem.data();
+  if (data.email === email && data.password === password) {
 
-            sessionStorage.setItem("welcomeMessage", `Welcome back, ${data.name}!`);
+    // 🔎 Check account status before login
+    if (data.status && data.status.toLowerCase() === "inactive") {
+      alert("Your account has been deactivated. Please contact admin.");
+      loader.style.display = "none"; // hide loader again
+      return; // ❌ stop login here
+    }
 
-            // wait 2 seconds, then redirect
-            setTimeout(() => {
-              location.replace("../Dashboard/customer/customer.html");
-            }, 2000);
-            return;
-          }
-        }
+    // ✅ If Active, continue login
+    sessionStorage.setItem("isLoggedIn", "true");
+    sessionStorage.setItem("userId", docItem.id);
+    sessionStorage.setItem("role", "customer");
+    sessionStorage.setItem("userName", data.name);
+    
+    await logActivity(docItem.id, "Logged In", `User ${data.name} logged in.`);
+    sessionStorage.setItem("welcomeMessage", `Welcome back, ${data.name}!`);
+
+    // wait 2 seconds, then redirect
+    setTimeout(() => {
+      location.replace("../Dashboard/customer/customer.html");
+    }, 2000);
+    return;
+  }
+}
+
         
 // Check admin (optional, remove if not needed)
 const adminRef = collection(db, "Admin");

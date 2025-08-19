@@ -178,7 +178,7 @@
 
 
 
-
+// WALK IN FORM//
     document.getElementById("walkinForm")?.addEventListener("submit", async function(e) {
         e.preventDefault();
 
@@ -255,185 +255,211 @@
         });
     }
 
-    // 📅 Load appointments into two tables
-  async function loadAllAppointments() {
-    const dashboardTable = document.getElementById("table-dashboard");
-    const appointmentTable = document.getElementById("appointmentTable");
-    const historyTable = document.getElementById("historytable");
+  // 📅 Load appointments into two tables
+async function loadAllAppointments() {
+  const dashboardTable = document.getElementById("table-dashboard");
+  const appointmentTable = document.getElementById("appointmentTable");
+  const historyTable = document.getElementById("historytable");
 
-    if (dashboardTable) dashboardTable.innerHTML = "";
-    if (appointmentTable) appointmentTable.innerHTML = "";
-    if (historyTable) historyTable.innerHTML = "";
+  if (dashboardTable) dashboardTable.innerHTML = "";
+  if (appointmentTable) appointmentTable.innerHTML = "";
+  if (historyTable) historyTable.innerHTML = "";
 
-      // ✅ Counts
-    let todayScheduleCount = 0;
-    let finishedAppointmentsCount = 0;
-    let walkInCount = 0;
+  // ✅ Counts
+  let todayScheduleCount = 0;
+  let finishedAppointmentsCount = 0;
+  let walkInCount = 0;
 
-    let totalAppointmentsToday = 0;
-    let pendingAppointmentsToday = 0;
-    let cancelledAppointmentsToday = 0;
+  let totalAppointmentsToday = 0;
+  let pendingAppointmentsToday = 0;
+  let cancelledAppointmentsToday = 0;
 
-    let totalUsers = 0;
+  let totalUsers = 0;
 
-    
-    
+  const today = new Date().toISOString().split("T")[0]; // "YYYY-MM-DD"
 
+  try {
+    const [snapshot, walkInSnapshot] = await Promise.all([
+      getDocs(collection(db, "Appointment")),
+      getDocs(collection(db, "WalkInAppointment")),
+    ]);
 
-    const today = new Date().toISOString().split("T")[0]; // "YYYY-MM-DD"
-    try {
-      const [snapshot, walkInSnapshot] = await Promise.all([
-        getDocs(collection(db, "Appointment")),
-        getDocs(collection(db, "WalkInAppointment")),
-      
-      ]);
+    if (snapshot.empty && walkInSnapshot.empty) {
+      const emptyRow = "<tr><td colspan='8'>No appointments found.</td></tr>";
+      if (dashboardTable) dashboardTable.innerHTML = emptyRow;
+      if (appointmentTable) appointmentTable.innerHTML = emptyRow;
+      await logActivity("admin", "Load Appointments", "No appointments found.");
+      return;
+    }
 
-      if (snapshot.empty && walkInSnapshot.empty) {
-        const emptyRow = "<tr><td colspan='8'>No appointments found.</td></tr>";
-        if (dashboardTable) dashboardTable.innerHTML = emptyRow;
-        if (appointmentTable) appointmentTable.innerHTML = emptyRow;
-        await logActivity("admin", "Load Appointments", "No appointments found.");
-        return;
+    // Function to render each row
+    const renderRow = (data, type, docId) => {
+      const status = data.status || "Pending";
+
+      const displayData = {
+        name:
+          type === "walkin"
+            ? `${data.firstName || ""} ${data.lastName || ""}`.trim()
+            : data.name || "",
+        petName: data.petName || data.pet?.petName || "",
+        service: type === "walkin" ? data.serviceType || "" : data.service || "",
+        time: data.time || "",
+        date: data.date || "",
+        contact: data.contact || "",
+        status,
+        mode: type === "walkin" ? "Walk-In" : "Appointment",
+      };
+
+      // ✅ Count today's schedule
+      if (displayData.date === today) {
+        todayScheduleCount++;
       }
 
-      const renderRow = (data, type) => {
-        const status = data.status || "Pending";
+      // ✅ Count finished appointments
+      if (status.toLowerCase() === "completed") {
+        finishedAppointmentsCount++;
+      }
 
-        // Normalize field names so both types look the same
-        const displayData = {
-      name:
-        type === "walkin"
-          ? `${data.firstName || ""} ${data.lastName || ""}`.trim()
-          : data.name || "",
-      petName: data.petName || data.pet?.petName || "",
-      service: type === "walkin" ? data.serviceType || "" : data.service || "",
-      time: data.time || "",
-      date: data.date || "",
-      contact: data.contact || "",
-      status,
-      mode: type === "walkin" ? "Walk-In" : "Appointment" // 👈 added mode
+      // ✅ Count walk-ins
+      if (type === "walkin") {
+        walkInCount++;
+      }
+
+      // Dashboard summary table
+      if (dashboardTable) {
+        const dashRow = document.createElement("tr");
+        dashRow.innerHTML = `
+          <td>${displayData.name}</td>
+          <td>${displayData.petName}</td>
+          <td>${displayData.service}</td>
+          <td>${displayData.time}</td>
+          <td>${displayData.mode}</td>
+          <td class="status ${status.toLowerCase()}">${status}</td>
+        `;
+        dashboardTable.appendChild(dashRow);
+      }
+
+      // Full appointment table with actions
+      if (appointmentTable) {
+        let actionButtons = "";
+        if (status === "Pending") {
+          actionButtons = `
+            <button class="btn accept" data-id="${docId}" data-type="${type}">Accept</button>
+            <button class="btn decline" data-id="${docId}" data-type="${type}">Decline</button>
+            <button class="btn reschedule" data-id="${docId}" data-type="${type}">Reschedule</button>
+            <button class="btn screenshot" data-id="${docId}" data-type="${type}">View Screenshot</button>
+          `;
+        } else if (status === "In Progress") {
+          actionButtons = `<button class="btn complete" data-id="${docId}" data-type="${type}">Complete</button>`;
+        } else if (status === "Completed") {
+          actionButtons = `
+            <button class="btn view" data-id="${docId}" data-type="${type}">View</button>
+            <button class="btn edit" data-id="${docId}" data-type="${type}">Edit</button>
+          `;
+        }
+
+        const fullRow = document.createElement("tr");
+        fullRow.innerHTML = `
+          <td>${displayData.date}</td>
+          <td>${displayData.time}</td>
+          <td>${displayData.name}</td>
+          <td>${displayData.contact}</td>
+          <td>${displayData.petName}</td>
+          <td>${displayData.service}</td>
+          <td class="status ${status.toLowerCase()}">${status}</td>
+          <td>${actionButtons}</td>
+        `;
+        appointmentTable.appendChild(fullRow);
+      }
+
+      // History table
+      if (historyTable) {
+        const totalAmount = data.totalAmount || 0; // ✅ fallback if field is missing
+        const historyRow = document.createElement("tr");
+        historyRow.innerHTML = `
+          <td>${displayData.date}</td>
+          <td>${displayData.time}</td>
+          <td>${displayData.name}</td>
+          <td>${displayData.petName}</td>
+          <td>${displayData.service}</td>
+          <td>${totalAmount}</td>
+          <td class="status ${status.toLowerCase()}">${status}</td>
+        `;
+        historyTable.appendChild(historyRow);
+      }
     };
 
-    // ✅ Count today's schedule
-        if (displayData.date === today) {
-          todayScheduleCount++;
-        }
+    // Render all regular appointments
+    snapshot.forEach((doc) => renderRow(doc.data(), "appointment", doc.id));
 
-        // ✅ Count finished appointments
-        if (status.toLowerCase() === "completed") {
-          finishedAppointmentsCount++;
-        }
+    // Render all walk-in appointments
+    walkInSnapshot.forEach((doc) => renderRow(doc.data(), "walkin", doc.id));
 
-        // ✅ Count walk-ins
-        if (type === "walkin") {
-          walkInCount++;
-        }
+    // ✅ Update dashboard card numbers
+    document.querySelector(".card:nth-child(1) .numbers").textContent =
+      todayScheduleCount;
+    document.querySelector(".card:nth-child(2) .numbers").textContent =
+      finishedAppointmentsCount;
+    document.querySelector(".card:nth-child(3) .numbers").textContent =
+      walkInCount;
 
-        // Dashboard summary table
-        if (dashboardTable) {
-          const dashRow = document.createElement("tr");
-          dashRow.innerHTML = `
-            <td>${displayData.name}</td>
-            <td>${displayData.petName}</td>
-            <td>${displayData.service}</td>
-            <td>${displayData.time}</td>
-            <td>${displayData.mode}</td>
-            <td class="status ${status.toLowerCase()}">${status}</td>
-          `;
-          dashboardTable.appendChild(dashRow);
-        }
+    document.querySelector(
+      "#appointments .stat-card:nth-child(1) .stat-number"
+    ).textContent = totalAppointmentsToday;
+    document.querySelector(
+      "#appointments .stat-card:nth-child(2) .stat-number"
+    ).textContent = pendingAppointmentsToday;
+    document.querySelector(
+      "#appointments .stat-card:nth-child(3) .stat-number"
+    ).textContent = cancelledAppointmentsToday;
 
-        // Full appointment table with actions
-        if (appointmentTable) {
-          let actionButtons = "";
-          if (status === "Pending") {
-            actionButtons = `
-              <button class="btn accept">Accept</button>
-              <button class="btn decline">Decline</button>
-              <button class="btn reschedule">Reschedule</button>
-              <button class="btn screenshot">View Screenshot</button>
-            `;
-          } else if (status === "In Progress") {
-            actionButtons = `<button class="btn complete">Complete</button>`;
-          } else if (status === "Completed") {
-            actionButtons = `
-              <button class="btn view">View</button>
-              <button class="btn edit">Edit</button>
-            `;
-          }
-
-          // History table - show all
-  if (historyTable) {
-    const totalAmount = data.totalAmount || 0; // ✅ fallback if field is missing
-    const historyRow = document.createElement("tr");
-    historyRow.innerHTML = `
-      <td>${displayData.date}</td>
-      <td>${displayData.time}</td>
-      <td>${displayData.name}</td>
-      <td>${displayData.petName}</td>
-      <td>${displayData.service}</td>
-        <td>${totalAmount}</td> <!-- ✅ show totalAmount -->
-      <td class="status ${status.toLowerCase()}">${status}</td>
-    
-    `;
-    historyTable.appendChild(historyRow);
-  }
-
-
-          const fullRow = document.createElement("tr");
-          fullRow.innerHTML = `
-            <td>${displayData.date}</td>
-            <td>${displayData.time}</td>
-            <td>${displayData.name}</td>
-            <td>${displayData.contact}</td>
-            <td>${displayData.petName}</td>
-            <td>${displayData.service}</td>
-            <td class="status ${status.toLowerCase()}">${status}</td>
-            <td>${actionButtons}</td>
-          `;
-          appointmentTable.appendChild(fullRow);
-        }
-      }
-
-
-      
-      // Render all regular appointments
-      snapshot.forEach((doc) => renderRow(doc.data(), "appointment"));
-
-      // Render all walk-in appointments
-      walkInSnapshot.forEach((doc) => renderRow(doc.data(), "walkin"));
-
-      
-      // ✅ Update dashboard card numbers
-      document.querySelector(".card:nth-child(1) .numbers").textContent = todayScheduleCount;
-      document.querySelector(".card:nth-child(2) .numbers").textContent = finishedAppointmentsCount;
-      document.querySelector(".card:nth-child(3) .numbers").textContent = walkInCount;
-      
-
-      document.querySelector("#appointments .stat-card:nth-child(1) .stat-number").textContent = totalAppointmentsToday;
-      document.querySelector("#appointments .stat-card:nth-child(2) .stat-number").textContent = pendingAppointmentsToday;
-      document.querySelector("#appointments .stat-card:nth-child(3) .stat-number").textContent = cancelledAppointmentsToday;
-
-      // ✅ If you have a Users card somewhere
-      const usersCard = document.querySelector(".users-count");
-      if (usersCard) {
-        usersCard.textContent = totalUsers;
-      }
-      
-
-      await logActivity(
-        "admin",
-        "Load Appointments",
-        `${snapshot.size + walkInSnapshot.size} appointments loaded.`
-      );
-    } catch (error) {
-      console.error("Error loading appointments:", error);
-      const errorRow = "<tr><td colspan='8'>Error loading appointments.</td></tr>";
-      if (dashboardTable) dashboardTable.innerHTML = errorRow;
-      if (appointmentTable) appointmentTable.innerHTML = errorRow;
-      await logActivity("admin", "Load Appointments Error", error.message);
+    // ✅ If you have a Users card somewhere
+    const usersCard = document.querySelector(".users-count");
+    if (usersCard) {
+      usersCard.textContent = totalUsers;
     }
+
+    // 🟢 Event Listeners: When status changes, re-render all tables
+    document
+      .querySelectorAll(".btn.accept, .btn.decline, .btn.complete")
+      .forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const docId = btn.getAttribute("data-id");
+          const type = btn.getAttribute("data-type");
+          const newStatus = btn.classList.contains("accept")
+            ? "In Progress"
+            : btn.classList.contains("decline")
+            ? "Declined"
+            : "Completed";
+
+          const collectionName =
+            type === "walkin" ? "WalkInAppointment" : "Appointment";
+
+          await updateDoc(doc(db, collectionName, docId), {
+            status: newStatus,
+          });
+
+          // 🔄 Refresh all tables after update
+          loadAllAppointments();
+        });
+      });
+
+    // ✅ Success log
+    await logActivity(
+      "admin",
+      "Load Appointments",
+      `${snapshot.size + walkInSnapshot.size} appointments loaded.`
+    );
+  } catch (error) {
+    console.error("Error loading appointments:", error);
+    const errorRow =
+      "<tr><td colspan='8'>Error loading appointments.</td></tr>";
+    if (dashboardTable) dashboardTable.innerHTML = errorRow;
+    if (appointmentTable) appointmentTable.innerHTML = errorRow;
+    await logActivity("admin", "Load Appointments Error", error.message);
   }
+}
+
 
 
   // 👥 Load all users
@@ -1230,13 +1256,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const reportDateTo = document.getElementById("reportDateTo");
   const reportTableBody = document.getElementById("reportTableBody");
 
-  const todayRevenueEl = document.querySelector(".stats-grid .stat-card:nth-child(1) .stat-number");
-  const weekRevenueEl = document.querySelector(".stats-grid .stat-card:nth-child(2) .stat-number");
-  const monthRevenueEl = document.querySelector(".stats-grid .stat-card:nth-child(3) .stat-number");
-  const servicesCompletedEl = document.querySelector(".stats-grid .stat-card:nth-child(4) .stat-number");
 
 
-  // --- Add this function above your generateBtn click listener ---
+  // --- Update revenue cards from SalesReport ---
 async function updateRevenueCards(category = "all") {
   try {
     const snapshot = await getDocs(collection(db, "SalesReport"));
@@ -1252,13 +1274,10 @@ async function updateRevenueCards(category = "all") {
 
     snapshot.forEach(docSnap => {
       const data = docSnap.data();
-
-      // Filter by category if needed
       if (category.toLowerCase() !== "all" && data.category !== category) return;
 
       const createdAt = data.createdAt?.toDate ? data.createdAt.toDate() : null;
       const amount = data.totalRevenue || 0;
-
       if (!createdAt) return;
 
       if (createdAt.toDateString() === today.toDateString()) todayRevenue += amount;
@@ -1266,28 +1285,16 @@ async function updateRevenueCards(category = "all") {
       if (createdAt >= startOfMonth) monthRevenue += amount;
     });
 
-    // Update cards — always show 0 if no data
-    todayRevenueEl.textContent = `₱${todayRevenue.toLocaleString()}`;
-    weekRevenueEl.textContent = `₱${weekRevenue.toLocaleString()}`;
-    monthRevenueEl.textContent = `₱${monthRevenue.toLocaleString()}`;
+    // ✅ Update cards by ID instead of nth-child
+    document.getElementById("todayRevenue").textContent = `₱${todayRevenue.toLocaleString()}`;
+    document.getElementById("weekRevenue").textContent = `₱${weekRevenue.toLocaleString()}`;
+    document.getElementById("monthRevenue").textContent = `₱${monthRevenue.toLocaleString()}`;
   } catch (err) {
     console.error("Error updating revenue cards:", err);
   }
 }
 
-// --- Then, inside your generateBtn click listener, call this at the end ---
-generateBtn.addEventListener("click", async () => {
-  try {
-    // ...existing report generation code...
-
-    // After table and stats updates:
-    await updateRevenueCards(category);
-  } catch (err) {
-    console.error("Error generating report:", err);
-  }
-});
-
-//BUTTON TO GENERATE SALES REPORT//
+  // --- Generate Report Button ---
   generateBtn.addEventListener("click", async () => {
     try {
       const reportType = reportTypeEl.value;
@@ -1307,53 +1314,58 @@ generateBtn.addEventListener("click", async () => {
       startOfWeek.setDate(today.getDate() - today.getDay());
       const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
-      // Start query
+      // --- Build Appointment query ---
       let q = collection(db, "Appointment");
       const filters = [];
 
-      // Apply category filter if not "all"
+      // ✅ Fix: use "service", not "serviceType"
       if (category.toLowerCase() !== "all") {
-        filters.push(where("serviceType", "==", category));
+        filters.push(where("service", "==", category));
       }
 
-      // Apply date range filter if both dates provided
+      // ✅ Fix: "date" is a string, not a timestamp
       if (fromDate && toDate) {
-        filters.push(where("date", ">=", Timestamp.fromDate(fromDate)));
-        filters.push(where("date", "<=", Timestamp.fromDate(toDate)));
+        filters.push(where("date", ">=", fromDate.toISOString().split("T")[0]));
+        filters.push(where("date", "<=", toDate.toISOString().split("T")[0]));
       }
 
-      // Build final query with all filters 
       if (filters.length > 0) {
         q = query(q, ...filters);
       }
 
+      // --- Get Appointment data ---
       const snapshot = await getDocs(q);
       snapshot.forEach(docSnap => {
-      const data = docSnap.data();
-      const saleDate = data.date?.toDate ? data.date.toDate() : null;
-      const serviceList = data.services || []; // adjust to match your field name
-      const servicePrice = data.totalPrice || 0;
-      totalRevenue += servicePrice;
-      totalServices += serviceList.length || 1;
+        const data = docSnap.data();
 
-  // Revenue card calculations
-  if (saleDate) {
-    if (saleDate.toDateString() === today.toDateString()) todayRevenue += servicePrice;
-    if (saleDate >= startOfWeek) weekRevenue += servicePrice;
-    if (saleDate >= startOfMonth) monthRevenue += servicePrice;
-  }
+        const saleDate = data.createdAt?.toDate
+          ? data.createdAt.toDate()
+          : (data.date ? new Date(data.date) : null);
 
-  rows.push({
-    date: saleDate ? saleDate.toLocaleDateString() : "N/A",
-    type: data.serviceType || "Unknown",
-    services: Array.isArray(serviceList) ? serviceList.join(", ") : serviceList, 
-    revenue: servicePrice,
-    avg: servicePrice,
-    growth: "N/A"
-  });
-});
+        const serviceType = data.service || "Unknown";
+        const servicePrice = data.totalPrice || 0; // ⚠️ confirm this field
 
-      // Save the generated report into SalesReport collection
+        totalRevenue += servicePrice;
+        totalServices += 1;
+
+        // Revenue card calculations
+        if (saleDate) {
+          if (saleDate.toDateString() === today.toDateString()) todayRevenue += servicePrice;
+          if (saleDate >= startOfWeek) weekRevenue += servicePrice;
+          if (saleDate >= startOfMonth) monthRevenue += servicePrice;
+        }
+
+        rows.push({
+          date: saleDate ? saleDate.toLocaleDateString() : "N/A",
+          type: serviceType,
+     
+          revenue: servicePrice,
+          avg: servicePrice,
+          growth: "N/A"
+        });
+      });
+
+      // --- Save to SalesReport ---
       await addDoc(collection(db, "SalesReport"), {
         reportType,
         category,
@@ -1363,9 +1375,9 @@ generateBtn.addEventListener("click", async () => {
         totalServices,
         createdAt: serverTimestamp(),
         details: rows
-      });     
+      });
 
-      // Populate table
+      // --- Populate table ---
       reportTableBody.innerHTML = "";
       if (rows.length > 0) {
         rows.forEach(r => {
@@ -1373,7 +1385,7 @@ generateBtn.addEventListener("click", async () => {
           tr.innerHTML = `
             <td>${r.date}</td>
             <td>${r.type}</td>
-            <td>${r.services}</td>
+    
             <td>₱${r.revenue.toLocaleString()}</td>
             <td>₱${r.avg.toLocaleString()}</td>
             <td>${r.growth}</td>
@@ -1384,24 +1396,20 @@ generateBtn.addEventListener("click", async () => {
         reportTableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;">No data available</td></tr>`;
       }
 
-      
-        // --- REFLECT REVENUE AND SERVICES COMPLETED ---
-        function reflectRevenueCards(today, week, month, services) {
-          document.getElementById("todayRevenue").textContent = `₱${today.toLocaleString()}`;
-          document.getElementById("weekRevenue").textContent = `₱${week.toLocaleString()}`;
-          document.getElementById("monthRevenue").textContent = `₱${month.toLocaleString()}`;
-          document.getElementById("servicesCompleted").textContent = services.toLocaleString();
-        }
-
-        // Call it after calculating totals
-        reflectRevenueCards(todayRevenue, weekRevenue, monthRevenue, totalServices);
+      // --- Reflect local totals ---
+    // ✅ Update services completed card
+document.getElementById("servicesCompleted").textContent = totalServices.toLocaleString();
 
 
-            } catch (err) {
-              console.error("Error generating report:", err);
-            }
-          });
-        });
+      // --- Refresh revenue cards from SalesReport ---
+      await updateRevenueCards(category);
+
+    } catch (err) {
+      console.error("Error generating report:", err);
+    }
+  });
+});
+
 
 
   // 🕓 Load recent activities
