@@ -7,7 +7,7 @@ import {
   where,
   getDocs,
   doc,
-  setDoc
+  updateDoc // ⬅️ FIX: import updateDoc
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
 // ✅ Your Firebase config
@@ -23,49 +23,100 @@ const firebaseConfig = {
 
 // ✅ Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app); // make sure this exists here!d
+const db = getFirestore(app);
 
-
-
+let selectedDocId = null; // ⬅️ FIX: declare global variable
 
 async function loadAppointments() {
   const userId = sessionStorage.getItem("userId");
-  console.log("Loaded userId from sessionStorage:", userId);
   const tableBody = document.getElementById("appointments");
   tableBody.innerHTML = "";
 
   if (!userId) {
-    tableBody.innerHTML = "<tr><td colspan='6'>User not logged in.</td></tr>";
+    tableBody.innerHTML = "<tr><td colspan='7'>User not logged in.</td></tr>";
     return;
   }
 
   try {
-    // ✅ Query all appointments where userId == current userId
     const q = query(collection(db, "Appointment"), where("userId", "==", userId));
     const querySnapshot = await getDocs(q);
 
     if (querySnapshot.empty) {
-      tableBody.innerHTML = "<tr><td colspan='6'>No appointments found.</td></tr>";
+      tableBody.innerHTML = "<tr><td colspan='7'>No appointments found.</td></tr>";
     } else {
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
+      querySnapshot.forEach((docSnap) => {
+        const data = docSnap.data();
         const row = document.createElement("tr");
+
         row.innerHTML = `
           <td>${data.name || ""}</td>
           <td>${data.petName || ""}</td>
           <td>${data.service || ""}</td>
           <td>${data.date || ""}</td>
           <td>${data.number || ""}</td>
-          <td>${data.status || "Pending"}</td>
+          <td class="${data.status === "Cancelled" ? "cancelled" : ""}">
+            ${data.status || "Pending"}
+          </td>
+          <td>
+            ${
+              data.status === "Cancelled"
+                ? "<span class='disabled-text'>--</span>"
+                : `<button class="btn cancel-btn" data-id="${docSnap.id}">Cancel</button>`
+            }
+          </td>
         `;
+
         tableBody.appendChild(row);
+      });
+
+      // attach listeners for cancel buttons
+      document.querySelectorAll(".cancel-btn").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          selectedDocId = e.target.getAttribute("data-id");
+          openCancelModal();
+        });
       });
     }
   } catch (error) {
     console.error("Error fetching appointments:", error);
-    tableBody.innerHTML = "<tr><td colspan='6'>Error loading appointments.</td></tr>";
+    tableBody.innerHTML = "<tr><td colspan='7'>Error loading appointments.</td></tr>";
   }
 }
+
+// ✅ Modal functions
+function openCancelModal() {
+  document.getElementById("cancelModal").style.display = "block";
+}
+function closeCancelModal() {
+  document.getElementById("cancelModal").style.display = "none";
+  document.getElementById("cancelReason").value = "";
+}
+
+// ✅ Confirm cancel with reason
+document.getElementById("confirmCancel").addEventListener("click", async () => {
+  const reason = document.getElementById("cancelReason").value.trim();
+  if (!reason) {
+    alert("Please provide a reason before cancelling.");
+    return;
+  }
+
+  try {
+    const docRef = doc(db, "Appointment", selectedDocId);
+    await updateDoc(docRef, {
+      status: "Cancelled",
+      cancelReason: reason
+    });
+
+    alert("Appointment cancelled successfully!");
+    closeCancelModal();
+    loadAppointments();
+  } catch (error) {
+    console.error("Error cancelling appointment:", error);
+    alert("Failed to cancel appointment.");
+  }
+});
+
+window.closeCancelModal = closeCancelModal;
 
 window.addEventListener("DOMContentLoaded", () => {
   loadAppointments();

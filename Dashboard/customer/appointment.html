@@ -100,6 +100,7 @@
                      <td>Date</td>
                      <td>Contact</td>
                      <td>Status</td>
+                     <td></td>
                    </tr>
                  </thead>
                  <tbody id="appointments">
@@ -109,6 +110,22 @@
 
         </div>
     </div>
+
+        <!-- Cancel Modal -->
+    <div id="cancelModal" class="modal">
+            <div class="modal-content">
+            <span class="close-btn" onclick="closeCancelModal()">&times;</span>
+            <h2>Cancel Appointment</h2>
+            <p>Please provide a reason for cancellation:</p>
+        <textarea id="cancelReason" rows="4" placeholder="Enter reason..."></textarea>
+
+        <div class="modal-actions">
+            <button class="btn" onclick="closeCancelModal()">Close</button>
+            <button class="btn danger-btn" id="confirmCancel">Confirm Cancel</button>
+            </div>
+        </div>
+    </div>
+
 </div>
 </body>
 </html>

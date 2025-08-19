@@ -227,6 +227,22 @@ color:var(--background-color);
   padding-top: 20px;
 }
 
+.btn {
+  padding: 8px 14px;
+  background-color: var(--background-color);
+  color: var(--white);
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.btn:hover {
+  background-color: var(--orange);
+}
+
 /* Table container */
 .table {
   width: 100%;
@@ -290,7 +306,63 @@ color:var(--background-color);
   color: #d32f2f;
 }
 
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background: rgba(0,0,0,0.5);
+}
 
+.modal-content {
+  background: #fff;
+  margin: 10% auto;
+  padding: 20px;
+  border-radius: 12px;
+  width: 400px;
+  max-width: 90%;
+  animation: slideDown 0.3s ease;
+}
+
+.close-btn {
+  float: right;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+textarea {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  resize: none;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 15px;
+  gap: 10px;
+}
+
+.danger-btn {
+  background: red;
+  color: white;
+
+}
+
+.danger-btn:hover {
+  background: darkred;
+  transition: background 0.3s, color 0.3s, box-shadow 0.3s;
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-30px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
 
 
 /* ===== Responsive Enhancements ===== */
