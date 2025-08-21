@@ -1257,7 +1257,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const reportTableBody = document.getElementById("reportTableBody");
 
 
-
   // --- Update revenue cards from SalesReport ---
 async function updateRevenueCards(category = "all") {
   try {
