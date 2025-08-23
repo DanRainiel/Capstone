@@ -4,155 +4,120 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/regular.min.css" integrity="sha512-8hM9a+2hrLBhOuB3uiy+QIXBsu6Qk+snsP1CboFQW6pdt/yYz0IcDp/+CGv5m39r9doGUc/zw6aBpyLF6XFgzg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/fontawesome.min.css" integrity="sha512-v8QQ0YQ3H4K6Ic3PJkym91KoeNT5S3PnDKvqnwqFD1oiqIl653crGZplPdU5KKtHjO0QKcQ2aUlQZYjHczkmGw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/brands.min.css" integrity="sha512-58P9Hy7II0YeXLv+iFiLCv1rtLW47xmiRpC1oFafeKNShp8V5bKV/ciVtYqbk2YfxXQMt58DjNfkXFOn62xE+g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome-animation/1.1.0/font-awesome-animation.min.css" referrerpolicy="no-referrer" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <link rel="stylesheet" href="/Dashboard/customer/invoice.css" />
-  <script type="module" src="./javascript.customer/invoicedatabase.js" defer></script>
+  <script type="module" src="./javascript.customer/invoice.js" defer></script>
   <title>Invoice</title>
 </head>
 <body>
 
 <header class="profile-page-header">
-    <a href="invoicepage.html" class="back-button">
-      <i class="fa-solid fa-arrow-left"></i> Back
-    </a>
-    <h1 class="header-title">Invoice</h1>
+  <a href="invoicepage.html" class="back-button">
+    <i class="fa-solid fa-arrow-left"></i> Back
+  </a>
+  <h1 class="header-title">Invoice</h1>
 </header>
 
-    <section>
-        <div class="invoice">
-        <div class="header">
-            <div class="i_row">
-                <div class="i_logo">
-                    <i class="fa-solid fa-paw"><p> Pet Stop Veterinary Clinic</p></i>
-                </div>
-                <div class="i_title text_right">
-                    <h2>INVOICE</h2>
-                    <p class="p_title">
-                        00/00/0000
-                    </p>
-            </div>
-            </div>
-            <div class="i_row">
-                <div class="i_number">
-                    <p class="p_title">INVOICE NO:*******</p>
-                </div>
-                <div class="i_address text_right">
-                    <p>TO</p>
-                    <p class="p_title">
-                        Contact number: 09255533490 <br/>
-                        <span>Located at Blk 2 lot Cavite Viejo Centenieal Road, <br/>
-                             Gahak, Kawit, Cavite</span> <br/>
-                        <span>Philippines</span>
-                    </p>
-                </div>
-            </div>
+<section>
+  <div class="invoice">
+    <div class="header">
+      <div class="i_row">
+        <div class="i_logo">
+          <i class="fa-solid fa-paw"></i><p> Pet Stop Veterinary Clinic</p>
         </div>
-        <div class="body">
-            <div class="i_table">
-                <div class="i_table_head">
-                    <div class="i_row">
-                        <div class="i_col w_15">
-                            <p class="p_title">Pet Size</p>
-                        </div>
-                        <div class="i_col w_55">
-                            <p class="p_title">Pet Name</p>
-                        </div>
-                        <div class="i_col w_15">
-                            <p class="p_title">Owner Name</p>
-                        </div>
-                        <div class="i_col w_15">
-                            <p class="p_title">Service Type:</p>
-                        </div>
-                        <div class="i_col w_15">
-                            <p class="p_title">Appointment Time</p>
-                        </div>
-                        <div class="i_col w_15">
-                            <p class="p_title">Appointment Date</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="i_table_body">
-                    <div class="i_row">
-                        <div class="i_col w_15">
-                            <p class="p_title">L</p>
-                        </div>
-                        <div class="i_col w_55">
-                            <p class="p_title">Bruno</p>
-                        </div>
-                        <div class="i_col w_15">
-                            <p class="p_title">Peter</p>
-                        </div>
-                        <div class="i_col w_15">
-                            <p class="p_title">Grooming</p>
-                        </div>
-                        <div class="i_col w_15">
-                            <p class="p_title">2:30</p>
-                        </div>
-                        <div class="i_col w_15">
-                            <p class="p_title">5-5-2025</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="i_table_foot">
-                    <div class="i_row">
-                        <div class="i_col w_15">
-                            <p></p>
-                        </div>
-                        <div class="i_col w_55">
-                            <p></p>
-                        </div>
-                        <div class="i_col w_15">
-                            <p></p>
-                        </div>
-                        <div class="i_col w_15">
-                            <p></p>
-                        </div>
-                        <div class="i_col w_15">
-                            <p>Sub Total:</p>
-                            <p>Discount: </p>
-                        </div>
-                        <div class="i_col w_15">
-                            <p>1,000 php</p>
-                            <p>10%</p>
-                        </div>
-                    </div>
-                    <div class="i_row grand_total_wrap">
-                        <div class="i_col w_50 grand_total">
-                            <p><span>Total:</span>
-                            <span>900 php</span></p>
-                        </div>
-                    </div>
-                </div>
+        <div class="i_title text_right">
+          <h2>INVOICE</h2>
+          <p class="p_title" id="invoiceDate">00/00/0000</p>
+        </div>
+      </div>
+      <div class="i_row">
+        <div class="i_number">
+          <p class="p_title">INVOICE NO: <span id="invoiceNo">*******</span></p>
+        </div>
+        <div class="i_address text_right">
+          <p>TO</p>
+          <p class="p_title">
+            Contact number: <span id="ownerNumber">----------</span><br/>
+            <span>Located at Blk 2 lot Cavite Viejo Centenieal Road, <br/>
+                 Gahak, Kawit, Cavite</span> <br/>
+            <span>Philippines</span>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="body">
+      <div class="i_table">
+        <div class="i_table_head">
+          <div class="i_row">
+            <div class="i_col w_15"><p class="p_title">Pet Size</p></div>
+            <div class="i_col w_15"><p class="p_title">Pet Name</p></div>
+            <div class="i_col w_15"><p class="p_title">Owner Name</p></div>
+            <div class="i_col w_15"><p class="p_title">Service Type</p></div>
+            <div class="i_col w_15"><p class="p_title">Appointment Time</p></div>
+            <div class="i_col w_15"><p class="p_title">Appointment Date</p></div>
+          </div>
+        </div>
+
+        <div class="i_table_body">
+          <div class="i_row">
+            <div class="i_col w_15"><p id="petSize"></p></div>
+            <div class="i_col w_15"><p id="petName"></p></div>
+            <div class="i_col w_15"><p id="ownerName"></p></div>
+            <div class="i_col w_15"><p id="service"></p></div>
+            <div class="i_col w_15"><p id="appointmentTime"></p></div>
+            <div class="i_col w_15"><p id="appointmentDate"></p></div>
+          </div>
+        </div>
+
+        <div class="i_table_foot">
+          <div class="i_row">
+            <div class="i_col w_70"><p></p></div>
+
+            <!-- Labels -->
+            <div class="i_col w_15">
+              <p>Service Fee:</p>
+              <p>Fee:</p>
+              <p>Discount:</p>
             </div>
-        </div>
-        <div class="footer">
-            <div class="i_row">
-                <div class="divi_col w_50">
-                    <p class="p_title">Payment Method</p>
-                    <p>Ji Kass</p>
-                </div>
-                <div class="divi_col w_50 text_right">
-                    <p class="p_title">Term and condition</p>
-                    <p>These Terms and Conditions constitute a 
-                        legally binding agreement made between you, whether 
-                        personally or on behalf of an entity (“you”) and 
-                        [business entity name] (“we,” “us” or “our”),
-                         concerning your access to and use of the 
-                         [website name.com] website as 
-                         well as any other media form, media channel, 
-                         mobile website or mobile application related, 
-                         linked, or otherwise connected thereto 
-                         (collectively, the “Site”).</p>
-                </div>
+
+            <!-- Values -->
+            <div class="i_col w_15">
+              <p id="serviceFee">₱0.00</p>
+            
+              <p id="reservationFee">₱0.00</p>
+              <p id="discount">0%</p>
             </div>
+          </div>
+
+          <!-- Total -->
+          <div class="i_row grand_total_wrap">
+            <div class="i_col w_50 grand_total">
+              <p><span>Total:</span>
+              <span id="totalFee">₱0.00</span></p>
+            </div>
+          </div>
         </div>
+
+      </div>
+    </div>
+
+    <div class="footer">
+      <div class="i_row">
+        <div class="divi_col w_50">
+          <p class="p_title">Payment Method</p>
+          <p id="paymentStatus">Gcash</p>
         </div>
-    </section>
+        <div class="divi_col w_50 text_right">
+          <p class="p_title">Terms and condition</p>
+          <p>These Terms and Conditions constitute a 
+            legally binding agreement made between you and 
+            Pet Stop Veterinary Clinic regarding your appointment and billing.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
 </body>
 </html>

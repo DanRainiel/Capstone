@@ -56,20 +56,22 @@ async function loadAppointments() {
 
   // ✅ Add SweetAlert loader for "View Invoice" button
   const button = row.querySelector(".view-invoice-btn");
-  button.addEventListener("click", () => {
-    Swal.fire({
-      title: "Loading Invoice...",
-      html: "Please wait while we load your invoice.",
-      allowOutsideClick: false,
-      didOpen: () => {
-        Swal.showLoading();
-      }
-    });
-
-    setTimeout(() => {
-      window.location.href = "invoice.html";
-    }, 1500); // 1.2 second delay before redirect
+button.addEventListener("click", () => {
+  Swal.fire({
+    title: "Loading Invoice...",
+    html: "Please wait while we load your invoice.",
+    allowOutsideClick: false,
+    didOpen: () => {
+      Swal.showLoading();
+    }
   });
+
+  setTimeout(() => {
+    // ✅ redirect with ?id=<doc.id>
+    window.location.href = `invoice.html?id=${doc.id}`;
+  }, 1500);
+});
+
 });
 
   } catch (error) {

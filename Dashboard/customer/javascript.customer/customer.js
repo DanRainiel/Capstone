@@ -373,6 +373,9 @@ function formatTime(time) {
 
 // run on load
 loadClinicHours();
+
+
+
 // CALENDAR //
 
                 let currentDate = new Date();
@@ -494,68 +497,78 @@ onSnapshot(blockedCollection, (snapshot) => {
         calendarGrid.appendChild(emptyCell);
     }
 
-    const today = new Date();
-    for (let day = 1; day <= daysInMonth; day++) {
-        const cellDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-        const dateStr = formatDate(cellDate);
+ const today = new Date();
+today.setHours(0, 0, 0, 0); // normalize today's date
 
-        const dayCell = document.createElement('div');
-        dayCell.className = 'calendar-day-cell';
-        dayCell.innerHTML = `<div class="calendar-day-number">${day}</div>`;
+for (let day = 1; day <= daysInMonth; day++) {
+    const cellDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+    const dateStr = formatDate(cellDate);
 
-        // Blocked days
-        if (blockedSlots.some(b => b.date === dateStr)) {
-            dayCell.classList.add('blocked-day');
-            dayCell.style.pointerEvents = 'none';
-            const blockedBadge = document.createElement('div');
-            blockedBadge.className = 'calendar-blocked-badge';
-            blockedBadge.textContent = 'Blocked';
-            dayCell.appendChild(blockedBadge);
-        }
+    const dayCell = document.createElement('div');
+    dayCell.className = 'calendar-day-cell';
+    dayCell.innerHTML = `<div class="calendar-day-number">${day}</div>`;
 
-        // Today highlight
-        if (cellDate.toDateString() === today.toDateString()) {
-            dayCell.classList.add('today');
-        }
+    // ❌ Grey out past dates
+    if (cellDate < today) {
+        dayCell.classList.add('past-day');
+        dayCell.style.pointerEvents = 'none';
+    }
 
-        // Selected date highlight
-        if (selectedDate && cellDate.toDateString() === selectedDate.toDateString()) {
-            dayCell.classList.add('selected');
-        }
+    // Blocked days
+    if (blockedSlots.some(b => b.date === dateStr)) {
+        dayCell.classList.add('blocked-day');
+        dayCell.style.pointerEvents = 'none';
+        const blockedBadge = document.createElement('div');
+        blockedBadge.className = 'calendar-blocked-badge';
+        blockedBadge.textContent = 'Blocked';
+        dayCell.appendChild(blockedBadge);
+    }
 
-        // Appointment count badge
-        const dayAppointments = (appointments[dateStr] || []).filter((apt, index, self) =>
-            index === self.findIndex(t =>
-                t.time === apt.time &&
-                t.petName === apt.petName &&
-                t.owner === apt.owner &&
-                t.type === apt.type
-            )
-        );
+    // Today highlight
+    if (cellDate.toDateString() === today.toDateString()) {
+        dayCell.classList.add('today');
+    }
 
-        if (dayAppointments.length > 0) {
-            const countBadge = document.createElement('div');
-            countBadge.className = 'calendar-appointment-count';
-            countBadge.textContent = dayAppointments.length;
-            dayCell.classList.add('has-appointments');
-            dayCell.appendChild(countBadge);
-        }
+    // Selected date highlight
+    if (selectedDate && cellDate.toDateString() === selectedDate.toDateString()) {
+        dayCell.classList.add('selected');
+    }
 
-        // Available indicator
+    // Appointment count badge
+    const dayAppointments = (appointments[dateStr] || []).filter((apt, index, self) =>
+        index === self.findIndex(t =>
+            t.time === apt.time &&
+            t.petName === apt.petName &&
+            t.owner === apt.owner &&
+            t.type === apt.type
+        )
+    );
+
+    if (dayAppointments.length > 0) {
+        const countBadge = document.createElement('div');
+        countBadge.className = 'calendar-appointment-count';
+        countBadge.textContent = dayAppointments.length;
+        dayCell.classList.add('has-appointments');
+        dayCell.appendChild(countBadge);
+    }
+
+    // Available indicator
+    if (cellDate >= today) {  // only show if date is valid
         const availableIndicator = document.createElement('div');
         availableIndicator.className = 'calendar-available-indicator';
         availableIndicator.textContent = 'Available';
         dayCell.appendChild(availableIndicator);
-
-        // Clickable if not blocked
-        if (!dayCell.classList.contains('blocked-day')) {
-            dayCell.addEventListener('click', () => selectDate(cellDate));
-        }
-
-        calendarGrid.appendChild(dayCell);
     }
-}
 
+    // Clickable if not blocked or past
+    if (!dayCell.classList.contains('blocked-day') && !dayCell.classList.contains('past-day')) {
+        dayCell.addEventListener('click', () => selectDate(cellDate));
+    }
+
+    calendarGrid.appendChild(dayCell);
+}
+                }
+                
 
 
                 function navigateMonth(direction) {
