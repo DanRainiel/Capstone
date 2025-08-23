@@ -811,6 +811,8 @@
   color: var(--background-color);
 }
 
+
+
 /* Style the delete buttons inside specialDiscountsList */
 #specialDiscountsList button.btn-delete {
   background-color: #e74c3c; /* red */
@@ -827,6 +829,14 @@
   background-color: rgba(165, 10, 10, 0.75);
   transform: translateY(-2px);
 }
+
+#pet-management .content-section {
+        display: block;
+        padding: 20px;
+        min-height: calc(100vh - 60px);
+    }
+
+
 
 
 

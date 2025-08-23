@@ -1490,3 +1490,460 @@ document.getElementById("servicesCompleted").textContent = totalServices.toLocal
   loadAllUsers();
 
   // 🐾 Load services and special discounts
+
+  //Pet-Management//
+
+     let allPets = [];
+    let filteredPets = [];
+
+    // DOM Elements
+    const addPetForm = document.getElementById('addPetForm');
+    const editPetForm = document.getElementById('editPetForm');
+    const petsTableBody = document.getElementById('petsTableBody');
+    const editPetModal = document.getElementById('editPetModal');
+    const viewPetModal = document.getElementById('viewPetModal');
+    const searchPetName = document.getElementById('searchPetName');
+    const searchOwnerName = document.getElementById('searchOwnerName');
+    const filterSpecies = document.getElementById('filterSpecies');
+
+    // Statistics elements
+    const totalPetsCount = document.getElementById('totalPetsCount');
+    const activePetsCount = document.getElementById('activePetsCount');
+    const recentPetsCount = document.getElementById('recentPetsCount');
+    const upcomingAppointmentsCount = document.getElementById('upcomingAppointmentsCount');
+
+    // Load all pets from Firestore
+    async function loadAllPets() {
+      try {
+        const querySnapshot = await getDocs(collection(db, "Pets"));
+        allPets = [];
+        
+        querySnapshot.forEach((doc) => {
+          allPets.push({
+            id: doc.id,
+            ...doc.data()
+          });
+        });
+
+        filteredPets = [...allPets];
+        renderPetsTable();
+        updateStatistics();
+      } catch (error) {
+        console.error("Error loading pets:", error);
+        Swal.fire('Error', 'Failed to load pets data', 'error');
+      }
+    }
+
+    // Render pets table
+    function renderPetsTable() {
+      petsTableBody.innerHTML = '';
+
+      if (filteredPets.length === 0) {
+        petsTableBody.innerHTML = `
+          <tr>
+            <td colspan="9" style="text-align: center; padding: 40px; color: #666;">
+              No pets found matching your criteria
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      filteredPets.forEach(pet => {
+        const row = document.createElement('tr');
+        const lastVisit = pet.lastVisit || 'Never';
+        const status = pet.status || 'Active';
+        
+        row.innerHTML = `
+          <td>
+            <strong>${pet.petName || 'N/A'}</strong>
+          </td>
+          <td>
+            <span class="pet-species">${pet.species || 'N/A'}</span>
+          </td>
+          <td>${pet.breed || '-'}</td>
+          <td>${pet.age || '-'}</td>
+          <td>${pet.ownerName || 'N/A'}</td>
+          <td>${pet.ownerContact || '-'}</td>
+          <td>${lastVisit}</td>
+          <td>
+            <span class="status ${status.toLowerCase()}">${status}</span>
+          </td>
+          <td>
+            <button class="btn-primary view-pet" data-pet-id="${pet.id}">
+              <i class="fa-solid fa-eye"></i> View
+            </button>
+            <button class="btn-primary edit-pet" data-pet-id="${pet.id}">
+              <i class="fa-solid fa-edit"></i> Edit
+            </button>
+            <button class="btn-danger delete-pet" data-pet-id="${pet.id}">
+              <i class="fa-solid fa-trash"></i> Delete
+            </button>
+          </td>
+        `;
+        
+        petsTableBody.appendChild(row);
+      });
+
+      attachTableEventListeners();
+    }
+
+    // Update statistics
+    function updateStatistics() {
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+
+      let recentPets = 0;
+      let activePets = 0;
+
+      allPets.forEach(pet => {
+        // Count active pets
+        if (!pet.status || pet.status.toLowerCase() === 'active') {
+          activePets++;
+        }
+
+        // Count pets added this month
+        if (pet.createdAt && pet.createdAt.toDate) {
+          const createdDate = pet.createdAt.toDate();
+          if (createdDate.getMonth() === currentMonth && createdDate.getFullYear() === currentYear) {
+            recentPets++;
+          }
+        }
+      });
+
+      totalPetsCount.textContent = allPets.length;
+      activePetsCount.textContent = activePets;
+      recentPetsCount.textContent = recentPets;
+      // You can implement upcoming appointments count by querying appointments collection
+      upcomingAppointmentsCount.textContent = '0'; // Placeholder
+    }
+
+    // Add new pet
+    addPetForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const formData = new FormData(addPetForm);
+      const petData = {
+        ownerName: formData.get('ownerName'),
+        ownerContact: formData.get('ownerContact'),
+        petName: formData.get('petName'),
+        species: formData.get('species'),
+        breed: formData.get('breed'),
+        age: formData.get('age'),
+        sex: formData.get('sex'),
+        weight: formData.get('weight') ? parseFloat(formData.get('weight')) : null,
+        size: formData.get('size'),
+        color: formData.get('color'),
+        medicalHistory: formData.get('medicalHistory'),
+        specialNotes: formData.get('specialNotes'),
+        status: 'Active',
+        createdAt: serverTimestamp(),
+        lastUpdated: serverTimestamp()
+      };
+
+      try {
+        await addDoc(collection(db, "Pets"), petData);
+        
+        Swal.fire({
+          title: 'Success!',
+          text: 'Pet has been added successfully',
+          icon: 'success',
+          timer: 2000,
+          showConfirmButton: false
+        });
+
+        addPetForm.reset();
+        loadAllPets();
+      } catch (error) {
+        console.error("Error adding pet:", error);
+        Swal.fire('Error', 'Failed to add pet. Please try again.', 'error');
+      }
+    });
+
+    // Attach event listeners to table buttons
+    function attachTableEventListeners() {
+      // View pet buttons
+      document.querySelectorAll('.view-pet').forEach(button => {
+        button.addEventListener('click', (e) => {
+          const petId = e.target.closest('button').dataset.petId;
+          showPetDetails(petId);
+        });
+      });
+
+      // Edit pet buttons
+      document.querySelectorAll('.edit-pet').forEach(button => {
+        button.addEventListener('click', (e) => {
+          const petId = e.target.closest('button').dataset.petId;
+          openEditPetModal(petId);
+        });
+      });
+
+      // Delete pet buttons
+      document.querySelectorAll('.delete-pet').forEach(button => {
+        button.addEventListener('click', (e) => {
+          const petId = e.target.closest('button').dataset.petId;
+          deletePet(petId);
+        });
+      });
+    }
+
+    // Show pet details in modal
+    function showPetDetails(petId) {
+      const pet = allPets.find(p => p.id === petId);
+      if (!pet) return;
+
+      const detailsContent = document.getElementById('petDetailsContent');
+      const createdDate = pet.createdAt?.toDate ? pet.createdAt.toDate().toLocaleDateString() : 'Unknown';
+      const lastUpdated = pet.lastUpdated?.toDate ? pet.lastUpdated.toDate().toLocaleDateString() : 'Unknown';
+
+      detailsContent.innerHTML = `
+        <div class="pet-card">
+          <div class="pet-header">
+            <div class="pet-name">${pet.petName || 'N/A'}</div>
+            <div class="pet-species">${pet.species || 'N/A'}</div>
+          </div>
+          
+          <div class="pet-details">
+            <div class="pet-detail">
+              <div class="pet-detail-label">Owner</div>
+              <div class="pet-detail-value">${pet.ownerName || 'N/A'}</div>
+            </div>
+            <div class="pet-detail">
+              <div class="pet-detail-label">Contact</div>
+              <div class="pet-detail-value">${pet.ownerContact || 'N/A'}</div>
+            </div>
+            <div class="pet-detail">
+              <div class="pet-detail-label">Breed</div>
+              <div class="pet-detail-value">${pet.breed || 'N/A'}</div>
+            </div>
+            <div class="pet-detail">
+              <div class="pet-detail-label">Age</div>
+              <div class="pet-detail-value">${pet.age || 'N/A'}</div>
+            </div>
+            <div class="pet-detail">
+              <div class="pet-detail-label">Sex</div>
+              <div class="pet-detail-value">${pet.sex || 'N/A'}</div>
+            </div>
+            <div class="pet-detail">
+              <div class="pet-detail-label">Weight</div>
+              <div class="pet-detail-value">${pet.weight ? pet.weight + ' kg' : 'N/A'}</div>
+            </div>
+            <div class="pet-detail">
+              <div class="pet-detail-label">Size</div>
+              <div class="pet-detail-value">${pet.size || 'N/A'}</div>
+            </div>
+            <div class="pet-detail">
+              <div class="pet-detail-label">Color</div>
+              <div class="pet-detail-value">${pet.color || 'N/A'}</div>
+            </div>
+            <div class="pet-detail">
+              <div class="pet-detail-label">Status</div>
+              <div class="pet-detail-value">
+                <span class="status ${(pet.status || 'active').toLowerCase()}">${pet.status || 'Active'}</span>
+              </div>
+            </div>
+            <div class="pet-detail">
+              <div class="pet-detail-label">Registered</div>
+              <div class="pet-detail-value">${createdDate}</div>
+            </div>
+          </div>
+          
+          ${pet.medicalHistory ? `
+            <div style="margin-top: 20px;">
+              <div class="pet-detail-label">Medical History</div>
+              <div class="pet-detail-value" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 5px;">
+                ${pet.medicalHistory}
+              </div>
+            </div>
+          ` : ''}
+          
+          ${pet.specialNotes ? `
+            <div style="margin-top: 15px;">
+              <div class="pet-detail-label">Special Notes</div>
+              <div class="pet-detail-value" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 5px;">
+                ${pet.specialNotes}
+              </div>
+            </div>
+          ` : ''}
+        </div>
+      `;
+
+      viewPetModal.classList.add('show');
+    }
+
+    // Open edit pet modal
+    function openEditPetModal(petId) {
+      const pet = allPets.find(p => p.id === petId);
+      if (!pet) return;
+
+      // Populate form fields
+      document.getElementById('editPetId').value = pet.id;
+      document.getElementById('editOwnerName').value = pet.ownerName || '';
+      document.getElementById('editOwnerContact').value = pet.ownerContact || '';
+      document.getElementById('editPetName').value = pet.petName || '';
+      document.getElementById('editSpecies').value = pet.species || '';
+      document.getElementById('editBreed').value = pet.breed || '';
+      document.getElementById('editAge').value = pet.age || '';
+      document.getElementById('editSex').value = pet.sex || '';
+      document.getElementById('editWeight').value = pet.weight || '';
+      document.getElementById('editSize').value = pet.size || '';
+      document.getElementById('editColor').value = pet.color || '';
+      document.getElementById('editMedicalHistory').value = pet.medicalHistory || '';
+      document.getElementById('editSpecialNotes').value = pet.specialNotes || '';
+
+      editPetModal.classList.add('show');
+    }
+
+    // Save pet changes
+    document.getElementById('savePetChanges').addEventListener('click', async () => {
+      const petId = document.getElementById('editPetId').value;
+      
+      const updatedData = {
+        ownerName: document.getElementById('editOwnerName').value,
+        ownerContact: document.getElementById('editOwnerContact').value,
+        petName: document.getElementById('editPetName').value,
+        species: document.getElementById('editSpecies').value,
+        breed: document.getElementById('editBreed').value,
+        age: document.getElementById('editAge').value,
+        sex: document.getElementById('editSex').value,
+        weight: document.getElementById('editWeight').value ? parseFloat(document.getElementById('editWeight').value) : null,
+        size: document.getElementById('editSize').value,
+        color: document.getElementById('editColor').value,
+        medicalHistory: document.getElementById('editMedicalHistory').value,
+        specialNotes: document.getElementById('editSpecialNotes').value,
+        lastUpdated: serverTimestamp()
+      };
+
+      try {
+        await updateDoc(doc(db, "Pets", petId), updatedData);
+        
+        Swal.fire({
+          title: 'Success!',
+          text: 'Pet information updated successfully',
+          icon: 'success',
+          timer: 2000,
+          showConfirmButton: false
+        });
+
+        editPetModal.classList.remove('show');
+        loadAllPets();
+      } catch (error) {
+        console.error("Error updating pet:", error);
+        Swal.fire('Error', 'Failed to update pet information. Please try again.', 'error');
+      }
+    });
+
+    // Delete pet
+    function deletePet(petId) {
+      const pet = allPets.find(p => p.id === petId);
+      if (!pet) return;
+
+      Swal.fire({
+        title: 'Are you sure?',
+        text: `Do you want to delete ${pet.petName}? This action cannot be undone!`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Yes, delete it!',
+        cancelButtonText: 'Cancel'
+      }).then(async (result) => {
+        if (result.isConfirmed) {
+          try {
+            await deleteDoc(doc(db, "Pets", petId));
+            
+            Swal.fire({
+              title: 'Deleted!',
+              text: 'Pet has been deleted successfully.',
+              icon: 'success',
+              timer: 2000,
+              showConfirmButton: false
+            });
+
+            loadAllPets();
+          } catch (error) {
+            console.error("Error deleting pet:", error);
+            Swal.fire('Error', 'Failed to delete pet. Please try again.', 'error');
+          }
+        }
+      });
+    }
+
+    // Search and filter functionality
+    function filterPets() {
+      const petNameSearch = searchPetName.value.toLowerCase().trim();
+      const ownerNameSearch = searchOwnerName.value.toLowerCase().trim();
+      const speciesFilter = filterSpecies.value;
+
+      filteredPets = allPets.filter(pet => {
+        const matchesPetName = !petNameSearch || 
+          (pet.petName && pet.petName.toLowerCase().includes(petNameSearch));
+        
+        const matchesOwnerName = !ownerNameSearch || 
+          (pet.ownerName && pet.ownerName.toLowerCase().includes(ownerNameSearch));
+        
+        const matchesSpecies = !speciesFilter || pet.species === speciesFilter;
+
+        return matchesPetName && matchesOwnerName && matchesSpecies;
+      });
+
+      renderPetsTable();
+    }
+
+    // Search button event
+    document.getElementById('searchBtn').addEventListener('click', filterPets);
+
+    // Clear search button event
+    document.getElementById('clearSearchBtn').addEventListener('click', () => {
+      searchPetName.value = '';
+      searchOwnerName.value = '';
+      filterSpecies.value = '';
+      filteredPets = [...allPets];
+      renderPetsTable();
+    });
+
+    // Real-time search as user types
+    searchPetName.addEventListener('input', filterPets);
+    searchOwnerName.addEventListener('input', filterPets);
+    filterSpecies.addEventListener('change', filterPets);
+
+    // Modal close functionality
+    document.querySelectorAll('.close, #cancelEditPet, #closePetDetails').forEach(element => {
+      element.addEventListener('click', () => {
+        editPetModal.classList.remove('show');
+        viewPetModal.classList.remove('show');
+      });
+    });
+
+    // Close modal when clicking outside
+    window.addEventListener('click', (e) => {
+      if (e.target === editPetModal) {
+        editPetModal.classList.remove('show');
+      }
+      if (e.target === viewPetModal) {
+        viewPetModal.classList.remove('show');
+      }
+    });
+
+    // Real-time updates from Firestore
+    onSnapshot(collection(db, "Pets"), (snapshot) => {
+      loadAllPets();
+    });
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      loadAllPets();
+    });
+
+    // Export functions for external use (if needed)
+    window.petManagement = {
+      loadAllPets,
+      filterPets,
+      showPetDetails,
+      openEditPetModal,
+      deletePet
+    };
+
+    
+  
