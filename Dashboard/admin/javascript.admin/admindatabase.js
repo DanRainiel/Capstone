@@ -255,7 +255,7 @@
         });
     }
 
-  // 📅 Load appointments into two tables
+// 📅 Load appointments into two tables
 async function loadAllAppointments() {
   const dashboardTable = document.getElementById("table-dashboard");
   const appointmentTable = document.getElementById("appointmentTable");
@@ -273,6 +273,7 @@ async function loadAllAppointments() {
   let totalAppointmentsToday = 0;
   let pendingAppointmentsToday = 0;
   let cancelledAppointmentsToday = 0;
+  let todaysEarnings = 0;
 
   let totalUsers = 0;
 
@@ -310,19 +311,37 @@ async function loadAllAppointments() {
         mode: type === "walkin" ? "Walk-In" : "Appointment",
       };
 
-      // ✅ Count today's schedule
+      // ✅ Count today's scheduled appointments
       if (displayData.date === today) {
-        todayScheduleCount++;
+        totalAppointmentsToday++;
       }
 
       // ✅ Count finished appointments
       if (status.toLowerCase() === "completed") {
         finishedAppointmentsCount++;
+        // 🟢 Add to today's earnings only if completed today
+        // 🟢 Add to today's earnings only if completed today
+if (displayData.date === today) {
+  let amount = data.totalAmount || 0;
+  if (typeof amount === "string") {
+    amount = amount.replace(/[^\d.-]/g, ""); // remove ₱ and commas
+  }
+  todaysEarnings += Number(amount) || 0;
+}
+
       }
 
       // ✅ Count walk-ins
       if (type === "walkin") {
         walkInCount++;
+      }
+
+      // ✅ Count pending and cancelled (all time)
+      if (status.toLowerCase() === "pending") {
+        pendingAppointmentsToday++;
+      }
+      if (status.toLowerCase() === "cancelled") {
+        cancelledAppointmentsToday++;
       }
 
       // Dashboard summary table
@@ -339,60 +358,60 @@ async function loadAllAppointments() {
         dashboardTable.appendChild(dashRow);
       }
 
-    if (appointmentTable) {
-  // ✅ ensure status always has a value
-  const normalizedStatus = (status || "Pending").toLowerCase();
-  let actionButtons = "";
+      // Appointment table
+      if (appointmentTable) {
+        const normalizedStatus = (status || "Pending").toLowerCase();
+        let actionButtons = "";
 
-  if (normalizedStatus === "pending") {
-    actionButtons = `
-      <button class="btn accept" data-id="${docId}" data-type="${type}">Accept</button>
-      <button class="btn decline" data-id="${docId}" data-type="${type}">Decline</button>
-      <button class="btn reschedule" data-id="${docId}" data-type="${type}">Reschedule</button>
-      <button class="btn screenshot" data-id="${docId}" data-type="${type}">View Screenshot</button>
-    `;
-  } else if (normalizedStatus === "in progress") {
-    actionButtons = `
-      <button class="btn complete" data-id="${docId}" data-type="${type}">Complete</button>
-    `;
-  } else if (normalizedStatus === "completed") {
-    actionButtons = `
-      <button class="btn view" data-id="${docId}" data-type="${type}">View</button>
-      <button class="btn edit" data-id="${docId}" data-type="${type}">Edit</button>
-    `;
-  }
+        if (normalizedStatus === "pending") {
+          actionButtons = `
+            <button class="btn accept" data-id="${docId}" data-type="${type}">Accept</button>
+            <button class="btn decline" data-id="${docId}" data-type="${type}">Decline</button>
+            <button class="btn reschedule" data-id="${docId}" data-type="${type}">Reschedule</button>
+            <button class="btn screenshot" data-id="${docId}" data-type="${type}">View Screenshot</button>
+          `;
+        } else if (normalizedStatus === "in progress") {
+          actionButtons = `
+            <button class="btn complete" data-id="${docId}" data-type="${type}">Complete</button>
+          `;
+        } else if (normalizedStatus === "completed") {
+          actionButtons = `
+            <button class="btn view" data-id="${docId}" data-type="${type}">View</button>
+            <button class="btn edit" data-id="${docId}" data-type="${type}">Edit</button>
+          `;
+        }
 
-  const fullRow = document.createElement("tr");
-  fullRow.innerHTML = `
-    <td>${displayData.date}</td>
-    <td>${displayData.time}</td>
-    <td>${displayData.name}</td>
-    <td>${displayData.contact}</td>
-    <td>${displayData.petName}</td>
-    <td>${displayData.service}</td>
-    <td class="status ${normalizedStatus}">${status || "Pending"}</td>
-    <td>${actionButtons}</td>
-  `;
-  appointmentTable.appendChild(fullRow);
-}
+        const fullRow = document.createElement("tr");
+        fullRow.innerHTML = `
+          <td>${displayData.date}</td>
+          <td>${displayData.time}</td>
+          <td>${displayData.name}</td>
+          
+          <td>${displayData.petName}</td>
+          <td>${displayData.service}</td>
+          <td class="status ${normalizedStatus}">${status || "Pending"}</td>
+          <td>${actionButtons}</td>
+        `;
+        appointmentTable.appendChild(fullRow);
+      }
 
-// History table
-if (historyTable) {
-  const totalAmount = data.totalAmount || 0; // ✅ fallback if field is missing
-  const normalizedStatus = (status || "Pending").toLowerCase();
+      // History table
+      if (historyTable) {
+        const totalAmount = data.totalAmount || 0;
+        const normalizedStatus = (status || "Pending").toLowerCase();
 
-  const historyRow = document.createElement("tr");
-  historyRow.innerHTML = `
-    <td>${displayData.date}</td>
-    <td>${displayData.time}</td>
-    <td>${displayData.name}</td>
-    <td>${displayData.petName}</td>
-    <td>${displayData.service}</td>
-    <td>${totalAmount}</td>
-    <td class="status ${normalizedStatus}">${status || "Pending"}</td>
-  `;
-  historyTable.appendChild(historyRow);
-}
+        const historyRow = document.createElement("tr");
+        historyRow.innerHTML = `
+          <td>${displayData.date}</td>
+          <td>${displayData.time}</td>
+          <td>${displayData.name}</td>
+          <td>${displayData.petName}</td>
+          <td>${displayData.service}</td>
+          <td>${totalAmount}</td>
+          <td class="status ${normalizedStatus}">${status || "Pending"}</td>
+        `;
+        historyTable.appendChild(historyRow);
+      }
     };
 
     // Render all regular appointments
@@ -403,7 +422,7 @@ if (historyTable) {
 
     // ✅ Update dashboard card numbers
     document.querySelector(".card:nth-child(1) .numbers").textContent =
-      todayScheduleCount;
+      totalAppointmentsToday;
     document.querySelector(".card:nth-child(2) .numbers").textContent =
       finishedAppointmentsCount;
     document.querySelector(".card:nth-child(3) .numbers").textContent =
@@ -411,19 +430,26 @@ if (historyTable) {
 
     document.querySelector(
       "#appointments .stat-card:nth-child(1) .stat-number"
-    ).textContent = totalAppointmentsToday;
+    ).textContent = totalAppointmentsToday; // today's schedule
     document.querySelector(
       "#appointments .stat-card:nth-child(2) .stat-number"
-    ).textContent = pendingAppointmentsToday;
+    ).textContent = pendingAppointmentsToday; // pending
     document.querySelector(
       "#appointments .stat-card:nth-child(3) .stat-number"
-    ).textContent = cancelledAppointmentsToday;
+    ).textContent = cancelledAppointmentsToday; // cancelled
 
-    // ✅ If you have a Users card somewhere
-    const usersCard = document.querySelector(".users-count");
-    if (usersCard) {
-      usersCard.textContent = totalUsers;
-    }
+    
+// ✅ Update Today's Earnings card correctly
+const earningsCard = Array.from(document.querySelectorAll(".card"))
+  .find(card => card.querySelector(".cardName")?.textContent.includes("Today's Earnings"));
+
+if (earningsCard) {
+  earningsCard.querySelector(".numbers").textContent =
+    "₱" + todaysEarnings.toLocaleString("en-PH");
+}
+
+
+
 
     // 🟢 Event Listeners: When status changes, re-render all tables
     document
@@ -435,7 +461,7 @@ if (historyTable) {
           const newStatus = btn.classList.contains("accept")
             ? "In Progress"
             : btn.classList.contains("decline")
-            ? "Declined"
+            ? "Cancelled"
             : "Completed";
 
           const collectionName =
@@ -447,6 +473,8 @@ if (historyTable) {
 
           // 🔄 Refresh all tables after update
           loadAllAppointments();
+
+          
         });
       });
 
@@ -465,6 +493,49 @@ if (historyTable) {
     await logActivity("admin", "Load Appointments Error", error.message);
   }
 }
+
+// 🔍 Filter History Table
+async function filterHistory() {
+  const ownerFilter = document.getElementById("searchOwner").value.toLowerCase();
+  const petFilter = document.getElementById("searchPet").value.toLowerCase();
+  const fromDate = document.getElementById("dateFrom").value;
+  const toDate = document.getElementById("dateTo").value;
+
+  const historyTable = document.getElementById("historytable");
+  if (!historyTable) return;
+
+  const rows = historyTable.querySelectorAll("tr");
+
+  rows.forEach((row, index) => {
+    // Skip header row if present
+    if (index === 0) return;
+
+    const cells = row.getElementsByTagName("td");
+    if (!cells.length) return;
+
+    const ownerName = (cells[2]?.textContent || "").toLowerCase(); // column 3 = owner
+    const petName = (cells[3]?.textContent || "").toLowerCase();   // column 4 = pet
+    const dateText = cells[0]?.textContent || "";                  // column 1 = date
+    const rowDate = new Date(dateText);
+
+    let matchesOwner = ownerName.includes(ownerFilter) || ownerFilter === "";
+    let matchesPet = petName.includes(petFilter) || petFilter === "";
+
+    let matchesDate = true;
+    if (fromDate) matchesDate = matchesDate && rowDate >= new Date(fromDate);
+    if (toDate) matchesDate = matchesDate && rowDate <= new Date(toDate);
+
+    row.style.display = matchesOwner && matchesPet && matchesDate ? "" : "none";
+  });
+}
+
+// 📌 Event Listeners
+document.getElementById("searchOwner").addEventListener("input", filterHistory);
+document.getElementById("searchPet").addEventListener("input", filterHistory);
+document.getElementById("dateFrom").addEventListener("change", filterHistory);
+document.getElementById("dateTo").addEventListener("change", filterHistory);
+document.querySelector(".btn-primary").addEventListener("click", filterHistory);
+
 
 
 
@@ -1312,119 +1383,135 @@ async function updateRevenueCards(category = "all") {
 }
 
   // --- Generate Report Button ---
-  generateBtn.addEventListener("click", async () => {
-    try {
-      const reportType = reportTypeEl.value;
-      const category = serviceCategoryEl.value;
-      const fromDate = reportDateFrom.value ? new Date(reportDateFrom.value) : null;
-      const toDate = reportDateTo.value ? new Date(reportDateTo.value) : null;
+generateBtn.addEventListener("click", async () => {
+  try {
+    const reportType = reportTypeEl.value;
+    const category = serviceCategoryEl.value;
+    const fromDate = reportDateFrom.value ? new Date(reportDateFrom.value) : null;
+    const toDate = reportDateTo.value ? new Date(reportDateTo.value) : null;
 
-      let totalRevenue = 0;
-      let totalServices = 0;
-      const rows = [];
-      let todayRevenue = 0;
-      let weekRevenue = 0;
-      let monthRevenue = 0;
+    let totalRevenue = 0;
+    let totalServices = 0;
+    const rows = [];
 
-      const today = new Date();
-      const startOfWeek = new Date(today);
-      startOfWeek.setDate(today.getDate() - today.getDay());
-      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const today = new Date();
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay());
+    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
-      // --- Build Appointment query ---
-      let q = collection(db, "Appointment");
-      const filters = [];
+    // --- Build base queries (Completed only) ---
+    let appointmentQuery = query(
+      collection(db, "Appointment"),
+      where("status", "==", "Completed")
+    );
+    let walkInQuery = query(
+      collection(db, "WalkInAppointment"),
+      where("status", "==", "Completed")
+    );
 
-      // ✅ Fix: use "service", not "serviceType"
-      if (category.toLowerCase() !== "all") {
-        filters.push(where("service", "==", category));
-      }
+    const filters = [];
 
-      // ✅ Fix: "date" is a string, not a timestamp
-      if (fromDate && toDate) {
-        filters.push(where("date", ">=", fromDate.toISOString().split("T")[0]));
-        filters.push(where("date", "<=", toDate.toISOString().split("T")[0]));
-      }
-
-      if (filters.length > 0) {
-        q = query(q, ...filters);
-      }
-
-      // --- Get Appointment data ---
-      const snapshot = await getDocs(q);
-      snapshot.forEach(docSnap => {
-        const data = docSnap.data();
-
-        const saleDate = data.createdAt?.toDate
-          ? data.createdAt.toDate()
-          : (data.date ? new Date(data.date) : null);
-
-        const serviceType = data.service || "Unknown";
-        const servicePrice = data.totalPrice || 0; // ⚠️ confirm this field
-
-        totalRevenue += servicePrice;
-        totalServices += 1;
-
-        // Revenue card calculations
-        if (saleDate) {
-          if (saleDate.toDateString() === today.toDateString()) todayRevenue += servicePrice;
-          if (saleDate >= startOfWeek) weekRevenue += servicePrice;
-          if (saleDate >= startOfMonth) monthRevenue += servicePrice;
-        }
-
-        rows.push({
-          date: saleDate ? saleDate.toLocaleDateString() : "N/A",
-          type: serviceType,
-     
-          revenue: servicePrice,
-          avg: servicePrice,
-          growth: "N/A"
-        });
-      });
-
-      // --- Save to SalesReport ---
-      await addDoc(collection(db, "SalesReport"), {
-        reportType,
-        category,
-        fromDate: fromDate || null,
-        toDate: toDate || null,
-        totalRevenue,
-        totalServices,
-        createdAt: serverTimestamp(),
-        details: rows
-      });
-
-      // --- Populate table ---
-      reportTableBody.innerHTML = "";
-      if (rows.length > 0) {
-        rows.forEach(r => {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td>${r.date}</td>
-            <td>${r.type}</td>
-    
-            <td>₱${r.revenue.toLocaleString()}</td>
-            <td>₱${r.avg.toLocaleString()}</td>
-            <td>${r.growth}</td>
-          `;
-          reportTableBody.appendChild(tr);
-        });
-      } else {
-        reportTableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;">No data available</td></tr>`;
-      }
-
-      // --- Reflect local totals ---
-    // ✅ Update services completed card
-document.getElementById("servicesCompleted").textContent = totalServices.toLocaleString();
-
-
-      // --- Refresh revenue cards from SalesReport ---
-      await updateRevenueCards(category);
-
-    } catch (err) {
-      console.error("Error generating report:", err);
+    if (category.toLowerCase() !== "all") {
+      filters.push(where("service", "==", category));
     }
-  });
+
+    if (fromDate && toDate) {
+      const from = fromDate.toISOString().split("T")[0];
+      const to = toDate.toISOString().split("T")[0];
+      filters.push(where("date", ">=", from));
+      filters.push(where("date", "<=", to));
+    }
+
+    if (filters.length > 0) {
+      appointmentQuery = query(appointmentQuery, ...filters);
+      walkInQuery = query(walkInQuery, ...filters);
+    }
+
+    // --- Get data from both collections ---
+    const [apptSnapshot, walkInSnapshot] = await Promise.all([
+      getDocs(appointmentQuery),
+      getDocs(walkInQuery),
+    ]);
+
+    // --- Process both sets ---
+    const processDoc = (docSnap, type) => {
+      const data = docSnap.data();
+
+      // 🟢 use totalAmount as price
+      let amount = data.totalAmount || 0;
+      if (typeof amount === "string") {
+        amount = amount.replace(/[^\d.-]/g, ""); // remove ₱, commas
+      }
+      amount = Number(amount) || 0;
+
+      const saleDate = data.createdAt?.toDate
+        ? data.createdAt.toDate()
+        : (data.date ? new Date(data.date) : null);
+
+      const serviceType =
+        type === "walkin"
+          ? data.serviceType || "Walk-In"
+          : data.service || "Appointment";
+
+      totalRevenue += amount;
+      totalServices += 1;
+
+      rows.push({
+        date: saleDate ? saleDate.toLocaleDateString() : "N/A",
+        type: serviceType,
+        revenue: amount,
+        avg: amount,
+        growth: "N/A",
+      });
+    };
+
+    apptSnapshot.forEach(doc => processDoc(doc, "appointment"));
+    walkInSnapshot.forEach(doc => processDoc(doc, "walkin"));
+
+    // --- Save combined report to Firestore ---
+    await addDoc(collection(db, "SalesReport"), {
+      reportType,
+      category,
+      fromDate: fromDate || null,
+      toDate: toDate || null,
+      totalRevenue,
+      totalServices,
+      createdAt: serverTimestamp(),
+      details: rows,
+    });
+
+    // --- Populate table ---
+    reportTableBody.innerHTML = "";
+    if (rows.length > 0) {
+      rows.forEach(r => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${r.date}</td>
+          <td>${r.type}</td>
+          <td>₱${r.revenue.toLocaleString()}</td>
+          <td>₱${r.avg.toLocaleString()}</td>
+          <td>${r.growth}</td>
+        `;
+        reportTableBody.appendChild(tr);
+      });
+    } else {
+      reportTableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;">No data available</td></tr>`;
+    }
+
+    // ✅ Update services completed & revenues locally
+    document.getElementById("servicesCompleted").textContent =
+      totalServices.toLocaleString();
+    document.getElementById("todayRevenue").textContent =
+      "₱" + totalRevenue.toLocaleString();
+
+    // --- Refresh revenue cards from SalesReport ---
+    await updateRevenueCards(category);
+
+  } catch (err) {
+    console.error("Error generating report:", err);
+  }
+
+});
 });
 
 
