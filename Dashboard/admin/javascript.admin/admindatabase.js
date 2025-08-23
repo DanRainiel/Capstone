@@ -339,54 +339,60 @@ async function loadAllAppointments() {
         dashboardTable.appendChild(dashRow);
       }
 
-      // Full appointment table with actions
-      if (appointmentTable) {
-        let actionButtons = "";
-        if (status === "Pending") {
-          actionButtons = `
-            <button class="btn accept" data-id="${docId}" data-type="${type}">Accept</button>
-            <button class="btn decline" data-id="${docId}" data-type="${type}">Decline</button>
-            <button class="btn reschedule" data-id="${docId}" data-type="${type}">Reschedule</button>
-            <button class="btn screenshot" data-id="${docId}" data-type="${type}">View Screenshot</button>
-          `;
-        } else if (status === "In Progress") {
-          actionButtons = `<button class="btn complete" data-id="${docId}" data-type="${type}">Complete</button>`;
-        } else if (status === "Completed") {
-          actionButtons = `
-            <button class="btn view" data-id="${docId}" data-type="${type}">View</button>
-            <button class="btn edit" data-id="${docId}" data-type="${type}">Edit</button>
-          `;
-        }
+    if (appointmentTable) {
+  // ✅ ensure status always has a value
+  const normalizedStatus = (status || "Pending").toLowerCase();
+  let actionButtons = "";
 
-        const fullRow = document.createElement("tr");
-        fullRow.innerHTML = `
-          <td>${displayData.date}</td>
-          <td>${displayData.time}</td>
-          <td>${displayData.name}</td>
-          <td>${displayData.contact}</td>
-          <td>${displayData.petName}</td>
-          <td>${displayData.service}</td>
-          <td class="status ${status.toLowerCase()}">${status}</td>
-          <td>${actionButtons}</td>
-        `;
-        appointmentTable.appendChild(fullRow);
-      }
+  if (normalizedStatus === "pending") {
+    actionButtons = `
+      <button class="btn accept" data-id="${docId}" data-type="${type}">Accept</button>
+      <button class="btn decline" data-id="${docId}" data-type="${type}">Decline</button>
+      <button class="btn reschedule" data-id="${docId}" data-type="${type}">Reschedule</button>
+      <button class="btn screenshot" data-id="${docId}" data-type="${type}">View Screenshot</button>
+    `;
+  } else if (normalizedStatus === "in progress") {
+    actionButtons = `
+      <button class="btn complete" data-id="${docId}" data-type="${type}">Complete</button>
+    `;
+  } else if (normalizedStatus === "completed") {
+    actionButtons = `
+      <button class="btn view" data-id="${docId}" data-type="${type}">View</button>
+      <button class="btn edit" data-id="${docId}" data-type="${type}">Edit</button>
+    `;
+  }
 
-      // History table
-      if (historyTable) {
-        const totalAmount = data.totalAmount || 0; // ✅ fallback if field is missing
-        const historyRow = document.createElement("tr");
-        historyRow.innerHTML = `
-          <td>${displayData.date}</td>
-          <td>${displayData.time}</td>
-          <td>${displayData.name}</td>
-          <td>${displayData.petName}</td>
-          <td>${displayData.service}</td>
-          <td>${totalAmount}</td>
-          <td class="status ${status.toLowerCase()}">${status}</td>
-        `;
-        historyTable.appendChild(historyRow);
-      }
+  const fullRow = document.createElement("tr");
+  fullRow.innerHTML = `
+    <td>${displayData.date}</td>
+    <td>${displayData.time}</td>
+    <td>${displayData.name}</td>
+    <td>${displayData.contact}</td>
+    <td>${displayData.petName}</td>
+    <td>${displayData.service}</td>
+    <td class="status ${normalizedStatus}">${status || "Pending"}</td>
+    <td>${actionButtons}</td>
+  `;
+  appointmentTable.appendChild(fullRow);
+}
+
+// History table
+if (historyTable) {
+  const totalAmount = data.totalAmount || 0; // ✅ fallback if field is missing
+  const normalizedStatus = (status || "Pending").toLowerCase();
+
+  const historyRow = document.createElement("tr");
+  historyRow.innerHTML = `
+    <td>${displayData.date}</td>
+    <td>${displayData.time}</td>
+    <td>${displayData.name}</td>
+    <td>${displayData.petName}</td>
+    <td>${displayData.service}</td>
+    <td>${totalAmount}</td>
+    <td class="status ${normalizedStatus}">${status || "Pending"}</td>
+  `;
+  historyTable.appendChild(historyRow);
+}
     };
 
     // Render all regular appointments
@@ -462,7 +468,6 @@ async function loadAllAppointments() {
 
 
 
-  // 👥 Load all users
   // 👥 Load all users + update stats
   async function loadAllUsers() {
     const userTable = document.getElementById("userTable");
@@ -905,23 +910,36 @@ async function loadAllAppointments() {
         calendarGrid.appendChild(emptyDiv);
       }
 
-      for (let day = 1; day <= daysInMonth; day++) {
-        const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-        const dayDiv = document.createElement("div");
-        dayDiv.classList.add("day");
-        dayDiv.textContent = day;
-        dayDiv.dataset.date = dateStr;
-        dayDiv.style.padding = "10px";
-        dayDiv.style.cursor = "pointer";
+     for (let day = 1; day <= daysInMonth; day++) {
+  const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  const dayDiv = document.createElement("div");
+  dayDiv.classList.add("day");
+  dayDiv.textContent = day;
+  dayDiv.dataset.date = dateStr;
+  dayDiv.style.padding = "10px";
+  dayDiv.style.cursor = "pointer";
 
-        if (blockedSlots.some(b => b.date === dateStr)) {
-          dayDiv.style.background = "#ffcccc";
-          dayDiv.style.borderRadius = "5px";
-          dayDiv.style.pointerEvents = "none"; // disable selection
-        }
+  const today = new Date();
+  today.setHours(0,0,0,0); // reset time part
+  const currentCellDate = new Date(currentYear, currentMonth, day);
 
-        calendarGrid.appendChild(dayDiv);
-      }
+  // 🔹 Grey out past dates
+  if (currentCellDate < today) {
+    dayDiv.style.background = "#e0e0e0";   // light grey
+    dayDiv.style.color = "#888";           // grey text
+    dayDiv.style.pointerEvents = "none";   // disable clicking
+  }
+
+  // 🔹 Highlight blocked dates
+  if (blockedSlots.some(b => b.date === dateStr)) {
+    dayDiv.style.background = "#ffcccc";
+    dayDiv.style.borderRadius = "5px";
+    dayDiv.style.pointerEvents = "none";
+  }
+
+  calendarGrid.appendChild(dayDiv);
+}
+
     }
 
     function renderTable() {

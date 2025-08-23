@@ -248,16 +248,16 @@ if (Array.isArray(appointmentData.selectedServices)) {
         updateTotalAmount();
 
         // Dropdown change listener
-        const feeTypeDropdown = document.getElementById("Reservation-fee-type");
-        if (feeTypeDropdown) {
-            feeTypeDropdown.addEventListener("change", updateTotalAmount);
-        }
+const feeTypeDropdown = document.getElementById("Reservation-fee-type");
+if (feeTypeDropdown) {
+    feeTypeDropdown.addEventListener("change", updateTotalAmount);
+}
 
-    } catch (error) {
-        console.error("Error processing appointment data:", error);
-    }
+} catch (error) {
+    console.error("Error processing appointment data:", error);
+}
 
-   function updateTotalAmount() {
+function updateTotalAmount() {
     const type = document.getElementById("Reservation-fee-type")?.value;
     let reservationFee = 0;
 
@@ -265,6 +265,8 @@ if (Array.isArray(appointmentData.selectedServices)) {
         reservationFee = 40;
     } else if (type === "with-downpayment") {
         reservationFee = 350;
+    } else if (type === "with-full-payment") {
+        reservationFee = 0; // full payment → no reservation fee
     }
 
     // Do NOT include reservationFee in total
@@ -274,6 +276,7 @@ if (Array.isArray(appointmentData.selectedServices)) {
     document.getElementById("reservation-fee").textContent = `₱${reservationFee.toFixed(2)}`;
     document.getElementById("total-amount").textContent = `₱${grandTotal.toFixed(2)}`;
 }
+
 
 });
 
@@ -330,11 +333,20 @@ document.addEventListener("DOMContentLoaded", () => {
                 const reservationType = document.getElementById("Reservation-fee-type")?.value || "";
                 const serviceFee = document.getElementById("service-fee")?.textContent.trim() || "";
                 const reservationFee = document.getElementById("reservation-fee")?.textContent.trim() || "";
-                const totalAmount = document.getElementById("total-amount")?.textContent.trim() || "";
+                let totalAmount = document.getElementById("total-amount")?.textContent.trim() || "";
 
+
+                  const serviceFeeNum = parseFloat(serviceFee.replace(/[₱,]/g, "")) || 0;
+        const reservationFeeNum = parseFloat(reservationFee.replace(/[₱,]/g, "")) || 0;
+
+        if (reservationType === "only" || reservationType === "with-downpayment") {
+            totalAmount = `₱${(serviceFeeNum - reservationFeeNum).toFixed(2)}`;
+        } else if (reservationType === "with-full-payment") {
+            totalAmount = `₱0.00`;
+        }
                 const selectedServices = Array.from(document.querySelectorAll("input[name='services']:checked"))
                     .map((checkbox) => checkbox.getAttribute("data-service"));
-
+        
                 const appointmentData = {
                     name,
                     ownerNumber,

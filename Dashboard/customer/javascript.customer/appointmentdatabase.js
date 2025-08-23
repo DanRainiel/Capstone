@@ -46,22 +46,23 @@ async function loadAppointments() {
     } else {
       querySnapshot.forEach((docSnap) => {
         const data = docSnap.data();
-        const row = document.createElement("tr");
+        const status = (data.status || "pending").toLowerCase(); // ✅ normalize
 
+        const row = document.createElement("tr");
         row.innerHTML = `
           <td>${data.name || ""}</td>
           <td>${data.petName || ""}</td>
           <td>${data.service || ""}</td>
           <td>${data.date || ""}</td>
           <td>${data.number || ""}</td>
-          <td class="${data.status === "Cancelled" ? "cancelled" : ""}">
+          <td class="${status === "cancelled" ? "cancelled" : ""}">
             ${data.status || "Pending"}
           </td>
           <td>
             ${
-              data.status === "Cancelled"
-                ? "<span class='disabled-text'>--</span>"
-                : `<button class="btn cancel-btn" data-id="${docSnap.id}">Cancel</button>`
+              status === "pending"
+                ? `<button class="btn cancel-btn" data-id="${docSnap.id}">Cancel</button>`
+                : `<span class='disabled-text'>--</span>`
             }
           </td>
         `;
@@ -69,7 +70,7 @@ async function loadAppointments() {
         tableBody.appendChild(row);
       });
 
-      // attach listeners for cancel buttons
+      // attach listeners for cancel buttons (only pending ones exist now)
       document.querySelectorAll(".cancel-btn").forEach((btn) => {
         btn.addEventListener("click", (e) => {
           selectedDocId = e.target.getAttribute("data-id");
@@ -82,6 +83,7 @@ async function loadAppointments() {
     tableBody.innerHTML = "<tr><td colspan='7'>Error loading appointments.</td></tr>";
   }
 }
+
 
 // ✅ Modal functions
 function openCancelModal() {

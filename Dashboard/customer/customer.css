@@ -1180,6 +1180,13 @@ hr{
             color: #2c3e50;
         }
 
+        .past-day {
+  background-color: #f0f0f0; 
+  color: #aaa;
+  cursor: not-allowed;
+}
+
+
         .calendar-form-group input,
         .calendar-form-group select {
             width: 100%;
