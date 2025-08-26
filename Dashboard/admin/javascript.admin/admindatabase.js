@@ -1596,6 +1596,9 @@ generateBtn.addEventListener("click", async () => {
 
   // 🐾 Load services and special discounts
 
+
+
+
   //Pet-Management//
 
      let allPets = [];
@@ -1617,27 +1620,56 @@ generateBtn.addEventListener("click", async () => {
     const recentPetsCount = document.getElementById('recentPetsCount');
     const upcomingAppointmentsCount = document.getElementById('upcomingAppointmentsCount');
 
-    // Load all pets from Firestore
-    async function loadAllPets() {
-      try {
-        const querySnapshot = await getDocs(collection(db, "Pets"));
-        allPets = [];
-        
-        querySnapshot.forEach((doc) => {
-          allPets.push({
-            id: doc.id,
-            ...doc.data()
-          });
-        });
+    async function getWalkInOwners() {
+  const ownersMap = {};
+  const snap = await getDocs(collection(db, "WalkInAppointment"));
+  snap.forEach(docSnap => {
+    const data = docSnap.data();
+    ownersMap[docSnap.id] = data.ownerName || "N/A";  // map ownerId → ownerName
+  });
+  return ownersMap;
+}
 
-        filteredPets = [...allPets];
-        renderPetsTable();
-        updateStatistics();
-      } catch (error) {
-        console.error("Error loading pets:", error);
-        Swal.fire('Error', 'Failed to load pets data', 'error');
-      }
-    }
+   async function loadAllPets() {
+  try {
+    allPets = [];
+
+    // get all WalkInAppointment owners first
+    const ownersMap = await getWalkInOwners();
+
+    // Get Pets
+   // Get Pets
+const petsSnap = await getDocs(collection(db, "Pets"));
+petsSnap.forEach((docSnap) => {
+  const data = docSnap.data();
+  allPets.push({
+    id: docSnap.id,
+    collection: "Pets",
+    ownerName: data.ownerId || "N/A", // <- use ownerId directly
+    ...data
+  });
+});
+
+
+    // Get WalkInPets (they already have ownerName)
+    const walkInSnap = await getDocs(collection(db, "WalkInPets"));
+    walkInSnap.forEach((docSnap) => {
+      allPets.push({
+        id: docSnap.id,
+        collection: "WalkInPets",
+        ...docSnap.data()
+      });
+    });
+
+    filteredPets = [...allPets];
+    renderPetsTable();
+    updateStatistics();
+  } catch (error) {
+    console.error("Error loading pets:", error);
+    Swal.fire('Error', 'Failed to load pets data', 'error');
+  }
+}
+
 
     // Render pets table
     function renderPetsTable() {
@@ -1746,9 +1778,15 @@ generateBtn.addEventListener("click", async () => {
         createdAt: serverTimestamp(),
         lastUpdated: serverTimestamp()
       };
-
+      
       try {
-        await addDoc(collection(db, "Pets"), petData);
+        // ✅ generate custom ID
+    const userId = "Admin1"; // or dynamically get current logged-in admin
+    const appointmentId = `${userId}_${petData.petName}_${Date.now()}`;
+
+    // ✅ use setDoc instead of addDoc
+    await setDoc(doc(db, "WalkInPets", appointmentId), petData);
+
         
         Swal.fire({
           title: 'Success!',
@@ -1921,7 +1959,7 @@ generateBtn.addEventListener("click", async () => {
       };
 
       try {
-        await updateDoc(doc(db, "Pets", petId), updatedData);
+       await updateDoc(doc(db, pet.collection, petId), updatedData);
         
         Swal.fire({
           title: 'Success!',
@@ -1956,7 +1994,7 @@ generateBtn.addEventListener("click", async () => {
       }).then(async (result) => {
         if (result.isConfirmed) {
           try {
-            await deleteDoc(doc(db, "Pets", petId));
+           await deleteDoc(doc(db, pet.collection, petId));
             
             Swal.fire({
               title: 'Deleted!',
@@ -2031,10 +2069,13 @@ generateBtn.addEventListener("click", async () => {
       }
     });
 
-    // Real-time updates from Firestore
-    onSnapshot(collection(db, "Pets"), (snapshot) => {
-      loadAllPets();
-    });
+    onSnapshot(collection(db, "Pets"), () => {
+  loadAllPets();
+});
+
+onSnapshot(collection(db, "WalkInPets"), () => {
+  loadAllPets();
+});
 
     // Initialize on page load
     document.addEventListener('DOMContentLoaded', () => {

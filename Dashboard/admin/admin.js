@@ -17,6 +17,8 @@ document.addEventListener("DOMContentLoaded", () => {
     main.classList.toggle('active');
   };
 
+  
+
   // Navigation functionality
   const menuItems = document.querySelectorAll('.navigation ul li a[data-section]');
   const contentSections = document.querySelectorAll('.content-section');
