@@ -6,6 +6,7 @@ import {
   query,
   where,
   getDocs,
+  getDoc,
   doc,
   updateDoc // ⬅️ FIX: import updateDoc
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
@@ -59,16 +60,80 @@ async function loadAppointments() {
             ${data.status || "Pending"}
           </td>
           <td>
+           <td>
             ${
               status === "pending"
-                ? `<button class="btn cancel-btn" data-id="${docSnap.id}">Cancel</button>`
-                : `<span class='disabled-text'>--</span>`
+                ? `
+                  <button class="btn cancel-btn" data-id="${docSnap.id}">Cancel</button>
+                  <button class="btn view-balance-btn" data-id="${docSnap.id}">View Balance</button>
+                `
+                : `<span class="disabled-text">--</span>`
             }
           </td>
-        `;
+
+          `;
 
         tableBody.appendChild(row);
       });
+
+      // Attach click handler for "View Balance" button
+document.addEventListener("click", async (e) => {
+  const btn = e.target.closest(".view-balance-btn");
+  if (!btn) return;
+
+  const docId = btn.getAttribute("data-id");
+
+  try {
+    const docRef = doc(db, "Appointment", docId);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists()) {
+      Swal.fire("Error", "Appointment not found", "error");
+      return;
+    }
+
+    const data = docSnap.data();
+
+    // Format applied discounts (if any)
+    const discounts = data.appliedDiscounts?.length
+      ? data.appliedDiscounts.join(", ")
+      : "None";
+
+    // Format selected services
+    const services = data.selectedServices?.length
+      ? data.selectedServices.map(s => `<li>${s}</li>`).join("")
+      : "<li>None</li>";
+
+    // Show modal
+    Swal.fire({
+      title: `<strong>Invoice #${data.invoiceNo}</strong>`,
+      html: `
+        <div style="text-align:left">
+          <p><b>Owner:</b> ${data.name}</p>
+          <p><b>Pet:</b> ${data.petName} (${data.petSize})</p>
+          <p><b>Vet:</b> ${data.vet}</p>
+          <p><b>Date:</b> ${data.date} at ${data.time}</p>
+          <p><b>Status:</b> ${data.status}</p>
+          <hr>
+          <p><b>Service:</b> ${data.service}</p>
+          <ul>${services}</ul>
+          <p><b>Service Fee:</b> ${data.serviceFee}</p>
+          <p><b>Reservation Fee:</b> ${data.reservationFee}</p>
+          <p><b>Applied Discounts:</b> ${discounts}</p>
+          <hr>
+          <p><b>Total Amount:</b> ${data.totalAmount}</p>
+          <p><b>Instructions:</b> ${data.instructions || "None"}</p>
+        </div>
+      `,
+      confirmButtonText: "Close",
+      width: 600
+    });
+
+  } catch (err) {
+    console.error(err);
+    Swal.fire("Error", "Something went wrong while fetching balance.", "error");
+  }
+});
 
       // attach listeners for cancel buttons (only pending ones exist now)
       document.querySelectorAll(".cancel-btn").forEach((btn) => {

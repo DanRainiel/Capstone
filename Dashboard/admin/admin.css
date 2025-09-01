@@ -417,6 +417,16 @@
         color: #721c24;
 }
 
+ .status.In Progress {
+        background: #f8d7da;
+        color: var(--orange);
+}
+
+.status.for-rescheduling {
+    background: #f8d7da;
+    color: var(--orange);
+}
+
     .btn-primary {
         background: var(--background-color);
         color: var(--white);
@@ -456,7 +466,7 @@
         padding: 30px;
         border-radius: 20px;
         box-shadow: 0 7px 25px rgba(0, 0, 0, 0.08);
-        max-width: 800px;
+        width: auto;
         margin: 20px 0;
     }
 
@@ -894,8 +904,33 @@
 }
 
 
+/* Discount Modal Styles Only */
+#discountModal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
 
+#discountModal.hidden {
+  display: none;
+}
 
+#discountModal .modal-content {
+  background: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  width: 300px;
+}
+
+#discountModal .modal-actions {
+  margin-top: 15px;
+  display: flex;
+  justify-content: space-between;
+}
 
     @media (max-width: 991px) {
         .navigation {

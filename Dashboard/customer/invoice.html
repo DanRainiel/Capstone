@@ -26,7 +26,8 @@
         </div>
         <div class="i_title text_right">
           <h2>INVOICE</h2>
-          <p class="p_title" id="invoiceDate">00/00/0000</p>
+          <!-- ✅ Invoice Date will be injected dynamically -->
+          <p class="p_title" id="invoiceDate">Loading...</p>
         </div>
       </div>
       <div class="i_row">
@@ -34,9 +35,9 @@
           <p class="p_title">INVOICE NO: <span id="invoiceNo">*******</span></p>
         </div>
         <div class="i_address text_right">
-          <p>TO</p>
+       
           <p class="p_title">
-            Contact number: <span id="ownerNumber">----------</span><br/>
+         
             <span>Located at Blk 2 lot Cavite Viejo Centenieal Road, <br/>
                  Gahak, Kawit, Cavite</span> <br/>
             <span>Philippines</span>
@@ -76,16 +77,16 @@
             <!-- Labels -->
             <div class="i_col w_15">
               <p>Service Fee:</p>
-              <p>Fee:</p>
-              <p>Discount:</p>
+              <p>Reservation Fee:</p>
+              <p>Discount(s):</p>
             </div>
 
             <!-- Values -->
             <div class="i_col w_15">
               <p id="serviceFee">₱0.00</p>
-            
               <p id="reservationFee">₱0.00</p>
-              <p id="discount">0%</p>
+              <!-- ✅ Show multiple discounts applied -->
+              <p id="discount">None</p>
             </div>
           </div>
 
@@ -118,6 +119,7 @@
     </div>
   </div>
 </section>
+
 
 </body>
 </html>

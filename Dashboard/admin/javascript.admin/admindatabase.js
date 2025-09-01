@@ -8,11 +8,13 @@
       getDocs,
       addDoc,
       serverTimestamp,
+      deleteField,
         where,   
         Timestamp,  // ✅ needed for filtering pets by userId
       updateDoc,  
       setDoc,  
       onSnapshot,
+      getDoc,
       deleteDoc,  // ✅ needed for changing user status
       doc      
     } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
@@ -46,134 +48,147 @@
     }
 
 
-  document.addEventListener("DOMContentLoaded", () => {
-    const STORAGE_KEY = "servicesData";
+document.addEventListener("DOMContentLoaded", async () => {
+  let services = [];
 
-    // Load from localStorage or use defaults
-    let services = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [
-      { name: "General Consultation", basePrice: 500, seniorDiscount: 20, pwdDiscount: 20, loyaltyDiscount: 10, notes: '', discounts: [] },
-      { name: "Vaccination", basePrice: 800, seniorDiscount: 15, pwdDiscount: 15, loyaltyDiscount: 5, notes: '', discounts: [] },
-      { name: "Surgery (Minor)", basePrice: 3000, seniorDiscount: 10, pwdDiscount: 10, loyaltyDiscount: 5, notes: '', discounts: [] },
-      { name: "Grooming", basePrice: 800, seniorDiscount: 15, pwdDiscount: 15, loyaltyDiscount: 10, notes: '', discounts: [] }
-    ];
+  const tableBody = document.querySelector("#fee-discount table tbody");
+  const editModal = document.getElementById("editServiceModal");
+  const specialDiscountsList = document.getElementById("specialDiscountsList");
+  let currentServiceIndex = null;
 
-    let specialDiscounts = [];
+  // ---------------- Firestore Helpers ----------------
+  async function saveServiceToFirestore(service) {
+    const docId = service.name.toLowerCase().replace(/\s+/g, '-');
+    await setDoc(doc(db, "services", docId), service);
+  }
 
-    const tableBody = document.querySelector("#fee-discount table tbody");
-    const editModal = document.getElementById("editServiceModal");
-    const specialDiscountsList = document.getElementById("specialDiscountsList");
-    let currentServiceIndex = null;
+  async function loadServicesFromFirestore() {
+    services = [];
+    const querySnapshot = await getDocs(collection(db, "services"));
 
-    function saveToStorage() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(services));
-    }
+    if (querySnapshot.empty) {
+      // Add default services if Firestore is empty
+      services = [
+        { name: "General Consultation", basePrice: 500, seniorDiscount: 20, pwdDiscount: 20, loyaltyDiscount: 10, notes: '', discounts: [] },
+        { name: "Vaccination", basePrice: 800, seniorDiscount: 15, pwdDiscount: 15, loyaltyDiscount: 5, notes: '', discounts: [] },
+        { name: "Surgery (Minor)", basePrice: 3000, seniorDiscount: 10, pwdDiscount: 10, loyaltyDiscount: 5, notes: '', discounts: [] },
+        { name: "Grooming", basePrice: 800, seniorDiscount: 15, pwdDiscount: 15, loyaltyDiscount: 10, notes: '', discounts: [] }
+      ];
 
-    // Render services table
-    function renderServices() {
-      tableBody.innerHTML = "";
-      services.forEach((s, index) => {
-        const discountList = s.discounts.length > 0
-          ? s.discounts.map(d => `${d.name} (${d.type === "percentage" ? d.value + "%" : "₱" + d.value})`).join(", ")
-          : "None";
-
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${s.name}</td>
-          <td>₱${s.basePrice}</td>
-          <td>${s.seniorDiscount}%</td>
-          <td>${s.pwdDiscount}%</td>
-          <td>${s.loyaltyDiscount}%</td>
-          <td>${discountList}</td>
-          <td><button class="btn-primary" data-index="${index}">Edit</button></td>
-        `;
-        tableBody.appendChild(row);
-      });
-    }
-
-    // Open edit modal
-    tableBody.addEventListener("click", (e) => {
-      if (e.target.tagName === "BUTTON") {
-        currentServiceIndex = e.target.dataset.index;
-        const service = services[currentServiceIndex];
-        
-        document.getElementById("editServiceName").value = service.name;
-        document.getElementById("editBasePrice").value = service.basePrice;
-        document.getElementById("editSeniorDiscount").value = service.seniorDiscount;
-        document.getElementById("editPwdDiscount").value = service.pwdDiscount;
-        document.getElementById("editLoyaltyDiscount").value = service.loyaltyDiscount;
-        document.getElementById("editNotes").value = service.notes;
-
-        renderServiceDiscounts(service);
-        editModal.style.display = "block";
+      for (const s of services) {
+        await saveServiceToFirestore(s);
       }
-    });
-
-    // Render service-specific discounts in modal
-    function renderServiceDiscounts(service) {
-      specialDiscountsList.innerHTML = "<h3>Applied Special Discounts</h3>";
-      service.discounts.forEach((d, idx) => {
-        const div = document.createElement("div");
-        div.innerHTML = `
-          ${d.name} - ${d.type === "percentage" ? d.value + "%" : "₱" + d.value} 
-          <button data-discount-index="${idx}">Delete</button>
-        `;
-        specialDiscountsList.appendChild(div);
-      });
-
-      specialDiscountsList.onclick = (e) => {
-        if (e.target.tagName === "BUTTON") {
-          const discountIndex = e.target.dataset.discountIndex;
-          service.discounts.splice(discountIndex, 1);
-          saveToStorage();
-          renderServiceDiscounts(service);
-          renderServices();
-        }
-      };
+    } else {
+      querySnapshot.forEach(docSnap => services.push(docSnap.data()));
     }
-
-    // Save service changes
-    document.getElementById("saveServiceChanges").addEventListener("click", () => {
-      if (currentServiceIndex !== null) {
-        const service = services[currentServiceIndex];
-        service.basePrice = parseFloat(document.getElementById("editBasePrice").value);
-        service.seniorDiscount = parseFloat(document.getElementById("editSeniorDiscount").value);
-        service.pwdDiscount = parseFloat(document.getElementById("editPwdDiscount").value);
-        service.loyaltyDiscount = parseFloat(document.getElementById("editLoyaltyDiscount").value);
-        service.notes = document.getElementById("editNotes").value;
-
-        saveToStorage();
-        renderServices();
-        editModal.style.display = "none";
-      }
-    });
-
-    // Publish new discount
-    document.getElementById("discountForm").addEventListener("submit", (e) => {
-      e.preventDefault();
-      const formData = new FormData(e.target);
-      const discount = {
-        name: formData.get("discountName"),
-        type: formData.get("discountType"),
-        value: parseFloat(formData.get("discountValue")),
-        applicableServices: formData.getAll("applicableServices"),
-      };
-
-      specialDiscounts.push(discount);
-
-      services.forEach(s => {
-        if (discount.applicableServices.includes("all") ||
-            discount.applicableServices.includes(s.name.toLowerCase().split(" ")[0])) {
-          s.discounts.push(discount);
-        }
-      });
-
-      saveToStorage();
-      renderServices();
-      e.target.reset();
-    });
 
     renderServices();
+  }
+
+  // ---------------- Rendering ----------------
+  function renderServices() {
+    tableBody.innerHTML = "";
+    services.forEach((s, index) => {
+      const discountList = s.discounts.length > 0
+        ? s.discounts.map(d => `${d.name} (${d.type === "percentage" ? d.value + "%" : "₱" + d.value})`).join(", ")
+        : "None";
+
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${s.name}</td>
+        <td>₱${s.basePrice}</td>
+        <td>${s.seniorDiscount}%</td>
+        <td>${s.pwdDiscount}%</td>
+        <td>${s.loyaltyDiscount}%</td>
+        <td>${discountList}</td>
+        <td><button class="btn-primary" data-index="${index}">Edit</button></td>
+      `;
+      tableBody.appendChild(row);
+    });
+  }
+
+  // ---------------- Edit Modal ----------------
+  tableBody.addEventListener("click", (e) => {
+    if (e.target.tagName === "BUTTON") {
+      currentServiceIndex = e.target.dataset.index;
+      const service = services[currentServiceIndex];
+
+      document.getElementById("editServiceName").value = service.name;
+      document.getElementById("editBasePrice").value = service.basePrice;
+      document.getElementById("editSeniorDiscount").value = service.seniorDiscount;
+      document.getElementById("editPwdDiscount").value = service.pwdDiscount;
+      document.getElementById("editLoyaltyDiscount").value = service.loyaltyDiscount;
+      document.getElementById("editNotes").value = service.notes;
+
+      renderServiceDiscounts(service);
+      editModal.style.display = "block";
+    }
   });
+
+  function renderServiceDiscounts(service) {
+    specialDiscountsList.innerHTML = "<h3>Applied Special Discounts</h3>";
+    service.discounts.forEach((d, idx) => {
+      const div = document.createElement("div");
+      div.innerHTML = `
+        ${d.name} - ${d.type === "percentage" ? d.value + "%" : "₱" + d.value} 
+        <button data-discount-index="${idx}">Delete</button>
+      `;
+      specialDiscountsList.appendChild(div);
+    });
+
+    specialDiscountsList.onclick = async (e) => {
+      if (e.target.tagName === "BUTTON") {
+        const discountIndex = e.target.dataset.discountIndex;
+        service.discounts.splice(discountIndex, 1);
+        await saveServiceToFirestore(service);
+        renderServiceDiscounts(service);
+        renderServices();
+      }
+    };
+  }
+
+  document.getElementById("saveServiceChanges").addEventListener("click", async () => {
+    if (currentServiceIndex !== null) {
+      const service = services[currentServiceIndex];
+      service.basePrice = parseFloat(document.getElementById("editBasePrice").value);
+      service.seniorDiscount = parseFloat(document.getElementById("editSeniorDiscount").value);
+      service.pwdDiscount = parseFloat(document.getElementById("editPwdDiscount").value);
+      service.loyaltyDiscount = parseFloat(document.getElementById("editLoyaltyDiscount").value);
+      service.notes = document.getElementById("editNotes").value;
+
+      await saveServiceToFirestore(service);
+      renderServices();
+      editModal.style.display = "none";
+    }
+  });
+
+  // ---------------- Discounts ----------------
+  document.getElementById("discountForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const discount = {
+      name: formData.get("discountName"),
+      type: formData.get("discountType"),
+      value: parseFloat(formData.get("discountValue")),
+      applicableServices: formData.getAll("applicableServices"),
+    };
+
+    for (const s of services) {
+      if (discount.applicableServices.includes("all") ||
+          discount.applicableServices.includes(s.name.toLowerCase().split(" ")[0])) {
+        s.discounts.push(discount);
+        await saveServiceToFirestore(s);
+      }
+    }
+
+    renderServices();
+    e.target.reset();
+  });
+
+  // ---------------- Initial Load ----------------
+  await loadServicesFromFirestore();
+});
+
 
 
 
@@ -319,7 +334,7 @@ async function loadAllAppointments() {
       // ✅ Count finished appointments
       if (status.toLowerCase() === "completed") {
         finishedAppointmentsCount++;
-        // 🟢 Add to today's earnings only if completed today
+       
         // 🟢 Add to today's earnings only if completed today
 if (displayData.date === today) {
   let amount = data.totalAmount || 0;
@@ -370,16 +385,25 @@ if (displayData.date === today) {
             <button class="btn reschedule" data-id="${docId}" data-type="${type}">Reschedule</button>
             <button class="btn screenshot" data-id="${docId}" data-type="${type}">View Screenshot</button>
           `;
-        } else if (normalizedStatus === "in progress") {
-          actionButtons = `
-            <button class="btn complete" data-id="${docId}" data-type="${type}">Complete</button>
-          `;
+} else if (normalizedStatus === "in progress") {
+  actionButtons = `
+    <button class="btn complete" data-id="${docId}" data-type="${type}">Complete</button>
+  
+    <button class="btn add-discount" data-id="${docId}" data-type="${type}" data-service="${displayData.service}">Apply Discount</button>
+  `;
+
         } else if (normalizedStatus === "completed") {
           actionButtons = `
             <button class="btn view" data-id="${docId}" data-type="${type}">View</button>
             <button class="btn edit" data-id="${docId}" data-type="${type}">Edit</button>
           `;
-        }
+        
+          } else if (normalizedStatus === "for-rescheduling") {
+    actionButtons = `
+      <button class="btn accept" data-id="${docId}" data-type="${type}">Accept</button>
+      <button class="btn decline" data-id="${docId}" data-type="${type}">Decline</button>
+    `;
+  } 
 
         const fullRow = document.createElement("tr");
         fullRow.innerHTML = `
@@ -450,33 +474,217 @@ if (earningsCard) {
 
 
 
+  // ✅ Helper function for safe price conversion
+  function parsePrice(price) {
+    if (!price) return 0;
+    if (typeof price === "number") return price;
+    return Number(price.toString().replace(/[^\d.-]/g, "")) || 0;
+  }
 
-    // 🟢 Event Listeners: When status changes, re-render all tables
-    document
-      .querySelectorAll(".btn.accept, .btn.decline, .btn.complete")
-      .forEach((btn) => {
-        btn.addEventListener("click", async () => {
-          const docId = btn.getAttribute("data-id");
-          const type = btn.getAttribute("data-type");
-          const newStatus = btn.classList.contains("accept")
-            ? "In Progress"
-            : btn.classList.contains("decline")
-            ? "Cancelled"
-            : "Completed";
+  let currentDiscountDocRef = null; // store docRef temporarily
 
-          const collectionName =
-            type === "walkin" ? "WalkInAppointment" : "Appointment";
+document.addEventListener("click", async (e) => {
+  const btn = e.target.closest(".btn.accept, .btn.decline, .btn.complete, .btn.add-discount, .btn.reschedule");
+  if (!btn) return;
 
-          await updateDoc(doc(db, collectionName, docId), {
-            status: newStatus,
-          });
+  const docId = btn.getAttribute("data-id");
+  const type = btn.getAttribute("data-type");
+  const collectionName = type === "walkin" ? "WalkInAppointment" : "Appointment";
+  const docRef = doc(db, collectionName, docId);
 
-          // 🔄 Refresh all tables after update
-          loadAllAppointments();
+   if (btn.classList.contains("reschedule")) {
+    await rescheduleAppointment(docId); // <-- call function with id
+    return;
+  }
+  // ✅ Open modal when Add Discount is clicked
+  if (btn.classList.contains("add-discount")) {
+    currentDiscountDocRef = docRef;
+    document.getElementById("discountModal").classList.remove("hidden");
+    return;
+  }
 
-          
-        });
-      });
+  // ✅ Handle Reschedule button separately (if needed)
+  if (btn.classList.contains("reschedule")) {
+    await updateDoc(docRef, { status: "for-rescheduling" });
+    loadAllAppointments();
+    return;
+  }
+
+  // ✅ Fetch data for Accept / Decline / Complete
+  const docSnap = await getDoc(docRef);
+  if (!docSnap.exists()) return;
+  const data = docSnap.data();
+
+  let updateData = {};
+
+  if (btn.classList.contains("accept")) {
+    if (data.status.toLowerCase() === "for-rescheduling") {
+      updateData = {
+        date: data.proposedDate || data.date,
+        status: "Pending",
+        proposedDate: deleteField()
+      };
+    } else {
+      updateData = { status: "In Progress" };
+    }
+  } else if (btn.classList.contains("decline")) {
+    if (data.status.toLowerCase() === "for-rescheduling") {
+      updateData = {
+        status: "Pending",
+        proposedDate: deleteField()
+      };
+    } else {
+      updateData = { status: "Cancelled" };
+    }
+  } else if (btn.classList.contains("complete")) {
+    updateData = { status: "Completed", completedAt: serverTimestamp() };
+  }
+
+  await updateDoc(docRef, updateData);
+  loadAllAppointments();
+});
+
+  // ================== RESCHEDULE ==================
+async function rescheduleAppointment() {
+  const modal = document.getElementById("detailsModal");
+  const docId = modal.getAttribute("data-docid");
+
+  if (!docId) {
+    alert("No appointment selected.");
+    return;
+  }
+
+  try {
+    const docRef = doc(db, "Appointment", docId);
+
+    // ✅ Do not overwrite proposedDate here 
+    // (your other JS already sets proposedDate & time request)
+    await updateDoc(docRef, { status: "for-rescheduling" });
+
+    alert("Appointment marked for rescheduling!");
+    closeDetailsModal();
+    loadAppointments(); // refresh table
+  } catch (error) {
+    console.error("Error updating appointment:", error);
+    alert("Failed to update status.");
+  }
+}
+
+// ✅ Apply discounts when modal confirm button clicked
+document.getElementById("applyDiscountBtn").addEventListener("click", async () => {
+  if (!currentDiscountDocRef) return;
+
+  try {
+    const snap = await getDoc(currentDiscountDocRef);
+    if (!snap.exists()) return alert("Appointment not found.");
+    const data = snap.data();
+
+    const serviceName = data.service; // could be "grooming" or "Grooming"
+
+    // 🔹 Get all services
+    const q = query(collection(db, "services"));
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+      return alert("No services found.");
+    }
+
+    let service = null;
+
+    for (const docSnap of querySnapshot.docs) {
+      const s = docSnap.data();
+      const docId = docSnap.id;
+
+      // ✅ Match by either doc ID or name field (case-insensitive)
+      if (
+        docId.toLowerCase() === serviceName.toLowerCase() ||
+        (s.name && s.name.toLowerCase() === serviceName.toLowerCase())
+      ) {
+        service = s;
+        break;
+      }
+    }
+
+    if (!service) {
+      return alert(`Service '${serviceName}' not found.`);
+    }
+
+    // 🔹 Base price
+    let totalAmount = parsePrice(service.basePrice ?? 0);
+
+    // ✅ Get checked discounts from modal
+    const selectedDiscounts = Array.from(
+      document.querySelectorAll("#discountModal .discount-option:checked")
+    ).map(cb => cb.value); // e.g. ["loyaltyDiscount"]
+
+    if (selectedDiscounts.length === 0) {
+      alert("Please select at least one discount.");
+      return;
+    }
+
+    let appliedDiscounts = [];
+    console.log("Service data from Firestore:", service);
+
+    // 🔹 Handle Firestore discounts (map OR array)
+    // 🔹 Handle Firestore discounts correctly (top-level fields)
+// ✅ Firestore has discount fields at top-level
+const discountObj = {
+  pwdDiscount: service.pwdDiscount ?? 0,
+  seniorDiscount: service.seniorDiscount ?? 0,
+  loyaltyDiscount: service.loyaltyDiscount ?? 0
+};
+
+console.log("Final discount object used:", discountObj);
+
+
+    console.log("Final discount object used:", discountObj);
+    console.log("Selected checkboxes:", selectedDiscounts);
+
+    // 🔹 Loop through selected discounts
+selectedDiscounts.forEach(discountKey => {
+  console.log("Checking key:", discountKey, "=>", discountObj[discountKey]);
+
+  const discountValue = parseFloat(discountObj[discountKey]) || 0;
+
+  if (discountValue > 0) {
+    const discountPercent = discountValue / 100;
+
+    // Deduct from base price
+    totalAmount -= service.basePrice * discountPercent;
+
+    appliedDiscounts.push(`${discountKey.replace("Discount", "")}: ${discountValue}%`);
+  }
+});
+
+
+
+    totalAmount = Math.max(0, Math.round(totalAmount * 100) / 100);
+
+    await updateDoc(currentDiscountDocRef, {
+      totalAmount,
+      appliedDiscounts
+    });
+
+    alert(`✅ Applied Discounts:\n${appliedDiscounts.join("\n")}\n\nNew Total: ₱${totalAmount}`);
+
+  } catch (err) {
+    console.error("Discount error:", err);
+    alert("Something went wrong applying the discount.");
+  }
+
+  // Close modal
+  document.getElementById("discountModal").classList.add("hidden");
+  currentDiscountDocRef = null;
+});
+
+
+// ✅ Close modal without saving
+document.getElementById("closeDiscountModal").addEventListener("click", () => {
+  document.getElementById("discountModal").classList.add("hidden");
+  currentDiscountDocRef = null;
+});
+
+
 
     // ✅ Success log
     await logActivity(
@@ -868,41 +1076,93 @@ document.querySelector(".btn-primary").addEventListener("click", filterHistory);
       });
     }
 
-    // --- CUSTOMER PAGE LOGIC ---
-  function renderCustomerNews() {
-    const newsContainer = document.querySelector('.cards');
-    if (!newsContainer) return;
+  // --- INDEX PAGE LOGIC ---
+function renderIndexNews() {
+  const newsContainer = document.querySelector('#news .box-container');
+  if (!newsContainer) return; // stop if not on index
 
-    const newsList = JSON.parse(localStorage.getItem('newsList')) || [];
-    newsContainer.innerHTML = '';
+  const newsList = JSON.parse(localStorage.getItem('newsList')) || [];
 
-    newsList.forEach(news => {
-      if (news.status === 'published') {
-        const card = document.createElement('div');
-        card.classList.add('card');
-        card.innerHTML = `
-          <div class="image-section">
-            <img src="${news.image}" alt="${news.title}">
-          </div>
-          <div class="content">
-            <h4>${news.title}</h4>
-            <p>${news.content}</p>
-          </div>
-          <div class="posted-date">
-            <p>${news.publishDate ? new Date(news.publishDate).toLocaleDateString() : ''}</p>
-          </div>
-        `;
-        newsContainer.appendChild(card);
-      }
-    });
-  }
+  // Only published & sort newest first
+  let publishedNews = newsList.filter(n => n.status === 'published');
+  publishedNews.sort((a, b) => new Date(b.publishDate) - new Date(a.publishDate));
 
-  document.addEventListener("DOMContentLoaded", renderCustomerNews);
+  // Take top 3 only
+  publishedNews = publishedNews.slice(0, 3);
 
-  // ✅ Refresh customer page display if localStorage changes
-  window.addEventListener('storage', renderCustomerNews);
+  newsContainer.innerHTML = '';
 
+  publishedNews.forEach(news => {
+    const box = document.createElement('div');
+    box.classList.add('box');
+    box.innerHTML = `
+      <div class="image">
+        <img src="${news.image}" alt="${news.title}">
+      </div>
+      <div class="content">
+        <div class="icons">
+          <a href="#"><i class="fa-solid fa-calendar"></i> 
+            ${news.publishDate ? new Date(news.publishDate).toLocaleDateString() : ''}
+          </a>
+          <a href="#"><i class="fas fa-user"></i> By admin</a>
+        </div>
+        <h3>${news.title}</h3>
+        <p>${news.content}</p>
+        <a href="news.html" class="btn">Learn More <span class="fas fa-chevron-right"></span></a>
+      </div>
+    `;
+    newsContainer.appendChild(box);
   });
+
+  // Optional: "See All News" button
+  if (publishedNews.length > 0) {
+    const seeAll = document.createElement('div');
+    seeAll.classList.add('see-all');
+    seeAll.innerHTML = `<a href="news.html" class="btn">See All News</a>`;
+    newsContainer.appendChild(seeAll);
+  }
+}
+
+// --- CUSTOMER PAGE LOGIC ---
+function renderCustomerNews() {
+  const newsContainer = document.querySelector('.cards');
+  if (!newsContainer) return; // stop if not on customer/news page
+
+  const newsList = JSON.parse(localStorage.getItem('newsList')) || [];
+
+  newsContainer.innerHTML = '';
+
+  newsList.forEach(news => {
+    if (news.status === 'published') {
+      const card = document.createElement('div');
+      card.classList.add('card');
+      card.innerHTML = `
+        <div class="image-section">
+          <img src="${news.image}" alt="${news.title}">
+        </div>
+        <div class="content">
+          <h4>${news.title}</h4>
+          <p>${news.content}</p>
+        </div>
+        <div class="posted-date">
+          <p>${news.publishDate ? new Date(news.publishDate).toLocaleDateString() : ''}</p>
+        </div>
+      `;
+      newsContainer.appendChild(card);
+    }
+  });
+}
+
+// ✅ Run both (each will only run if container exists)
+renderIndexNews();
+renderCustomerNews();
+
+// ✅ Update live if localStorage changes
+window.addEventListener('storage', () => {
+  renderIndexNews();
+  renderCustomerNews();
+});
+});
 
 
   //CALENDAR MANAGEMENT//
@@ -1637,7 +1897,7 @@ generateBtn.addEventListener("click", async () => {
     // get all WalkInAppointment owners first
     const ownersMap = await getWalkInOwners();
 
-    // Get Pets
+    
    // Get Pets
 const petsSnap = await getDocs(collection(db, "Pets"));
 petsSnap.forEach((docSnap) => {
@@ -1725,36 +1985,70 @@ petsSnap.forEach((docSnap) => {
       attachTableEventListeners();
     }
 
-    // Update statistics
-    function updateStatistics() {
-      const now = new Date();
-      const currentMonth = now.getMonth();
-      const currentYear = now.getFullYear();
+  async function updateStatistics() {
+  try {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
 
-      let recentPets = 0;
-      let activePets = 0;
+    let total = 0;
+    let active = 0;
+    let recent = 0;
 
-      allPets.forEach(pet => {
-        // Count active pets
-        if (!pet.status || pet.status.toLowerCase() === 'active') {
-          activePets++;
+    // --- Pets ---
+    const petsSnap = await getDocs(collection(db, "Pets"));
+    petsSnap.forEach((docSnap) => {
+      total++;
+      const data = docSnap.data();
+
+      if (!data.status || data.status.toLowerCase() === "active") {
+        active++;
+      }
+
+      if (data.createdAt?.toDate) {
+        const createdDate = data.createdAt.toDate();
+        if (
+          createdDate.getMonth() === currentMonth &&
+          createdDate.getFullYear() === currentYear
+        ) {
+          recent++;
         }
+      }
+    });
 
-        // Count pets added this month
-        if (pet.createdAt && pet.createdAt.toDate) {
-          const createdDate = pet.createdAt.toDate();
-          if (createdDate.getMonth() === currentMonth && createdDate.getFullYear() === currentYear) {
-            recentPets++;
-          }
+    // --- WalkInPets ---
+    const walkInSnap = await getDocs(collection(db, "WalkInPets"));
+    walkInSnap.forEach((docSnap) => {
+      total++;
+      const data = docSnap.data();
+
+      if (!data.status || data.status.toLowerCase() === "active") {
+        active++;
+      }
+
+      if (data.createdAt?.toDate) {
+        const createdDate = data.createdAt.toDate();
+        if (
+          createdDate.getMonth() === currentMonth &&
+          createdDate.getFullYear() === currentYear
+        ) {
+          recent++;
         }
-      });
+      }
+    });
 
-      totalPetsCount.textContent = allPets.length;
-      activePetsCount.textContent = activePets;
-      recentPetsCount.textContent = recentPets;
-      // You can implement upcoming appointments count by querying appointments collection
-      upcomingAppointmentsCount.textContent = '0'; // Placeholder
-    }
+    // Update cards
+    totalPetsCount.textContent = total;
+    activePetsCount.textContent = active;
+    recentPetsCount.textContent = recent;
+
+    // TODO: implement appointments later
+    upcomingAppointmentsCount.textContent = "0";
+  } catch (error) {
+    console.error("Error updating statistics:", error);
+    Swal.fire("Error", "Failed to update statistics", "error");
+  }
+}
 
     // Add new pet
     addPetForm.addEventListener('submit', async (e) => {
@@ -2034,6 +2328,7 @@ petsSnap.forEach((docSnap) => {
       renderPetsTable();
     }
 
+    
     // Search button event
     document.getElementById('searchBtn').addEventListener('click', filterPets);
 
@@ -2059,6 +2354,7 @@ petsSnap.forEach((docSnap) => {
       });
     });
 
+    
     // Close modal when clicking outside
     window.addEventListener('click', (e) => {
       if (e.target === editPetModal) {
@@ -2068,6 +2364,7 @@ petsSnap.forEach((docSnap) => {
         viewPetModal.classList.remove('show');
       }
     });
+
 
     onSnapshot(collection(db, "Pets"), () => {
   loadAllPets();

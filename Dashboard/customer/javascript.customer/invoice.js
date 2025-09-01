@@ -51,16 +51,19 @@ async function loadInvoice() {
     const data = docSnap.data();
     console.log("📌 Appointment data:", data);
 
-    // ✅ Invoice Date
-    document.getElementById("invoiceDate").textContent = new Date().toLocaleDateString();
+    // ✅ Invoice Date (from completedAt in Firestore)
+    if (data.completedAt?.toDate) {
+      document.getElementById("invoiceDate").textContent =
+        data.completedAt.toDate().toLocaleDateString();
+    } else {
+      document.getElementById("invoiceDate").textContent = "-";
+    }
 
     // ✅ Permanent Invoice Number
     let invoiceNumber;
     if (data.invoiceNo) {
-      // Already stored → use it
       invoiceNumber = data.invoiceNo;
     } else {
-      // Not yet stored → generate and save to Firestore
       invoiceNumber = generateInvoiceNumber();
       await updateDoc(docRef, { invoiceNo: invoiceNumber });
     }
@@ -88,31 +91,67 @@ async function loadInvoice() {
     const reservationFee = parseFloat((data.reservationFee || "0").toString().replace("₱", "").trim());
     document.getElementById("reservationFee").textContent = `₱${reservationFee.toFixed(2)}`;
 
-    // ✅ Discount
-    const discount = parseFloat(data.discount || 0);
-    document.getElementById("discount").textContent = discount > 0 ? `${discount}%` : "0%";
+  
 
-    // ✅ Total
-    let total = 0;
-    if (data.totalAmount !== undefined) {
-      total = parseFloat((data.totalAmount || "0").toString().replace("₱", "").trim()) || 0;
-    } else {
-      total = (serviceFee + reservationFee) - ((serviceFee + reservationFee) * (discount / 100));
-    }
-    document.getElementById("totalFee").textContent = `₱${total.toFixed(2)}`;
+    // ✅ Invoice Date → from completedAt in Firestore
+// ✅ Invoice Date → from Firestore completedAt
+const invoiceDateEl = document.getElementById("invoiceDate");
+if (invoiceDateEl) {
+  if (data.completedAt && data.completedAt.toDate) {
+    invoiceDateEl.textContent = data.completedAt.toDate().toLocaleDateString();
+  } else {
+    invoiceDateEl.textContent = new Date().toLocaleDateString();
+  }
+}
 
-    // ✅ Downpayment
-    let downpayment = 0;
-    if (data.paymentType && data.paymentType.toLowerCase() === "downpayment") {
-      downpayment = data.downpaymentAmount
-        ? parseFloat((data.downpaymentAmount).toString().replace("₱", "").trim())
-        : total * 0.30;
-    }
 
-    const downEl = document.getElementById("downpayment");
-    if (downEl) {
-      downEl.textContent = `₱${downpayment.toFixed(2)}`;
-    }
+// ✅ Handle Discounts
+const discountContainer = document.getElementById("discountContainer");
+const discountEl = document.getElementById("discount"); // still keep for total %
+
+let totalDiscount = 0;
+
+if (Array.isArray(data.appliedDiscounts) && data.appliedDiscounts.length > 0) {
+  discountContainer.innerHTML = ""; // clear first
+
+  data.appliedDiscounts.forEach(discount => {
+    const match = discount.match(/(\d+)%/);
+    if (match) totalDiscount += parseFloat(match[1]);
+
+    const p = document.createElement("p");
+    p.textContent = discount; // e.g. "PWD: 15%"
+    discountContainer.appendChild(p);
+  });
+
+  if (discountEl) discountEl.textContent = `${totalDiscount}%`;
+} else {
+  if (discountEl) discountEl.textContent = "0%";
+  if (discountContainer) discountContainer.innerHTML = "<p>No discounts</p>";
+}
+
+
+// ✅ Total
+let total = 0;
+if (data.totalAmount !== undefined) {
+  total = parseFloat((data.totalAmount || "0").toString().replace("₱", "").trim()) || 0;
+} else {
+  total = (serviceFee + reservationFee) - ((serviceFee + reservationFee) * (discount / 100));
+}
+document.getElementById("totalFee").textContent = `₱${total.toFixed(2)}`;
+
+// ✅ Downpayment
+let downpayment = 0;
+if (data.paymentType && data.paymentType.toLowerCase() === "downpayment") {
+  downpayment = data.downpaymentAmount
+    ? parseFloat((data.downpaymentAmount).toString().replace("₱", "").trim())
+    : total * 0.30;
+}
+
+const downEl = document.getElementById("downpayment");
+if (downEl) {
+  downEl.textContent = `₱${downpayment.toFixed(2)}`;
+}
+
 
   } catch (error) {
     console.error("❌ Error loading invoice:", error);

@@ -187,3 +187,88 @@ if (role === "admin" && currentPath.includes('admin.html')) {
   });
 }
 
+document.addEventListener("DOMContentLoaded", function () {
+  const cardsContainer = document.querySelector('.cards');
+  const boxesContainer = document.querySelector('#news .box-container');
+  const newsContainer = cardsContainer || boxesContainer;
+  if (!newsContainer) return;
+
+  const MODE = cardsContainer ? 'cards' : 'boxes'; // render style
+
+  const PLACEHOLDER_IMAGE = "/images/news2.webp"; 
+  const defaultNews = {
+    title: "NO NEWS AVAILABLE",
+    content: "Stay tuned for updates!",
+    image: PLACEHOLDER_IMAGE,
+    publishDate: ""
+  };
+
+  function getTop3Published(newsList) {
+    let published = (newsList || []).filter(n => n.status === 'published');
+    published.sort((a, b) => {
+      const da = a.publishDate ? new Date(a.publishDate).getTime() : 0;
+      const db = b.publishDate ? new Date(b.publishDate).getTime() : 0;
+      return db - da;
+    });
+    return published.slice(0, 3);
+  }
+
+  function renderNews() {
+    const stored = JSON.parse(localStorage.getItem('newsList')) || [];
+    let list = getTop3Published(stored);
+
+    // Always fill up to 3 slots
+    while (list.length < 3) {
+      list.push(defaultNews);
+    }
+
+    newsContainer.innerHTML = '';
+
+    list.forEach(news => {
+      const imgSrc = news.image || PLACEHOLDER_IMAGE;
+      const dateText = news.publishDate ? new Date(news.publishDate).toLocaleDateString() : '';
+
+      if (MODE === 'cards') {
+        const card = document.createElement('div');
+        card.classList.add('card');
+        card.innerHTML = `
+          <div class="image-section">
+            <img src="${imgSrc}" alt="${news.title}">
+          </div>
+          <div class="content">
+            <h4>${news.title}</h4>
+            <p>${news.content}</p>
+          </div>
+          <div class="posted-date">
+            <p>${dateText}</p>
+          </div>
+        `;
+        newsContainer.appendChild(card);
+      } else {
+        const box = document.createElement('div');
+        box.classList.add('box');
+        box.innerHTML = `
+          <div class="image">
+            <img src="${imgSrc}" alt="${news.title}">
+          </div>
+          <div class="content">
+            <div class="icons">
+              <a href="#"><i class="fa-solid fa-calendar"></i> ${dateText}</a>
+              <a href="#"><i class="fas fa-user"></i> By admin</a>
+            </div>
+            <h3>${news.title}</h3>
+            <p>${news.content}</p>
+            <a href="news.html" class="btn">Learn More <span class="fas fa-chevron-right"></span></a>
+          </div>
+        `;
+        newsContainer.appendChild(box);
+      }
+    });
+  }
+
+  renderNews();
+
+  window.addEventListener('storage', (event) => {
+    if (event.key === 'newsList') renderNews();
+  });
+});

@@ -54,9 +54,23 @@ async function loadAppointments() {
   `;
   tableBody.appendChild(row);
 
-  // ✅ Add SweetAlert loader for "View Invoice" button
-  const button = row.querySelector(".view-invoice-btn");
+// ✅ Add SweetAlert loader for "View Invoice" button
+const button = row.querySelector(".view-invoice-btn");
 button.addEventListener("click", () => {
+  // Assuming you have a "status" field in your document
+  const status = doc.data().status; // or row.getAttribute("data-status") if you stored it in DOM
+
+  if (status !== "Completed") {
+    Swal.fire({
+      icon: "warning",
+      title: "Invoice Unavailable",
+      text: "You can only view the invoice once the appointment is marked as Completed.",
+      confirmButtonText: "OK"
+    });
+    return; // stop execution here
+  }
+
+  // ✅ Show loader only if status is Completed
   Swal.fire({
     title: "Loading Invoice...",
     html: "Please wait while we load your invoice.",
@@ -71,6 +85,7 @@ button.addEventListener("click", () => {
     window.location.href = `invoice.html?id=${doc.id}`;
   }, 1500);
 });
+
 
 });
 

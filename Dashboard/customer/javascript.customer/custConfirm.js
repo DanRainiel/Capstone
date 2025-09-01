@@ -126,6 +126,36 @@ if (cancelBtn) {
     });
 }
 
+document.addEventListener("DOMContentLoaded", function () {
+  const appointmentData = JSON.parse(sessionStorage.getItem("appointment"));
+
+  if (appointmentData) {
+    console.log("Loaded appointment from modal:", appointmentData);
+
+    const confirmBtn = document.getElementById("bookBtn");
+
+    confirmBtn.addEventListener("click", async () => {
+      try {
+        const appointmentId = appointmentData.appointmentId || `${appointmentData.userId}_${appointmentData.petId}_${Date.now()}`;
+
+        // Firestore save
+        await setDoc(doc(db, "Appointment", appointmentId), {
+          ...appointmentData,
+          status: "pending",
+          bookedAt: new Date().toISOString()
+        });
+
+        alert("Appointment confirmed successfully!");
+        sessionStorage.removeItem("appointment");
+        window.location.href = "custDashboard.html";
+
+      } catch (error) {
+        console.error("Error saving appointment from modal:", error);
+        alert("Failed to confirm appointment. Please try again.");
+      }
+    });
+  }
+});
 
     if (!appointmentData) {
         alert("No appointment data found.");
@@ -368,6 +398,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     totalAmount,
                     selectedServices
                 };
+
+                
 
                 // Save to Firestore
         const userId = sessionStorage.getItem("userId"); // ✅ retrieve userId

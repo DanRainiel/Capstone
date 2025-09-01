@@ -98,45 +98,28 @@ window.addEventListener("click", (e) => {
 });
 
 // ================== RESCHEDULE ==================
+// ================== RESCHEDULE ==================
 async function rescheduleAppointment() {
   const modal = document.getElementById("detailsModal");
   const docId = modal.getAttribute("data-docid");
-  const newDateTime = document.getElementById("newDate").value;
 
-  if (!docId || !newDateTime) {
-    alert("Please select a new date & time.");
+  if (!docId) {
+    alert("No appointment selected.");
     return;
   }
 
-  // Convert to Date object
-  const dateObj = new Date(newDateTime);
-
-  // Extract parts manually
-  const year = dateObj.getFullYear();
-  const month = String(dateObj.getMonth() + 1).padStart(2, "0");
-  const day = String(dateObj.getDate()).padStart(2, "0");
-
-  let hours = dateObj.getHours();
-  const minutes = String(dateObj.getMinutes()).padStart(2, "0");
-  const ampm = hours >= 12 ? "PM" : "AM";
-
-  // Convert to 12-hour format
-  hours = hours % 12;
-  hours = hours ? hours : 12; // 0 should be 12
-
-  // ✅ Final format: YYYY-MM-DD hh:mm AM/PM
-  const formattedDateTime = `${year}-${month}-${day} ${hours}:${minutes} ${ampm}`;
-
   try {
     const docRef = doc(db, "Appointment", docId);
-    await updateDoc(docRef, { date: formattedDateTime });
 
-    alert("Appointment rescheduled successfully!");
+    // ✅ Update status instead of rescheduling directly
+    await updateDoc(docRef, { status: "for-rescheduling" });
+
+    alert("Appointment marked for rescheduling!");
     closeDetailsModal();
     loadAppointments(); // refresh table
   } catch (error) {
     console.error("Error updating appointment:", error);
-    alert("Failed to reschedule.");
+    alert("Failed to update status.");
   }
 }
 

@@ -84,7 +84,7 @@
 }
 
         
-// Check admin (optional, remove if not needed)
+// ✅ Check Admin
 const adminRef = collection(db, "Admin");
 const adminSnapshot = await getDocs(adminRef);
 
@@ -106,11 +106,41 @@ for (const docItem of adminSnapshot.docs) {
     });
 
     setTimeout(() => {
-      location.replace("../Dashboard/admin/admin.html");
+      location.replace("../Dashboard/admin/admin.html"); // keep admin redirect
     }, 2000);
     return;
   }
 }
+
+// ✅ Check Staff
+const staffRef = collection(db, "Staff");
+const staffSnapshot = await getDocs(staffRef);
+
+for (const docItem of staffSnapshot.docs) {
+  const data = docItem.data();
+  if (data.email === email && data.password === password) {
+    sessionStorage.setItem("isLoggedIn", "true");
+    sessionStorage.setItem("userId", docItem.id);
+    sessionStorage.setItem("role", "staff");
+    sessionStorage.setItem("userName", data.name);
+    sessionStorage.setItem("welcomeMessage", `Welcome back, Staff ${data.name}!`);
+
+    Swal.fire({
+      icon: "success",
+      title: "Login Successful",
+      text: `Welcome back, Staff ${data.name}!`,
+      timer: 2000,
+      showConfirmButton: false
+    });
+
+    setTimeout(() => {
+     location.replace("../Dashboard/staff/staff.html");
+
+    }, 2000);
+    return;
+  }
+}
+
 
 loader.style.display = "none";
 Swal.fire({
@@ -132,7 +162,6 @@ Swal.fire({
 });
     
   // REGISTER
-
   const signUpButton = document.getElementById("SignUpBtn");
 
   signUpButton.addEventListener("click", async (e) => {

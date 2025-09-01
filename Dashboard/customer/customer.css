@@ -2113,7 +2113,9 @@ color: var(--white);
    
 }
 
-
+#appt-time option.blocked-time {
+  color: #f70e0e;
+}
 
 
 

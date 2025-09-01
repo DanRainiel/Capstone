@@ -44,6 +44,7 @@
     }
   }
 
+  
 
         async function loadUsername() {
         const userId = sessionStorage.getItem("userId");
@@ -263,78 +264,122 @@ if (confirmLogout) {
             });
         });
         
-         //SUBMIT BUTTON LOGIC//       
+// ✅ Helper: convert "HH:MM AM/PM" or "HH:MM" into minutes since midnight
+function toMinutes(timeStr) {
+  if (!timeStr) return null;
+  let hours, minutes;
+
+  if (timeStr.includes("AM") || timeStr.includes("PM")) {
+    // 12-hour format
+    let [time, modifier] = timeStr.split(" ");
+    [hours, minutes] = time.split(":").map(Number);
+    if (modifier === "PM" && hours !== 12) hours += 12;
+    if (modifier === "AM" && hours === 12) hours = 0;
+  } else {
+    // 24-hour format
+    [hours, minutes] = timeStr.split(":").map(Number);
+  }
+
+  return hours * 60 + minutes;
+}
+
+//SUBMIT BUTTON LOGIC//
 document.addEventListener("DOMContentLoaded", () => {
-    const form = document.getElementById("appointment-form");
+  const form = document.getElementById("appointment-form");
+  
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-    form.addEventListener("submit", (e) => {
-        e.preventDefault();
+    const appointmentData = {
+      name: document.getElementById("appt-name").value.trim(),
+      number: document.getElementById("appt-number").value.trim(),
+      petName: document.getElementById("appt-petname").value.trim(),
+      breed: document.getElementById("appt-breed").value.trim(),
+      petSize: document.getElementById("appt-size").value,
+      sex: document.getElementById("appt-sex").value,
+      service: document.getElementById("appt-service").value,
+      time: formatTo12Hour(document.getElementById("appt-time").value),
+      date: document.getElementById("appt-date").value,
+      serviceFee: 0,
+      selectedServices: [],
+      vaccines: [],
+    };
 
-        const appointmentData = {
-            name: document.getElementById("appt-name").value.trim(),
-            number: document.getElementById("appt-number").value.trim(),
-            petName: document.getElementById("appt-petname").value.trim(),
-            breed: document.getElementById("appt-breed").value.trim(),
-            petSize: document.getElementById("appt-size").value,
-            sex: document.getElementById("appt-sex").value,
-            service: document.getElementById("appt-service").value,
-            time: formatTo12Hour(document.getElementById("appt-time").value),
-            date: document.getElementById("appt-date").value,
-            serviceFee: 0,
-            selectedServices: [],
-            vaccines: [],
-        };
-
-        // 💰 Apply fee based on service
-        switch (appointmentData.service) {
-            case "grooming":
-                appointmentData.serviceFee = 500;
-                break;
-            case "vaccinations":
-                appointmentData.serviceFee = 700;
-                break;
-            case "dental-care":
-                appointmentData.serviceFee = 600;
-                break;
-            case "consultation":
-                appointmentData.serviceFee = 400;
-                break;
-            case "laboratory":
-                appointmentData.serviceFee = 800;
-                break;
-            case "treatment":
-                appointmentData.serviceFee = 1000;
-                break;
-        }
-
-        Swal.fire({
-            title: 'Processing...',
-            text: 'Please wait while we submit your appointment.',
-            allowOutsideClick: false,
-            allowEscapeKey: false,
-            didOpen: () => {
-                Swal.showLoading();
-            }
-        });
-
-        // ⏳ Simulate a short delay (e.g. 1.5 seconds)
-       setTimeout(() => {
-    // ✅ Save appointment data to sessionStorage
-    sessionStorage.setItem("appointment", JSON.stringify(appointmentData));
+    // 💰 Apply fee based on service
+    switch (appointmentData.service) {
+      case "grooming": appointmentData.serviceFee = 500; break;
+      case "vaccinations": appointmentData.serviceFee = 700; break;
+      case "dental-care": appointmentData.serviceFee = 600; break;
+      case "consultation": appointmentData.serviceFee = 400; break;
+      case "laboratory": appointmentData.serviceFee = 800; break;
+      case "treatment": appointmentData.serviceFee = 1000; break;
+    }
 
     Swal.fire({
+      title: 'Checking availability...',
+      text: 'Please wait while we verify your appointment slot.',
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
+    try {
+      // 🔎 Get all appointments for the same date
+      const q = query(collection(db, "Appointment"), where("date", "==", appointmentData.date));
+      const querySnapshot = await getDocs(q);
+
+      let conflict = false;
+      const newTime = toMinutes(appointmentData.time);
+
+     querySnapshot.forEach(docSnap => {
+  const existing = docSnap.data();
+  
+  // Defensive: ensure existing time is comparable
+  const existingTime = toMinutes(existing.time);
+  
+  if (existingTime !== null && newTime !== null && existingTime === newTime) {
+    conflict = true;
+  }
+});
+
+
+      if (conflict) {
+        await Swal.fire({
+          icon: "error",
+          title: "Slot Unavailable",
+          text: "This date and time is already booked. Please choose another.",
+          confirmButtonColor: "#f8732b"
+        });
+        return; // ⛔ STOP here
+      }
+
+      // ✅ If no conflict, save appointment
+      sessionStorage.setItem("Appointment", JSON.stringify(appointmentData));
+
+      await Swal.fire({
         title: 'Appointment Submitted!',
         text: 'Your appointment has been saved. Redirecting to confirmation page...',
         icon: 'success',
         confirmButtonText: 'Continue',
         confirmButtonColor: '#f8732b'
-    }).then(() => {
-        window.location.href = "custConfirm.html";
-    });
-}, 1500);
+      });
 
-    });
+      window.location.href = "custConfirm.html";
+
+    } catch (error) {
+      console.error("Error checking slot:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Something went wrong",
+        text: "Unable to check appointment availability. Please try again.",
+        confirmButtonColor: "#f8732b"
+      });
+    }
+  });
 });
+
 
 
 const opHoursEl = document.querySelector(".opHours");
@@ -376,392 +421,419 @@ loadClinicHours();
 
 
 
-// CALENDAR //
+  // CALENDAR //
 
-                let currentDate = new Date();
-                let selectedDate = null;
-                let selectedTimeSlot = null;
-                let currentMonth = new Date().getMonth();
-                let currentYear = new Date().getFullYear();
+                  let currentDate = new Date();
+                  let selectedDate = null;
+                  let selectedTimeSlot = null;
+                  let currentMonth = new Date().getMonth();
+                  let currentYear = new Date().getFullYear();
 
-      
-                let appointments = {}; // This will hold real-time Firestore data
+        
+                  let appointments = {}; // This will hold real-time Firestore data
 
-     function formatTo12Hour(timeStr) {
-    const [hour, minute] = timeStr.split(':');
-    const h = parseInt(hour, 10);
-    const suffix = h >= 12 ? 'PM' : 'AM';
-    const hour12 = h % 12 === 0 ? 12 : h % 12;
-    return `${hour12}:${minute} ${suffix}`;
-}
-
-
- async function loadAppointmentsFromFirestore() {
-  appointments = {};
-  selectedDate = null;
-  selectedTimeSlot = null;
-
-  const currentUserUid = sessionStorage.getItem("userId");
-  console.log("Loading appointments for UID:", currentUserUid);
-
-  if (!currentUserUid) {
-    console.error("No user ID found in sessionStorage.");
-    return;
+      function formatTo12Hour(timeStr) {
+      const [hour, minute] = timeStr.split(':');
+      const h = parseInt(hour, 10);
+      const suffix = h >= 12 ? 'PM' : 'AM';
+      const hour12 = h % 12 === 0 ? 12 : h % 12;
+      return `${hour12}:${minute} ${suffix}`;
   }
 
-  const querySnapshot = await getDocs(collection(db, "Appointment"));
-  console.log("Total appointments in DB:", querySnapshot.size);
 
-  querySnapshot.forEach((docSnap) => {
-    const data = docSnap.data();
-    console.log("Checking doc:", data);
+  async function loadAppointmentsFromFirestore() {
+    appointments = {};
+    selectedDate = null;
+    selectedTimeSlot = null;
 
-    if (data.userId !== currentUserUid) {
-      console.log("Skipping non-matching appointment:", data.userId);
+    const currentUserUid = sessionStorage.getItem("userId");
+    console.log("Loading appointments for UID:", currentUserUid);
+
+    if (!currentUserUid) {
+      console.error("No user ID found in sessionStorage.");
       return;
     }
 
-   const dateStr = formatDate(new Date(data.date));
+    const querySnapshot = await getDocs(collection(db, "Appointment"));
+    console.log("Total appointments in DB:", querySnapshot.size);
+
+    querySnapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+      console.log("Checking doc:", data);
+
+      if (data.userId !== currentUserUid) {
+        console.log("Skipping non-matching appointment:", data.userId);
+        return;
+      }
+
+    const dateStr = formatDate(new Date(data.date));
 
 
-    if (!appointments[dateStr]) {
-      appointments[dateStr] = [];
-    }
+      if (!appointments[dateStr]) {
+        appointments[dateStr] = [];
+      }
 
-    appointments[dateStr].push({
-      id: docSnap.id,
-      time: data.time,
-      petName: data.petName,
-      type: data.service,
-      owner: data.name || data.ownerName || "Unknown",
-      phone: data.number || data.ownerPhone || ""
+      appointments[dateStr].push({
+        id: docSnap.id,
+        time: data.time,
+        petName: data.petName,
+        type: data.service,
+        owner: data.name || data.ownerName || "Unknown",
+        phone: data.number || data.ownerPhone || ""
+      });
     });
+
+    console.log("Filtered appointments:", appointments);
+
+    updateCalendar();
+    updateSidebar();
+  }
+
+
+                  const timeSlots = [
+                      '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
+                      '14:00', '14:30', '15:00', '15:30', '16:00', '16:30'
+                  ];
+
+                  const months = [
+                      'January', 'February', 'March', 'April', 'May', 'June',
+                      'July', 'August', 'September', 'October', 'November', 'December'
+                  ];
+
+                  // Initialize calendar
+                  function initCalendar() {
+                      updateCalendar();
+                      updateSidebar();
+                  }
+
+                  let blockedSlots = [];
+
+  // Listen to admin's blocked slots in real-time
+  const blockedCollection = collection(db, "BlockedSlots");
+  onSnapshot(blockedCollection, (snapshot) => {
+    blockedSlots = snapshot.docs.map(doc => doc.data());
+    updateCalendar(); // re-render when blocks change
   });
 
-  console.log("Filtered appointments:", appointments);
+                  function updateCalendar() {
+      const monthYear = document.getElementById('monthYear');
+      const calendarGrid = document.getElementById('calendarGrid');
 
-  updateCalendar();
-  updateSidebar();
-}
+      monthYear.textContent = `${months[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
+      calendarGrid.innerHTML = '';
+
+      const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      dayHeaders.forEach(day => {
+          const dayHeader = document.createElement('div');
+          dayHeader.className = 'calendar-day-header';
+          dayHeader.textContent = day;
+          calendarGrid.appendChild(dayHeader);
+      });
+
+      const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+      const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+      const startingDayOfWeek = firstDay.getDay();
+      const daysInMonth = lastDay.getDate();
+
+      // Empty cells for previous month days
+      for (let i = 0; i < startingDayOfWeek; i++) {
+          const emptyCell = document.createElement('div');
+          emptyCell.className = 'calendar-day-cell empty';
+          calendarGrid.appendChild(emptyCell);
+      }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // normalize today's date
+
+  for (let day = 1; day <= daysInMonth; day++) {
+      const cellDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+      const dateStr = formatDate(cellDate);
+
+      const dayCell = document.createElement('div');
+      dayCell.className = 'calendar-day-cell';
+      dayCell.innerHTML = `<div class="calendar-day-number">${day}</div>`;
+
+      // ❌ Grey out past dates
+      if (cellDate < today) {
+          dayCell.classList.add('past-day');
+          dayCell.style.pointerEvents = 'none';
+      }
+
+      // Blocked days
+      if (blockedSlots.some(b => b.date === dateStr)) {
+          dayCell.classList.add('blocked-day');
+          dayCell.style.pointerEvents = 'none';
+          const blockedBadge = document.createElement('div');
+          blockedBadge.className = 'calendar-blocked-badge';
+          blockedBadge.textContent = 'Blocked';
+          dayCell.appendChild(blockedBadge);
+      }
+
+      // Today highlight
+      if (cellDate.toDateString() === today.toDateString()) {
+          dayCell.classList.add('today');
+      }
+
+      // Selected date highlight
+      if (selectedDate && cellDate.toDateString() === selectedDate.toDateString()) {
+          dayCell.classList.add('selected');
+      }
+
+      // Appointment count badge
+      const dayAppointments = (appointments[dateStr] || []).filter((apt, index, self) =>
+          index === self.findIndex(t =>
+              t.time === apt.time &&
+              t.petName === apt.petName &&
+              t.owner === apt.owner &&
+              t.type === apt.type
+          )
+      );
+
+      if (dayAppointments.length > 0) {
+          const countBadge = document.createElement('div');
+          countBadge.className = 'calendar-appointment-count';
+          countBadge.textContent = dayAppointments.length;
+          dayCell.classList.add('has-appointments');
+          dayCell.appendChild(countBadge);
+      }
+
+      // Available indicator
+      if (cellDate >= today) {  // only show if date is valid
+          const availableIndicator = document.createElement('div');
+          availableIndicator.className = 'calendar-available-indicator';
+          availableIndicator.textContent = 'Available';
+          dayCell.appendChild(availableIndicator);
+      }
+
+      // Clickable if not blocked or past
+      if (!dayCell.classList.contains('blocked-day') && !dayCell.classList.contains('past-day')) {
+          dayCell.addEventListener('click', () => selectDate(cellDate));
+      }
+
+      calendarGrid.appendChild(dayCell);
+  }
+                  }
+                  
 
 
-                const timeSlots = [
-                    '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
-                    '14:00', '14:30', '15:00', '15:30', '16:00', '16:30'
-                ];
+                  function navigateMonth(direction) {
+      currentMonth += direction;
+      if (currentMonth < 0) {
+          currentMonth = 11;
+          currentYear--;
+      } else if (currentMonth > 11) {
+          currentMonth = 0;
+          currentYear++;
+      }
 
-                const months = [
-                    'January', 'February', 'March', 'April', 'May', 'June',
-                    'July', 'August', 'September', 'October', 'November', 'December'
-                ];
+      currentDate = new Date(currentYear, currentMonth, 1);
+      updateCalendar();
+  }
 
-                // Initialize calendar
-                function initCalendar() {
-                    updateCalendar();
-                    updateSidebar();
+
+                  function selectDate(date) {
+                      selectedDate = date;
+                      selectedTimeSlot = null;
+                      updateCalendar();
+                      updateSidebar();
+                  }
+
+                  function updateSidebar() {
+                      const selectedDateDiv = document.getElementById('selectedDate');
+                      const timeSlotsDiv = document.getElementById('timeSlots');
+                      const appointmentsListDiv = document.getElementById('appointmentsList');
+                      const bookBtn = document.getElementById('bookBtn');
+                      
+                      if (!selectedDate) {
+                          selectedDateDiv.textContent = 'Select a date to view appointments';
+                          timeSlotsDiv.innerHTML = '';
+                          appointmentsListDiv.innerHTML = '';
+                          bookBtn.disabled = true;
+                          return;
+                      }
+                      
+                      const dateStr = formatDate(selectedDate);
+                      selectedDateDiv.textContent = selectedDate.toLocaleDateString('en-US', {
+                          weekday: 'long',
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                      });
+                      
+                      // Update time slots
+                      timeSlotsDiv.innerHTML = '';
+                      const dayAppointments = appointments[dateStr] || [];
+                      
+                      timeSlots.forEach(time => {
+                          const timeSlot = document.createElement('div');
+                          timeSlot.className = 'calendar-time-slot';
+                          timeSlot.textContent = formatTo12Hour(time);
+
+                          
+                          const isBooked = dayAppointments.some(apt => apt.time === time);
+                          
+                          if (isBooked) {
+                              timeSlot.classList.add('booked');
+                          } else {
+                              timeSlot.addEventListener('click', () => selectTimeSlot(time));
+                          }
+                          
+                          if (selectedTimeSlot === time) {
+                              timeSlot.classList.add('selected');
+                          }
+                          
+                          timeSlotsDiv.appendChild(timeSlot);
+                      });
+                      
+                      // Update appointments list
+                      appointmentsListDiv.innerHTML = '';
+                      if (dayAppointments.length > 0) {
+                    const filteredAppointments = selectedTimeSlot
+                    ? dayAppointments.filter(apt => apt.time <= selectedTimeSlot)
+                      : dayAppointments;
+
+                      // Remove duplicates (based on time, petName, owner, type)
+  const seen = new Set();
+  const uniqueAppointments = filteredAppointments.filter(apt => {
+      const key = `${apt.time}_${apt.petName}_${apt.owner}_${apt.type}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+  });
+
+                    if (uniqueAppointments.length > 0) {
+                    uniqueAppointments.forEach(apt => {
+
+                  const appointmentDiv = document.createElement('div');
+                appointmentDiv.className = 'calendar-appointment';
+                  appointmentDiv.innerHTML = `
+                  <div class="calendar-appointment-time">${formatTo12Hour(apt.time)}</div>
+                  <div class="calendar-appointment-details">
+                      <strong>${apt.petName}</strong> - ${apt.owner}
+                      <div class="calendar-appointment-type calendar-type-${apt.type}">${getTypeDisplayName(apt.type)}</div>
+                  </div>
+              `;appointmentDiv.innerHTML = `
+    <div class="calendar-appointment-time">${formatTo12Hour(apt.time)}</div>
+    <div class="calendar-appointment-details">
+        <strong>${apt.petName}</strong> - ${apt.owner}
+        <div class="calendar-appointment-type calendar-type-${apt.type}">${getTypeDisplayName(apt.type)}</div>
+    </div>
+  `;
+  appointmentDiv.addEventListener('click', () => {
+      sessionStorage.setItem('selectedAppointmentId', apt.id); // Save appointment ID
+      window.location.href = 'custConfirm.html'; // Go to confirmation page
+  });
+
+              appointmentsListDiv.appendChild(appointmentDiv);
+          });
+          
+      } else {
+          appointmentsListDiv.innerHTML = '<p style="text-align: center; color: #6c757d;">No appointments for this time slot</p>';
+      }
+  } else {
+      appointmentsListDiv.innerHTML = '<p style="text-align: center; color: #6c757d;">No appointments scheduled</p>';
+  }
+
+                      
+                      // Update book button
+                      bookBtn.disabled = !selectedTimeSlot;
+                  }
+
+                  function selectTimeSlot(time) {
+                      selectedTimeSlot = time;
+                      updateSidebar();
+                  }
+
+                  function formatDate(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+
+                  function parseDateLocal(dateStr) {
+                  const [year, month, day] = dateStr.split('-').map(Number);
+                return new Date(year, month - 1, day); // Month is 0-indexed
                 }
 
-                let blockedSlots = [];
 
-// Listen to admin's blocked slots in real-time
-const blockedCollection = collection(db, "BlockedSlots");
-onSnapshot(blockedCollection, (snapshot) => {
-  blockedSlots = snapshot.docs.map(doc => doc.data());
-  updateCalendar(); // re-render when blocks change
-});
+                  function getTypeDisplayName(type) {
+                      const types = {
+                          checkup: 'General Checkup',
+                          vaccinations: 'Vaccination',
+                          surgery: 'Surgery',
+                          grooming: 'Grooming',
+                          treatment: 'Treatment',
+                          consultation: 'Consultation',
+                      };
+                      return types[type] || type;
+                  }
 
-                function updateCalendar() {
-    const monthYear = document.getElementById('monthYear');
-    const calendarGrid = document.getElementById('calendarGrid');
+                  
+                  function hideBookingModal() {
+                      const modal = document.getElementById('bookingModal');
+                      modal.style.display = 'none';
+                      document.getElementById('bookingForm').reset();
+                  }
 
-    monthYear.textContent = `${months[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
-    calendarGrid.innerHTML = '';
+                  
 
-    const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    dayHeaders.forEach(day => {
-        const dayHeader = document.createElement('div');
-        dayHeader.className = 'calendar-day-header';
-        dayHeader.textContent = day;
-        calendarGrid.appendChild(dayHeader);
-    });
+              
 
-    const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-    const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-    const startingDayOfWeek = firstDay.getDay();
-    const daysInMonth = lastDay.getDate();
+                  // Close modal when clicking outside
+                  window.addEventListener('click', function(e) {
+                      const modal = document.getElementById('bookingModal');
+                      if (e.target === modal) {
+                          hideBookingModal();
+                      }
+                  });
 
-    // Empty cells for previous month days
-    for (let i = 0; i < startingDayOfWeek; i++) {
-        const emptyCell = document.createElement('div');
-        emptyCell.className = 'calendar-day-cell empty';
-        calendarGrid.appendChild(emptyCell);
-    }
-
- const today = new Date();
-today.setHours(0, 0, 0, 0); // normalize today's date
-
-for (let day = 1; day <= daysInMonth; day++) {
-    const cellDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-    const dateStr = formatDate(cellDate);
-
-    const dayCell = document.createElement('div');
-    dayCell.className = 'calendar-day-cell';
-    dayCell.innerHTML = `<div class="calendar-day-number">${day}</div>`;
-
-    // ❌ Grey out past dates
-    if (cellDate < today) {
-        dayCell.classList.add('past-day');
-        dayCell.style.pointerEvents = 'none';
-    }
-
-    // Blocked days
-    if (blockedSlots.some(b => b.date === dateStr)) {
-        dayCell.classList.add('blocked-day');
-        dayCell.style.pointerEvents = 'none';
-        const blockedBadge = document.createElement('div');
-        blockedBadge.className = 'calendar-blocked-badge';
-        blockedBadge.textContent = 'Blocked';
-        dayCell.appendChild(blockedBadge);
-    }
-
-    // Today highlight
-    if (cellDate.toDateString() === today.toDateString()) {
-        dayCell.classList.add('today');
-    }
-
-    // Selected date highlight
-    if (selectedDate && cellDate.toDateString() === selectedDate.toDateString()) {
-        dayCell.classList.add('selected');
-    }
-
-    // Appointment count badge
-    const dayAppointments = (appointments[dateStr] || []).filter((apt, index, self) =>
-        index === self.findIndex(t =>
-            t.time === apt.time &&
-            t.petName === apt.petName &&
-            t.owner === apt.owner &&
-            t.type === apt.type
-        )
-    );
-
-    if (dayAppointments.length > 0) {
-        const countBadge = document.createElement('div');
-        countBadge.className = 'calendar-appointment-count';
-        countBadge.textContent = dayAppointments.length;
-        dayCell.classList.add('has-appointments');
-        dayCell.appendChild(countBadge);
-    }
-
-    // Available indicator
-    if (cellDate >= today) {  // only show if date is valid
-        const availableIndicator = document.createElement('div');
-        availableIndicator.className = 'calendar-available-indicator';
-        availableIndicator.textContent = 'Available';
-        dayCell.appendChild(availableIndicator);
-    }
-
-    // Clickable if not blocked or past
-    if (!dayCell.classList.contains('blocked-day') && !dayCell.classList.contains('past-day')) {
-        dayCell.addEventListener('click', () => selectDate(cellDate));
-    }
-
-    calendarGrid.appendChild(dayCell);
-}
-                }
-                
-
-
-                function navigateMonth(direction) {
-    currentMonth += direction;
-    if (currentMonth < 0) {
-        currentMonth = 11;
-        currentYear--;
-    } else if (currentMonth > 11) {
-        currentMonth = 0;
-        currentYear++;
-    }
-
-    currentDate = new Date(currentYear, currentMonth, 1);
-    updateCalendar();
-}
-
-
-                function selectDate(date) {
-                    selectedDate = date;
-                    selectedTimeSlot = null;
-                    updateCalendar();
-                    updateSidebar();
-                }
-
-                function updateSidebar() {
-                    const selectedDateDiv = document.getElementById('selectedDate');
-                    const timeSlotsDiv = document.getElementById('timeSlots');
-                    const appointmentsListDiv = document.getElementById('appointmentsList');
-                    const bookBtn = document.getElementById('bookBtn');
-                    
-                    if (!selectedDate) {
-                        selectedDateDiv.textContent = 'Select a date to view appointments';
-                        timeSlotsDiv.innerHTML = '';
-                        appointmentsListDiv.innerHTML = '';
-                        bookBtn.disabled = true;
-                        return;
-                    }
-                    
-                    const dateStr = formatDate(selectedDate);
-                    selectedDateDiv.textContent = selectedDate.toLocaleDateString('en-US', {
-                        weekday: 'long',
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                    });
-                    
-                    // Update time slots
-                    timeSlotsDiv.innerHTML = '';
-                    const dayAppointments = appointments[dateStr] || [];
-                    
-                    timeSlots.forEach(time => {
-                        const timeSlot = document.createElement('div');
-                        timeSlot.className = 'calendar-time-slot';
-                        timeSlot.textContent = formatTo12Hour(time);
-
-                        
-                        const isBooked = dayAppointments.some(apt => apt.time === time);
-                        
-                        if (isBooked) {
-                            timeSlot.classList.add('booked');
-                        } else {
-                            timeSlot.addEventListener('click', () => selectTimeSlot(time));
-                        }
-                        
-                        if (selectedTimeSlot === time) {
-                            timeSlot.classList.add('selected');
-                        }
-                        
-                        timeSlotsDiv.appendChild(timeSlot);
-                    });
-                    
-                    // Update appointments list
-                    appointmentsListDiv.innerHTML = '';
-                    if (dayAppointments.length > 0) {
-                   const filteredAppointments = selectedTimeSlot
-                   ? dayAppointments.filter(apt => apt.time <= selectedTimeSlot)
-                    : dayAppointments;
-
-                    // Remove duplicates (based on time, petName, owner, type)
-const seen = new Set();
-const uniqueAppointments = filteredAppointments.filter(apt => {
-    const key = `${apt.time}_${apt.petName}_${apt.owner}_${apt.type}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-});
-
-                   if (uniqueAppointments.length > 0) {
-                  uniqueAppointments.forEach(apt => {
-
-                 const appointmentDiv = document.createElement('div');
-               appointmentDiv.className = 'calendar-appointment';
-                appointmentDiv.innerHTML = `
-                <div class="calendar-appointment-time">${formatTo12Hour(apt.time)}</div>
-                <div class="calendar-appointment-details">
-                    <strong>${apt.petName}</strong> - ${apt.owner}
-                    <div class="calendar-appointment-type calendar-type-${apt.type}">${getTypeDisplayName(apt.type)}</div>
-                </div>
-            `;appointmentDiv.innerHTML = `
-  <div class="calendar-appointment-time">${formatTo12Hour(apt.time)}</div>
-  <div class="calendar-appointment-details">
-      <strong>${apt.petName}</strong> - ${apt.owner}
-      <div class="calendar-appointment-type calendar-type-${apt.type}">${getTypeDisplayName(apt.type)}</div>
-  </div>
-`;
-appointmentDiv.addEventListener('click', () => {
-    sessionStorage.setItem('selectedAppointmentId', apt.id); // Save appointment ID
-    window.location.href = 'custConfirm.html'; // Go to confirmation page
-});
-
-            appointmentsListDiv.appendChild(appointmentDiv);
-        });
-        
-    } else {
-        appointmentsListDiv.innerHTML = '<p style="text-align: center; color: #6c757d;">No appointments for this time slot</p>';
-    }
-} else {
-    appointmentsListDiv.innerHTML = '<p style="text-align: center; color: #6c757d;">No appointments scheduled</p>';
-}
-
-                    
-                    // Update book button
-                    bookBtn.disabled = !selectedTimeSlot;
-                }
-
-                function selectTimeSlot(time) {
-                    selectedTimeSlot = time;
-                    updateSidebar();
-                }
-
-                function formatDate(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-
-                function parseDateLocal(dateStr) {
-                const [year, month, day] = dateStr.split('-').map(Number);
-               return new Date(year, month - 1, day); // Month is 0-indexed
-              }
-
-
-                function getTypeDisplayName(type) {
-                    const types = {
-                        checkup: 'General Checkup',
-                        vaccinations: 'Vaccination',
-                        surgery: 'Surgery',
-                        grooming: 'Grooming',
-                        treatment: 'Treatment',
-                        consultation: 'Consultation',
-                    };
-                    return types[type] || type;
-                }
-
-                
-                function hideBookingModal() {
-                    const modal = document.getElementById('bookingModal');
-                    modal.style.display = 'none';
-                    document.getElementById('bookingForm').reset();
-                }
-
-                
-
-             
-
-                // Close modal when clicking outside
-                window.addEventListener('click', function(e) {
-                    const modal = document.getElementById('bookingModal');
-                    if (e.target === modal) {
-                        hideBookingModal();
-                    }
-                });
-
-                // Initialize calendar when page loads
-              document.addEventListener('DOMContentLoaded', async function () {
+        // REBOOK BUTTON //
+document.addEventListener('DOMContentLoaded', async function () {
   await loadAppointmentsFromFirestore();
   initCalendar();
 
   const bookBtn = document.getElementById('bookBtn');
 
- bookBtn.addEventListener('click', () => {
-   window.location.href = 'customer.html';
- });
+  bookBtn.addEventListener('click', async () => {
+    if (!selectedDate || !selectedTimeSlot) {
+      alert("Please select a date and time slot first!");
+      return;
+    }
+
+    // ✅ Re-run clinic schedule check before filling form
+    await applyClinicSchedule();
+
+    const timeSelect = document.getElementById("appt-time");
+    const selectedOpt = Array.from(timeSelect.options).find(
+      o => o.value === selectedTimeSlot
+    );
+
+    // ❌ If the time is blocked, stop and warn user
+    if (!selectedOpt || selectedOpt.disabled) {
+      alert("That time is not available. Please pick another slot.");
+      return;
+    }
+
+    // ✅ Otherwise, fill booking form
+    document.getElementById("appt-date").value = formatDate(selectedDate);
+    document.getElementById("appt-time").value = selectedTimeSlot;
+
+    // Redirect to booking section
+    document.getElementById("book-tab").click();
+  });
 
 
 
-    // ⬅️➡️ Add these handlers to allow month navigation
-              document.getElementById("prevMonthBtn").addEventListener("click", () => navigateMonth(-1));
-              document.getElementById("nextMonthBtn").addEventListener("click", () => navigateMonth(1));
-           });
+  // Month navigation
+  document.getElementById("prevMonthBtn").addEventListener("click", () => navigateMonth(-1));
+  document.getElementById("nextMonthBtn").addEventListener("click", () => navigateMonth(1));
+});
 
+
+
+     
 
   //PETS//
 
@@ -965,6 +1037,7 @@ showAddPetModal() {
     document.getElementById('petModal').style.display = 'flex';
   },
 
+  
     bookAppointment(id) {
       const pet = this.pets.find(p => p.id === id);
       if (!pet) return;
@@ -985,56 +1058,53 @@ showAddPetModal() {
       document.getElementById('appointmentModal').style.display = 'flex';
     },
 
-    async submitAppointmentForm(event) {
-      event.preventDefault();
+   async submitAppointmentForm(event) {
+  event.preventDefault();
 
-      const userId = sessionStorage.getItem("userId");
-      const pet = this.currentBookingPet;
+  const userId = sessionStorage.getItem("userId");
+  const pet = this.currentBookingPet;
 
-      if (!userId || !pet) {
-        alert("User or pet not found.");
-        return;
-      }
-
-      const form = document.getElementById("appointmentForm");
-      const ownerName = form.querySelector("#ownerName").value.trim();
-      const ownerPhone = form.querySelector("#ownerPhone").value.trim();
-      const service = form.querySelector("#appointmentService").value;
-      const date = form.querySelector("#appointmentDate").value;
-      const time = form.querySelector("#appointmentTime").value;
-      const notes = form.querySelector("#appointmentNotes").value.trim();
-
-      if (!ownerName || !ownerPhone || !service || !date || !time) {
-        alert("Please fill out all required fields.");
-        return;
-      }
-
-      const appointmentId = `${userId}_${pet.id}_${Date.now()}`;
-
-  
-
-  try {
-    await setDoc(doc(db, "Appointment", appointmentId), {
-      userId,
-      petId: pet.id,
-      petName: pet.petName,
-      ownerName,
-      ownerPhone,
-      service,
-      date,
-      time,
-      notes,
-      createdAt: new Date().toISOString()
-    });
-
-    alert("Appointment booked successfully!");
-    this.closeAppointmentModal();
-  } catch (error) {
-    console.error("Error saving appointment:", error);
-    alert("Failed to book appointment. Please try again.");
+  if (!userId || !pet) {
+    alert("User or pet not found.");
+    return;
   }
 
-    },
+  const form = document.getElementById("appointmentForm");
+  const ownerName = form.querySelector("#ownerName").value.trim();
+  const ownerPhone = form.querySelector("#ownerPhone").value.trim();
+  const service = form.querySelector("#appointmentService").value;
+  const date = form.querySelector("#appointmentDate").value;
+  const time = form.querySelector("#appointmentTime").value;
+  const notes = form.querySelector("#appointmentNotes").value.trim();
+
+  if (!ownerName || !ownerPhone || !service || !date || !time) {
+    alert("Please fill out all required fields.");
+    return;
+  }
+
+  // ✅ Instead of saving to Firestore here, build a draft object
+  const appointmentData = {
+    userId,
+    petId: pet.id,
+    petName: pet.petName,
+    ownerName,
+    ownerPhone,
+    service,
+    date,
+    time,
+    notes,
+    createdAt: new Date().toISOString()
+  };
+
+  // ✅ Save draft to sessionStorage
+  sessionStorage.setItem("appointment", JSON.stringify(appointmentData));
+
+  // ✅ Close modal
+  this.closeAppointmentModal();
+
+  // ✅ Redirect to confirmation page
+  window.location.href = "custConfirm.html";
+},
 
     confirmDelete(id) {
       const pet = this.pets.find(p => p.id === id);
@@ -1157,6 +1227,93 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 });
+
+// Convert Firestore "HH:MM" (24-hour) -> minutes
+function toMinutes24(timeStr) {
+  if (!timeStr) return NaN;
+  const [h, m] = timeStr.split(":").map(Number);
+  return h * 60 + m;
+}
+
+// Convert dropdown "h:mm AM/PM - h:mm AM/PM" -> minutes (start time only)
+// Convert dropdown "h:mm AM/PM - h:mm AM/PM" OR "HH:MM - HH:MM"
+function toMinutesRangeStart(rangeStr) {
+  if (!rangeStr) return NaN;
+  const part = rangeStr.split("-")[0].trim(); // take start time
+
+  // Case 1: already in 24h format "HH:MM"
+  if (/^\d{1,2}:\d{2}$/.test(part)) {
+    const [h, m] = part.split(":").map(Number);
+    return h * 60 + m;
+  }
+
+  // Case 2: "h:mm AM/PM"
+  const [time, modifier] = part.split(" ");
+  let [hours, minutes] = time.split(":").map(Number);
+
+  if (modifier.toUpperCase() === "PM" && hours !== 12) hours += 12;
+  if (modifier.toUpperCase() === "AM" && hours === 12) hours = 0;
+
+  return hours * 60 + minutes;
+}
+
+
+async function applyClinicSchedule() {
+  try {
+    const scheduleRef = doc(db, "ClinicSettings", "schedule");
+    const snap = await getDoc(scheduleRef);
+
+    if (!snap.exists()) {
+      console.warn("⚠️ No schedule found in ClinicSettings.");
+      return;
+    }
+
+    const data = snap.data();
+
+    // ✅ pick schedule depending on today
+    const today = new Date();
+    const isSaturday = today.getDay() === 6; // Sunday=0 ... Saturday=6
+    const hours = isSaturday ? data.saturdayHours : data.weekdayHours;
+
+    const openMinutes = toMinutes24(hours.start); // e.g. "08:00"
+    const closeMinutes = toMinutes24(hours.end); // e.g. "14:00"
+
+    console.log("Clinic hours today:", hours.start, "-", hours.end);
+
+    const timeSelect = document.getElementById("appt-time");
+
+    Array.from(timeSelect.options).forEach(opt => {
+      if (!opt.value) return; // skip "Select Time"
+
+     const optionMinutes = toMinutesRangeStart(opt.value);
+
+
+      // ❌ block only if outside the range
+      if (isNaN(optionMinutes) || optionMinutes < openMinutes || optionMinutes >= closeMinutes) {
+        opt.disabled = true;
+        opt.classList.add("blocked-time");
+      } else {
+        opt.disabled = false;
+        opt.classList.remove("blocked-time");
+      }
+    });
+
+    // Safety: prevent selecting disabled ones
+    timeSelect.addEventListener("change", e => {
+      const selected = e.target.options[e.target.selectedIndex];
+      if (selected.disabled) {
+        alert("That time is outside clinic hours. Please pick another.");
+        e.target.selectedIndex = 0;
+      }
+    });
+
+  } catch (err) {
+    console.error("Error applying clinic schedule:", err);
+  }
+}
+
+document.addEventListener("DOMContentLoaded", applyClinicSchedule);
+
 
 
   window.PetManager = PetManager;
