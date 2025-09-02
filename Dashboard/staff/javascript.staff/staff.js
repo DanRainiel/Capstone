@@ -1055,3 +1055,236 @@ document.getElementById("dateTo").addEventListener("change", filterHistory);
 document.querySelector(".btn-primary").addEventListener("click", filterHistory);
 
 loadAllAppointments();
+
+
+//VACCINATION LABELING//
+  const vaccinationForm = document.getElementById("vaccinationLabelForm");
+  const vaccinationRecordsBody = document.getElementById("vaccinationRecordsBody");
+  const remindersBody = document.getElementById("RemindersBody");
+
+  // Stats elements
+  const vaccinationsTodayEl = document.querySelector("#vaccination-labeling .stat-card:nth-child(1) .stat-number");
+  const vaccinationsMonthEl = document.querySelector("#vaccination-labeling .stat-card:nth-child(2) .stat-number");
+  const vaccinationsDueWeekEl = document.querySelector("#vaccination-labeling .stat-card:nth-child(3) .stat-number");
+
+  // Fetch existing records on page load
+  document.addEventListener("DOMContentLoaded", async () => {
+    const querySnapshot = await getDocs(collection(db, "VaccinationLabel"));
+    querySnapshot.forEach(doc => {
+      const data = doc.data();
+      appendToTables(data);
+    });
+    updateVaccinationStats();
+  });
+
+  // Form submission
+vaccinationForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const formData = new FormData(vaccinationForm);
+
+  const vaccinationDateStr = formData.get("vaccinationDate");
+  const nextDueDateStr = formData.get("nextDueDate");
+
+  const record = {
+    ownerName: formData.get("ownerName"),
+    petName: formData.get("petName"),
+    vaccineType: formData.get("vaccineType"),
+    batchNumber: formData.get("batchNumber"),
+
+    // Always save as YYYY-MM-DD strings
+    vaccinationDate: formatDateOnly(parseDateOnly(vaccinationDateStr)),
+    nextDueDate: formatDateOnly(parseDateOnly(nextDueDateStr)),
+
+    veterinarian: formData.get("veterinarian"),
+    labelQuantity: parseInt(formData.get("labelQuantity"), 10) || 1,
+    createdAt: serverTimestamp()
+  };
+
+  try {
+    await addDoc(collection(db, "VaccinationLabel"), record);
+    appendToTables(record);
+    vaccinationForm.reset();
+    updateVaccinationStats();
+  } catch (error) {
+    console.error("Error adding document:", error);
+  }
+});
+
+
+
+  // Append record to both tables
+  function appendToTables(data) {
+    // ===== Reminders table =====
+  const daysDelta = daysFromToday(data.nextDueDate);
+
+  // FIX: overdue means negative daysDelta
+  const isOverdue = daysDelta < 0;
+
+  const labelText =
+    daysDelta === 0
+      ? "Due today"
+      : isOverdue
+        ? `${Math.abs(daysDelta)} ${Math.abs(daysDelta) === 1 ? "day" : "days"} overdue`
+        : `Due in ${daysDelta} ${daysDelta === 1 ? "day" : "days"}`;
+
+  const labelColor = isOverdue ? "red" : "orange";
+
+
+    const reminderRow = document.createElement("tr");
+    reminderRow.innerHTML = `
+      <td>${data.ownerName}</td>
+      <td>${data.petName}</td>
+      <td>${formatVaccineName(data.vaccineType)} Booster</td>
+      <td>${data.nextDueDate}</td>
+      <td style="color: ${labelColor}; font-weight: bold;">${labelText}</td>
+      <td>
+        <button class="btn-primary">Send Reminder</button>
+        <button class="btn-primary">Book Appointment</button>
+      </td>
+    `;
+    remindersBody.appendChild(reminderRow);
+
+    // ===== Vaccination records table =====
+    const recordRow = document.createElement("tr");
+    recordRow.innerHTML = `
+      <td>${data.ownerName}</td>
+      <td>${data.petName}</td>
+      <td>${formatVaccineName(data.vaccineType)}</td>
+      <td>${data.batchNumber || "-"}</td>
+      <td>${data.vaccinationDate || "-"}</td>
+      <td>${data.nextDueDate || "-"}</td>
+      <td>${formatVetName(data.veterinarian)}</td>
+      
+    `;
+    vaccinationRecordsBody.appendChild(recordRow);
+  }
+
+
+  async function updateVaccinationStats() {
+    const today = new Date();
+    const todayStr = formatDateOnly(today); // Use same parsing logic
+
+    const monthStart = parseDateOnly(`${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-01`);
+    const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+    const weekStart = new Date(today);
+    weekStart.setDate(today.getDate() - today.getDay());
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+
+    const snapshot = await getDocs(collection(db, "VaccinationLabel"));
+
+    let countToday = 0;
+    let countMonth = 0;
+    let countWeekDue = 0;
+
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      if (!data.vaccinationDate) return;
+
+      const vaccDate = parseDateOnly(data.vaccinationDate);
+      const nextDue = parseDateOnly(data.nextDueDate);
+
+      // Today
+      if (data.vaccinationDate === todayStr) countToday++;
+
+      // This month
+      if (vaccDate >= monthStart && vaccDate <= monthEnd) countMonth++;
+
+      // Due this week
+      if (nextDue && nextDue >= weekStart && nextDue <= weekEnd) countWeekDue++;
+    });
+
+    vaccinationsTodayEl.textContent = countToday;
+    vaccinationsMonthEl.textContent = countMonth;
+    vaccinationsDueWeekEl.textContent = countWeekDue;
+  }
+
+  // New helper to get "YYYY-MM-DD" from Date
+function formatDateOnly(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+
+  // Helper functions
+  function formatVaccineName(type) {
+    const names = {
+      rabies: "Rabies",
+      "5in1": "5-in-1 (DHPPL)",
+      "6in1": "6-in-1 (DHPPLC)",
+      bordetella: "Bordetella",
+      "feline-3in1": "Feline 3-in-1",
+      "feline-4in1": "Feline 4-in-1"
+    };
+    return names[type] || type;
+  }
+
+  function formatVetName(id) {
+    const vets = {
+      "dr-rodriguez": "Dr. Rodriguez",
+      "dr-martinez": "Dr. Martinez",
+      "dr-santos": "Dr. Santos"
+    };
+    return vets[id] || id;
+  }
+
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+function parseDateOnly(input) {
+  if (!input) return null;
+
+  // Firestore Timestamp
+  if (typeof input?.toDate === "function") {
+    const d = input.toDate();
+
+    const isUTCmidnight =
+      d.getUTCHours() === 0 &&
+      d.getUTCMinutes() === 0 &&
+      d.getUTCSeconds() === 0 &&
+      d.getUTCMilliseconds() === 0;
+
+    const isLocalMidnight =
+      d.getHours() === 0 &&
+      d.getMinutes() === 0 &&
+      d.getSeconds() === 0 &&
+      d.getMilliseconds() === 0;
+
+    if (isUTCmidnight && !isLocalMidnight) {
+      return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+    }
+
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  }
+
+  // "YYYY-MM-DD"
+  if (typeof input === "string") {
+    const m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(input.trim());
+    if (!m) return null;
+    const y = Number(m[1]), mo = Number(m[2]), da = Number(m[3]);
+    return new Date(y, mo - 1, da);
+  }
+
+  // JS Date
+  if (input instanceof Date && !isNaN(input)) {
+    return new Date(input.getFullYear(), input.getMonth(), input.getDate());
+  }
+
+  return null;
+}
+
+function daysFromToday(dueLike) {
+  const due = parseDateOnly(dueLike);
+  if (!due) return 0;
+
+  const today = new Date();
+
+  const dueUTC = Date.UTC(due.getFullYear(), due.getMonth(), due.getDate());
+  const todayUTC = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+
+  return Math.trunc((dueUTC - todayUTC) / MS_PER_DAY);
+}
