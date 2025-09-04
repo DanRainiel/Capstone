@@ -383,7 +383,7 @@ if (displayData.date === today) {
             <button class="btn accept" data-id="${docId}" data-type="${type}">Accept</button>
             <button class="btn decline" data-id="${docId}" data-type="${type}">Decline</button>
             <button class="btn reschedule" data-id="${docId}" data-type="${type}">Reschedule</button>
-            <button class="btn screenshot" data-id="${docId}" data-type="${type}">View Screenshot</button>
+           <button class="btn screenshot" data-id="${docId}" data-type="Appointment">View Screenshot</button>
           `;
 } else if (normalizedStatus === "in progress") {
   actionButtons = `
@@ -403,8 +403,89 @@ if (displayData.date === today) {
       <button class="btn accept" data-id="${docId}" data-type="${type}">Accept</button>
       <button class="btn decline" data-id="${docId}" data-type="${type}">Decline</button>
     `;
-  } 
+     } else if (normalizedStatus === "cancelled") {
+    actionButtons = `
+      <button class="btn viewreason" data-id="${docId}" data-type="${type}">View Reason</button>
+    `;
+  }
 
+
+
+// Handle "View Screenshot"
+document.addEventListener("click", async (e) => {
+  if (e.target.classList.contains("screenshot")) {
+    const docId = e.target.getAttribute("data-id");
+    const type = e.target.getAttribute("data-type");
+
+    console.log("Fetching screenshot for:", { docId, type }); // ✅ Debug log
+
+    try {
+      const docRef = doc(db, type, docId);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data.receiptImage) {
+        Swal.fire({
+  title: "Uploaded Screenshot",
+  html: `<img src="${data.receiptImage}" style="width:800px;max-width:100%;border-radius:8px">`,
+  width: "auto",
+});
+
+        } else {
+          Swal.fire("No Screenshot", "This appointment has no uploaded screenshot.", "info");
+        }
+      } else {
+        Swal.fire("Error", "Appointment document could not be found.", "error");
+      }
+    } catch (err) {
+      console.error("Error fetching screenshot:", err);
+      Swal.fire("Error", "Something went wrong while loading the screenshot.", "error");
+    }
+  }
+});
+
+document.addEventListener("click", async (e) => {
+  if (e.target.classList.contains("viewreason")) {
+    const docId = e.target.getAttribute("data-id");
+    console.log("🔍 Fetching cancel reason for docId:", docId);
+
+    try {
+      const docRef = doc(db, "Appointment", docId); // make sure "Appointment" matches your collection name
+      const snap = await getDoc(docRef);
+
+      if (snap.exists()) {
+        const data = snap.data();
+        console.log("✅ Appointment data:", data);
+
+        const reason = data.cancelReason || "No reason provided.";
+        const cancelledAt = data.cancelledAt?.toDate
+          ? data.cancelledAt.toDate().toLocaleString()
+          : "Unknown time";
+
+        Swal.fire({
+          title: "Cancellation Reason",
+          html: `
+            <p><strong>Reason:</strong> ${reason}</p>
+            <p><strong>Cancelled At:</strong> ${cancelledAt}</p>
+          `,
+          icon: "info",
+          confirmButtonText: "Close"
+        });
+      } else {
+        console.warn("❌ Appointment not found for docId:", docId);
+        Swal.fire("Error", "Appointment not found.", "error");
+      }
+    } catch (error) {
+      console.error("🔥 Error fetching cancel reason:", error);
+      Swal.fire("Error", "Failed to load cancellation reason.", "error");
+    }
+  }
+});
+
+
+
+  
         const fullRow = document.createElement("tr");
         fullRow.innerHTML = `
           <td>${displayData.date}</td>

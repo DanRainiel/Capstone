@@ -311,34 +311,41 @@ document.addEventListener("DOMContentLoaded", () => {
 }
 });
 
-// ✅ Appointment source (replace later with Firestore)
-const appointmentsData = {
-    '2025-08-30': [
-        { time: '09:00 AM', owner: 'John Smith', pet: 'Buddy', service: 'Vaccination', status: 'completed' },
-        { time: '11:30 AM', owner: 'Maria Garcia', pet: 'Fluffy', service: 'Grooming', status: 'pending' },
-        { time: '2:00 PM', owner: 'David Lee', pet: 'Max', service: 'Check-up', status: 'pending' }
-    ],
-    '2025-08-31': [
-        { time: '10:00 AM', owner: 'Sarah Johnson', pet: 'Whiskers', service: 'Surgery', status: 'pending' },
-        { time: '3:00 PM', owner: 'Robert Wilson', pet: 'Charlie', service: 'Consultation', status: 'pending' }
-    ],
-    '2025-09-01': [
-        { time: '9:30 AM', owner: 'Emma Davis', pet: 'Bella', service: 'Vaccination', status: 'pending' }
-    ],
-    '2025-09-03': [
-        { time: '11:00 AM', owner: 'Michael Brown', pet: 'Rocky', service: 'Emergency', status: 'pending' },
-        { time: '1:30 PM', owner: 'Lisa Anderson', pet: 'Mimi', service: 'Grooming', status: 'pending' }
-    ]
-};
-
 // ✅ Global state
 let currentDate = new Date();
 let selectedDate = null;
+let appointmentsData = {}; // will be populated from Firestore
+
+// ✅ Fetch appointments from Firestore
+async function fetchAppointments() {
+    const appointmentsCol = collection(db, "Appointment");
+    const snapshot = await getDocs(appointmentsCol);
+
+    appointmentsData = {}; // reset
+
+   snapshot.forEach(doc => {
+    const appt = doc.data();
+    const dateKey = appt.date; // already in 'YYYY-MM-DD' format
+
+    if (!appointmentsData[dateKey]) appointmentsData[dateKey] = [];
+
+    appointmentsData[dateKey].push({
+        time: appt.time,
+        owner: appt.name,      // <-- was 'owner'
+        pet: appt.petName,     // <-- was 'pet'
+        service: appt.service,
+        status: appt.status || "pending"
+    });
+});
+
+
+    renderCalendar();
+}
 
 // ✅ Calendar initialization
 function initializeCalendar() {
-    renderCalendar();
     setupCalendarNavigation();
+    fetchAppointments(); // load Firestore appointments first
 }
 
 // ✅ Render calendar with appointment indicators
@@ -354,10 +361,9 @@ function renderCalendar() {
     const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
     monthYear.textContent = `${monthNames[month]} ${year}`;
 
-    // Clear old grid
     calendarGrid.innerHTML = '';
 
-    // Add weekday headers
+    // Weekday headers
     const dayHeaders = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
     dayHeaders.forEach(day => {
         const header = document.createElement('div');
@@ -366,7 +372,6 @@ function renderCalendar() {
         calendarGrid.appendChild(header);
     });
 
-    // Dates logic
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
     const startDate = new Date(firstDay);
@@ -382,21 +387,17 @@ function renderCalendar() {
 
         const dateKey = currentDay.toISOString().split('T')[0];
 
-        // dim days not in current month
         if (currentDay.getMonth() !== month) {
             cell.classList.add('other-month');
         } else {
-            // highlight today
             if (currentDay.toDateString() === new Date().toDateString()) {
                 cell.classList.add('today');
             }
 
-            // mark days with appointments
             if (appointmentsData[dateKey] && appointmentsData[dateKey].length > 0) {
                 cell.classList.add('has-appointment');
             }
 
-            // select date
             cell.addEventListener('click', (e) => selectDate(dateKey, currentDay, e));
         }
 
@@ -447,7 +448,7 @@ function displayAppointments(dateKey, dateObj) {
     `).join('');
 }
 
-// ✅ Navigation controls (Prev / Next Month)
+// ✅ Navigation controls
 function setupCalendarNavigation() {
     const prevBtn = document.getElementById('prevMonth');
     const nextBtn = document.getElementById('nextMonth');
@@ -467,8 +468,7 @@ function setupCalendarNavigation() {
     }
 }
 
-
-// ✅ Run when page loads
+// ✅ Run on page load
 document.addEventListener("DOMContentLoaded", initializeCalendar);
 
 
@@ -1288,3 +1288,67 @@ function daysFromToday(dueLike) {
 
   return Math.trunc((dueUTC - todayUTC) / MS_PER_DAY);
 }
+
+// Make logout available to inline onclick=""
+window.logout = function () {
+  Swal.fire({
+    title: 'Are you sure you want to logout?',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#f8732b',
+    cancelButtonColor: '#aaa',
+    confirmButtonText: 'Yes, logout',
+    cancelButtonText: 'Cancel'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      sessionStorage.clear();
+
+      // 🔄 Show loader
+      Swal.fire({
+        title: "Logging you out...",
+        html: `
+          <div style="display: flex; flex-direction: column; align-items: center;">
+            <div class="custom-loader" style="
+                width: 50px;
+                height: 50px;
+                border: 5px solid #ccc;
+                border-top: 5px solid var(--background-color);
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+                margin-bottom: 15px;">
+            </div>
+            <span style="font-size: 14px; color: #ccc;">Please wait a moment</span>
+          </div>
+        `,
+        background: "#ffffff",
+        color: "#1e1e1e",
+        showConfirmButton: false,
+        allowOutsideClick: false,
+        customClass: {
+          popup: 'rounded-xl shadow-lg'
+        },
+      });
+
+      // ⏳ After short delay, show success then redirect
+      setTimeout(() => {
+        Swal.fire({
+          title: "Logged out successfully!",
+          html: `<div style="font-size: 20px; color: rgba(0, 0, 0, 0.3);">You will be redirected shortly.</div>`,
+          icon: "success",
+          background: "#ffffff",
+          color: "#1e1e1e",
+          iconColor: '#f8732b',
+          showConfirmButton: false,
+          timer: 2000,
+          customClass: {
+            popup: 'rounded-xl shadow-lg'
+          },
+          didClose: () => {
+            window.location.href = '/index.html';
+          }
+        });
+      }, 1200);
+    }
+  });
+};
+

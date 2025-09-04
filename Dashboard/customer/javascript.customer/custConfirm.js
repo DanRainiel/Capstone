@@ -365,18 +365,30 @@ document.addEventListener("DOMContentLoaded", () => {
                 const reservationFee = document.getElementById("reservation-fee")?.textContent.trim() || "";
                 let totalAmount = document.getElementById("total-amount")?.textContent.trim() || "";
 
+                const serviceFeeNum = parseFloat(serviceFee.replace(/[₱,]/g, "")) || 0;
+                const reservationFeeNum = parseFloat(reservationFee.replace(/[₱,]/g, "")) || 0;
 
-                  const serviceFeeNum = parseFloat(serviceFee.replace(/[₱,]/g, "")) || 0;
-        const reservationFeeNum = parseFloat(reservationFee.replace(/[₱,]/g, "")) || 0;
+                if (reservationType === "only" || reservationType === "with-downpayment") {
+                    totalAmount = `₱${(serviceFeeNum - reservationFeeNum).toFixed(2)}`;
+                } else if (reservationType === "with-full-payment") {
+                    totalAmount = `₱0.00`;
+                }
 
-        if (reservationType === "only" || reservationType === "with-downpayment") {
-            totalAmount = `₱${(serviceFeeNum - reservationFeeNum).toFixed(2)}`;
-        } else if (reservationType === "with-full-payment") {
-            totalAmount = `₱0.00`;
-        }
                 const selectedServices = Array.from(document.querySelectorAll("input[name='services']:checked"))
                     .map((checkbox) => checkbox.getAttribute("data-service"));
-        
+
+                // ✅ Convert receipt to Base64 if uploaded
+                let receiptBase64 = null;
+                if (receiptUpload.files.length > 0) {
+                    const file = receiptUpload.files[0];
+                    receiptBase64 = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(file); // converts to base64
+                    });
+                }
+
                 const appointmentData = {
                     name,
                     ownerNumber,
@@ -385,10 +397,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     date: appointmentDate,
                     timestamp: new Date().toISOString(),
                     status: "pending",
-                  
+
                     petName,
                     petSize,
-                   petId: `${name}_${petName}`.replace(/\s+/g, '_'),
+                    petId: `${name}_${petName}`.replace(/\s+/g, '_'),
 
                     vet: veterinarian,
                     instructions: specialInstructions,
@@ -396,86 +408,71 @@ document.addEventListener("DOMContentLoaded", () => {
                     serviceFee,
                     reservationFee,
                     totalAmount,
-                    selectedServices
+                    selectedServices,
+
+                    // ✅ store base64 screenshot
+                    receiptImage: receiptBase64 || null
                 };
 
-                
-
                 // Save to Firestore
-        const userId = sessionStorage.getItem("userId"); // ✅ retrieve userId
+                const userId = sessionStorage.getItem("userId");
+                const timestamp = new Date().toISOString();
+                const appointmentId = `${userId}_${timestamp}`.replace(/[:.]/g, '-');
+                const appointmentRef = doc(db, "Appointment", appointmentId);
 
-const timestamp = new Date().toISOString();
-const appointmentId = `${userId}_${timestamp}`.replace(/[:.]/g, '-');
-const appointmentRef = doc(db, "Appointment", appointmentId);
-
-appointmentData.appointmentId = appointmentId;
-appointmentData.userId = userId; // include in data to support Firestore queries
-
+                appointmentData.appointmentId = appointmentId;
+                appointmentData.userId = userId;
 
                 await setDoc(appointmentRef, appointmentData);
 
                 const petData = {
-    userId,
-    petId: appointmentData.petId,
-    petName,
-    species: petSpecies,
-    breed: petBreed,
-    age: petAge,
-    sex: petSex,
-    size: petSize, // ✅ match the expected Firestore field
-    weight: petWeight,
-   ownerId: name, // ✅ 'name' is already defined as the owner's name
+                    userId,
+                    petId: appointmentData.petId,
+                    petName,
+                    species: petSpecies,
+                    breed: petBreed,
+                    age: petAge,
+                    sex: petSex,
+                    size: petSize,
+                    weight: petWeight,
+                    ownerId: name,
+                    createdAt: new Date().toISOString()
+                };
 
-    createdAt: new Date().toISOString()
-};
-
-
-              const petTimestamp = new Date().toISOString();
-const petId = `${userId}_${petName}_${petTimestamp}`.replace(/[:.]/g, '-'); // Unique ID with user + pet name
-const petRef = doc(db, "Pets", petId);
+                const petTimestamp = new Date().toISOString();
+                const petId = `${userId}_${petName}_${petTimestamp}`.replace(/[:.]/g, '-');
+                const petRef = doc(db, "Pets", petId);
 
                 await setDoc(petRef, petData, { merge: true });
 
-             
+                if (window.PetManager && typeof window.PetManager.loadPetsFromFirestore === "function") {
+                    await window.PetManager.loadPetsFromFirestore();
+                }
 
-if (window.PetManager && typeof window.PetManager.loadPetsFromFirestore === "function") {
-    await window.PetManager.loadPetsFromFirestore();
-}
+                // Show success message
+                await logActivity(name, "Booked Appointment", `Booked ${mainService} for ${petName}`);
 
-            // Show success message
-await logActivity(name, "Booked Appointment", `Booked ${mainService} for ${petName}`);
+                if (modal) modal.style.display = "none";
 
-// ✅ Hide booking modal before showing SweetAlert
-if (modal) {
-    modal.style.display = "none";
-}
-
-// Show success message
-Swal.fire({
-  icon: 'success',
-  title: 'Appointment booked!',
-  text: 'Your pet has been saved successfully.',
-  iconColor: 'var(--orange)',
-  showConfirmButton: false,
-  timer: 1500
-}).then(() => {
-  sessionStorage.removeItem("appointment");
-  window.location.href = "customer.html";
-});
-
-                
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Appointment booked!',
+                    text: 'Your pet has been saved successfully.',
+                    iconColor: 'var(--orange)',
+                    showConfirmButton: false,
+                    timer: 1500
+                }).then(() => {
+                    sessionStorage.removeItem("appointment");
+                    window.location.href = "customer.html";
+                });
 
             } catch (error) {
                 console.error("Failed to book appointment:", error);
                 alert("Something went wrong. Please try again.");
             }
         });
-
-        
     }
 
-    // Safely call functions if they exist
     if (typeof calculateServiceTotal === "function") calculateServiceTotal();
     if (typeof updateTotalAmount === "function") updateTotalAmount();
 });
-

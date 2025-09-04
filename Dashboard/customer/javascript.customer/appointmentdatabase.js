@@ -8,8 +8,11 @@ import {
   getDocs,
   getDoc,
   doc,
-  updateDoc // ⬅️ FIX: import updateDoc
+  updateDoc,
+  addDoc,           // ⬅️ add this
+  serverTimestamp   // ⬅️ add this
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
 
 // ✅ Your Firebase config
 const firebaseConfig = {
@@ -25,6 +28,21 @@ const firebaseConfig = {
 // ✅ Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+
+  // 🔍 Log admin activity
+    export async function logActivity(userId, action, details) {
+      try {
+        await addDoc(collection(db, "ActivityLog"), {
+          userId: userId || "anonymous",
+          action,
+          details,
+          timestamp: serverTimestamp()
+        });
+        console.log("Activity logged:", action);
+      } catch (error) {
+        console.error("Failed to log activity:", error);
+      }
+    }
 
 let selectedDocId = null; // ⬅️ FIX: declare global variable
 
@@ -159,7 +177,7 @@ function closeCancelModal() {
   document.getElementById("cancelReason").value = "";
 }
 
-// ✅ Confirm cancel with reason
+
 document.getElementById("confirmCancel").addEventListener("click", async () => {
   const reason = document.getElementById("cancelReason").value.trim();
   if (!reason) {
@@ -168,11 +186,39 @@ document.getElementById("confirmCancel").addEventListener("click", async () => {
   }
 
   try {
+    if (!selectedDocId) {
+      alert("No appointment selected to cancel.");
+      return;
+    }
+
     const docRef = doc(db, "Appointment", selectedDocId);
+
+    // ✅ Fetch appointment so we can log details
+    const snap = await getDoc(docRef);
+    let apptData = {};
+    if (snap.exists()) {
+      apptData = snap.data();
+    }
+
+    // ✅ Update status + save reason in Firestore
     await updateDoc(docRef, {
       status: "Cancelled",
-      cancelReason: reason
+      cancelReason: reason, // <-- Save the reason here
+      cancelledAt: new Date() // optional: timestamp for tracking
     });
+
+    // ✅ Grab userId directly from sessionStorage
+    const userId = sessionStorage.getItem("userId") || "anonymous";
+
+    // ✅ Log activity (without showing reason)
+    const pet = apptData.petName || "Unknown Pet";
+    const service = apptData.service || "Unknown Service";
+
+    await logActivity(
+      userId,
+      "Cancelled Appointment",
+      `Cancelled appointment for ${pet}. (${service}).`
+    );
 
     alert("Appointment cancelled successfully!");
     closeCancelModal();
@@ -182,6 +228,9 @@ document.getElementById("confirmCancel").addEventListener("click", async () => {
     alert("Failed to cancel appointment.");
   }
 });
+
+
+
 
 window.closeCancelModal = closeCancelModal;
 

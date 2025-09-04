@@ -336,6 +336,8 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         });
         
+
+        
 // ✅ Helper: convert "HH:MM AM/PM" or "HH:MM" into minutes since midnight
 function toMinutes(timeStr) {
   if (!timeStr) return null;
@@ -354,78 +356,165 @@ function toMinutes(timeStr) {
 
   return hours * 60 + minutes;
 }
- //SUBMIT BUTTON LOGIC//       
+
 document.addEventListener("DOMContentLoaded", () => {
-    const form = document.getElementById("appointment-form");
+    // ================================
+    // 📌 Logic for Main Appointment Form
+    // ================================
+    const appointmentForm = document.getElementById("appointment-form");
+    if (appointmentForm) {
+        // ✅ Always set today's date
+        const today = new Date().toISOString().split("T")[0]; 
+        document.getElementById("appt-date").value = today;
 
-    form.addEventListener("submit", (e) => {
-        e.preventDefault();
-
-        const appointmentData = {
-            name: document.getElementById("appt-name").value.trim(),
-            number: document.getElementById("appt-number").value.trim(),
-            petName: document.getElementById("appt-petname").value.trim(),
-            breed: document.getElementById("appt-breed").value.trim(),
-            petSize: document.getElementById("appt-size").value,
-            sex: document.getElementById("appt-sex").value,
-            service: document.getElementById("appt-service").value,
-            time: formatTo12Hour(document.getElementById("appt-time").value),
-            date: document.getElementById("appt-date").value,
-            serviceFee: 0,
-            selectedServices: [],
-            vaccines: [],
-        };
-
-        // 💰 Apply fee based on service
-        switch (appointmentData.service) {
-            case "grooming":
-                appointmentData.serviceFee = 500;
-                break;
-            case "vaccinations":
-                appointmentData.serviceFee = 700;
-                break;
-            case "dental-care":
-                appointmentData.serviceFee = 600;
-                break;
-            case "consultation":
-                appointmentData.serviceFee = 400;
-                break;
-            case "laboratory":
-                appointmentData.serviceFee = 800;
-                break;
-            case "treatment":
-                appointmentData.serviceFee = 1000;
-                break;
+        // ✅ Pre-fill timeslot from sessionStorage (if booking was used)
+        const savedSlot = sessionStorage.getItem("selectedSlot");
+        if (savedSlot) {
+            document.getElementById("appt-time").value = savedSlot; // directly fill input
+            sessionStorage.removeItem("selectedSlot");
         }
 
-        Swal.fire({
-            title: 'Processing...',
-            text: 'Please wait while we submit your appointment.',
-            allowOutsideClick: false,
-            allowEscapeKey: false,
-            didOpen: () => {
-                Swal.showLoading();
+        appointmentForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const selectedDate = document.getElementById("appt-date").value;
+
+            // 🚫 Check if date is blocked in Firestore
+            try {
+                const q = query(collection(db, "BlockedSlots"), where("date", "==", selectedDate));
+                const snapshot = await getDocs(q);
+
+                if (!snapshot.empty) {
+                    await Swal.fire({
+                        icon: "error",
+                        title: "Date Unavailable",
+                        text: "This date is blocked. Please choose another.",
+                        confirmButtonColor: "#f8732b"
+                    });
+                    return; // ❌ stop here
+                }
+            } catch (err) {
+                console.error("Error checking blocked date:", err);
+                await Swal.fire({
+                    icon: "error",
+                    title: "Error",
+                    text: "Could not verify blocked dates. Try again later.",
+                    confirmButtonColor: "#f8732b"
+                });
+                return; // ❌ don’t proceed if error
+            }
+
+            // ✅ Continue as normal if not blocked
+            const appointmentData = {
+                name: document.getElementById("appt-name").value.trim(),
+                number: document.getElementById("appt-number").value.trim(),
+                petName: document.getElementById("appt-petname").value.trim(),
+                breed: document.getElementById("appt-breed").value.trim(),
+                petSize: document.getElementById("appt-size").value,
+                sex: document.getElementById("appt-sex").value,
+                service: document.getElementById("appt-service").value,
+                time: formatTo12Hour(document.getElementById("appt-time").value), // formatted output
+                date: selectedDate, // ✅ pulled above
+                serviceFee: 0,
+                selectedServices: [],
+                vaccines: [],
+            };
+
+            // 💰 Apply fee
+            switch (appointmentData.service) {
+                case "grooming": appointmentData.serviceFee = 500; break;
+                case "vaccinations": appointmentData.serviceFee = 700; break;
+                case "dental-care": appointmentData.serviceFee = 600; break;
+                case "consultation": appointmentData.serviceFee = 400; break;
+                case "laboratory": appointmentData.serviceFee = 800; break;
+                case "treatment": appointmentData.serviceFee = 1000; break;
+            }
+
+            Swal.fire({
+                title: 'Processing...',
+                text: 'Please wait while we submit your appointment.',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            setTimeout(() => {
+                sessionStorage.setItem("appointment", JSON.stringify(appointmentData));
+
+                Swal.fire({
+                    title: 'Appointment Submitted!',
+                    text: 'Your appointment has been saved. Redirecting to confirmation page...',
+                    icon: 'success',
+                    confirmButtonText: 'Continue',
+                    confirmButtonColor: '#f8732b'
+                }).then(() => {
+                    window.location.href = "custConfirm.html";
+                });
+            }, 1500);
+        });
+    }
+});
+
+
+    // ================================
+    // 📌 Logic for Calendar Booking Button
+    // ================================
+    const bookBtn = document.getElementById("bookBtn");
+    if (bookBtn) {
+        bookBtn.addEventListener("click", async () => {
+            // ❌ Removed error check, default to 09:00 AM if nothing selected
+            const selectedSlot = document.querySelector(".time-slot.selected")?.dataset.value || "09:00 AM";
+
+            const today = new Date().toISOString().split("T")[0]; // always current date
+            const formattedTime = formatTo12Hour(selectedSlot);
+
+            
+
+            try {
+                // 🔎 Query Firestore for same date
+                const q = query(collection(db, "Appointment"), where("date", "==", today));
+                const querySnapshot = await getDocs(q);
+
+                let conflict = false;
+                const newTime = toMinutes(formattedTime);
+
+                querySnapshot.forEach(docSnap => {
+                    const existing = docSnap.data();
+                    const existingTime = toMinutes(existing.time);
+
+                    if (existingTime !== null && newTime !== null && existingTime === newTime) {
+                        conflict = true;
+                    }
+                });
+
+                if (conflict) {
+                    await Swal.fire({
+                        icon: "error",
+                        title: "Slot Unavailable",
+                        text: "This time is already booked. Please choose another.",
+                        confirmButtonColor: "#f8732b"
+                    });
+                    return;
+                }
+
+             
+
+                // 🔽 Scroll smoothly to booking section
+                document.querySelector("#booking").scrollIntoView({ behavior: "smooth" });
+
+            } catch (error) {
+                console.error("Error checking slot:", error);
+                Swal.fire({
+                    icon: "error",
+                    title: "Something went wrong",
+                    text: "Unable to check slot availability. Please try again.",
+                    confirmButtonColor: "#f8732b"
+                });
             }
         });
+    }
 
-        // ⏳ Simulate a short delay (e.g. 1.5 seconds)
-       setTimeout(() => {
-    // ✅ Save appointment data to sessionStorage
-    sessionStorage.setItem("appointment", JSON.stringify(appointmentData));
 
-    Swal.fire({
-        title: 'Appointment Submitted!',
-        text: 'Your appointment has been saved. Redirecting to confirmation page...',
-        icon: 'success',
-        confirmButtonText: 'Continue',
-        confirmButtonColor: '#f8732b'
-    }).then(() => {
-        window.location.href = "custConfirm.html";
-    });
-}, 1500);
-
-    });
-});
 
 
 
@@ -612,7 +701,7 @@ loadClinicHours();
           dayCell.style.pointerEvents = 'none';
           const blockedBadge = document.createElement('div');
           blockedBadge.className = 'calendar-blocked-badge';
-          blockedBadge.textContent = 'Blocked';
+          blockedBadge.textContent = 'Closed';
           dayCell.appendChild(blockedBadge);
       }
 
