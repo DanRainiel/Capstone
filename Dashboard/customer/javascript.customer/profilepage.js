@@ -7,7 +7,8 @@ import {
   getDocs,
   doc,
   setDoc,
-  getDoc      
+  getDoc,
+  updateDoc   // ✅ add this
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
 
@@ -39,6 +40,7 @@ document.addEventListener("DOMContentLoaded", () => {
     profileEmailEl.textContent = storedEmail;
   }
 
+  
   loadPets();
 });
 
@@ -170,10 +172,12 @@ async function showPetDetails(petId) {
 
     const data = docSnap.data();
     const container = document.querySelector('.container-pet');
-    const petsList = container.querySelector('.pets-list'); 
 
-    
-    const detailForm = document.createElement('form');
+    // ✅ Remove old form if any
+    let detailForm = container.querySelector('.account');
+    if (detailForm) detailForm.remove();
+
+    detailForm = document.createElement('form');
     detailForm.classList.add('account');
     detailForm.innerHTML = `
       <div class="account-header">
@@ -219,9 +223,12 @@ async function showPetDetails(petId) {
       }
     });
 
-    container.innerHTML = ''; 
-    container.appendChild(petsList); 
-    container.appendChild(detailForm); 
+    // ✅ Just append form, don’t touch petsList
+    container.appendChild(detailForm);
+
+    // ✅ Remove focus so browser doesn’t auto-scroll the clicked card
+    document.activeElement.blur();
+
   } catch (error) {
     console.error("Error loading pet details:", error);
     alert("Failed to load pet details!");
@@ -229,3 +236,76 @@ async function showPetDetails(petId) {
 }
 
 
+
+document.addEventListener("DOMContentLoaded", () => {
+  // Get the user ID from sessionStorage
+  const userId = sessionStorage.getItem("userId");
+  if (!userId) {
+    alert("User not logged in!");
+    return;
+  }
+
+  // Get the buttons
+  const saveBtn = document.querySelector(".btn-save");
+  const cancelBtn = document.querySelector(".btn-cancel");
+
+  if (!saveBtn || !cancelBtn) return;
+
+  saveBtn.type = "button";   // Ensure it doesn't submit a form
+  cancelBtn.type = "button";
+
+  saveBtn.addEventListener("click", async (e) => {
+  e.preventDefault();
+
+  const newName = document.getElementById("input-username")?.value.trim();
+  const newEmail = document.getElementById("input-email")?.value.trim();
+  const newPassword = document.getElementById("input-password")?.value.trim(); // ✅ moved here
+
+  if (!newName || !newEmail) {
+    alert("Both name and email are required!");
+    return;
+  }
+
+  try {
+    const userRef = doc(db, "users", userId);
+
+    await updateDoc(userRef, {
+      name: newName,
+      email: newEmail,
+      ...(newPassword ? { password: newPassword } : {}), // ✅ only update if not empty
+      updatedAt: new Date()
+    });
+
+    // Update the displayed profile immediately
+    const nameEl = document.getElementById("account-username");
+    const emailEl = document.getElementById("account-email");
+    const passwordEl = document.getElementById("account-password"); // ✅ make sure this exists
+
+    if (nameEl) nameEl.textContent = newName;
+    if (emailEl) emailEl.textContent = newEmail;
+    if (passwordEl && newPassword) passwordEl.textContent = newPassword;
+
+    // Update sessionStorage
+    sessionStorage.setItem("username", newName);
+    sessionStorage.setItem("email", newEmail);
+    if (newPassword) sessionStorage.setItem("password", newPassword);
+
+    alert("User details updated successfully!");
+  } catch (error) {
+    console.error("Error updating user:", error);
+    alert("Failed to update user. Try again.");
+  }
+});
+
+  // Cancel button resets inputs
+  cancelBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    const usernameInput = document.getElementById("input-username");
+    const emailInput = document.getElementById("input-email");
+    const passwordInput = document.getElementById("input-password");
+    // Reset to current sessionStorage values
+    if (usernameInput) usernameInput.value = sessionStorage.getItem("username") || "";
+    if (emailInput) emailInput.value = sessionStorage.getItem("email") || "";
+    if (passwordInput) passwordInput.value = sessionStorage.getItem("password") || "";
+  });
+});

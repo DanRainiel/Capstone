@@ -216,94 +216,103 @@
 
 
       <!-- Walk-in Form Section -->
-      <div id="walkIn-form" class="content-section">
-        <h1>Walk-in Registration</h1>
-        <div class="form-container">
-          <form id="walkinForm">
-            <h2 style="color: var(--background-color); margin-bottom: 20px;">Pet Owner Information</h2>
-            <div class="form-row">
-              <div class="form-group">
-                <label>First Name *</label>
-                <input type="text" name="firstName" required>
+        <div id="walkIn-form" class="content-section">
+          <h1>Walk-in Registration</h1>
+          <div class="form-container">
+            <form id="walkinForm">
+              <h2 style="color: var(--background-color); margin-bottom: 20px;">Pet Owner Information</h2>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>First Name *</label>
+                  <input type="text" name="firstName" required>
+                </div>
+                <div class="form-group">
+                  <label>Last Name *</label>
+                  <input type="text" name="lastName" required>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Contact Number *</label>
+                  <input type="tel" name="contact" required>
+                </div>
+                <div class="form-group">
+                  <label>Email Address</label>
+                  <input type="email" name="email">
+                </div>
               </div>
               <div class="form-group">
-                <label>Last Name *</label>
-                <input type="text" name="lastName" required>
+                <label>Address</label>
+                <textarea name="address" placeholder="Complete address"></textarea>
               </div>
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label>Contact Number *</label>
-                <input type="tel" name="contact" required>
-              </div>
-              <div class="form-group">
-                <label>Email Address</label>
-                <input type="email" name="email">
-              </div>
-            </div>
-            <div class="form-group">
-              <label>Address</label>
-              <textarea name="address" placeholder="Complete address"></textarea>
-            </div>
 
-            <h2 style="color: var(--background-color); margin: 30px 0 20px 0;">Pet Information</h2>
-            <div class="form-row">
-              <div class="form-group">
-                <label>Pet Name *</label>
-                <input type="text" name="petName" required>
+              <h2 style="color: var(--background-color); margin: 30px 0 20px 0;">Pet Information</h2>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Pet Name *</label>
+                  <input type="text" name="petName" required>
+                </div>
+                <div class="form-group">
+                  <label>Pet Type *</label>
+                  <select name="petType" required>
+                    <option value="">Select Pet Type</option>
+                    <option value="dog">Dog</option>
+                    <option value="cat">Cat</option>
+                    <option value="bird">Bird</option>
+                    <option value="rabbit">Rabbit</option>
+                    <option value="hamster">Hamster</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
               </div>
-              <div class="form-group">
-                <label>Pet Type *</label>
-                <select name="petType" required>
-                  <option value="">Select Pet Type</option>
-                  <option value="dog">Dog</option>
-                  <option value="cat">Cat</option>
-                  <option value="bird">Bird</option>
-                  <option value="rabbit">Rabbit</option>
-                  <option value="hamster">Hamster</option>
-                  <option value="other">Other</option>
-                </select>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Breed</label>
+                  <input type="text" name="breed">
+                </div>
+                <div class="form-group">
+                  <label>Age</label>
+                  <input type="text" name="age" placeholder="e.g., 2 years, 6 months">
+                </div>
               </div>
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label>Breed</label>
-                <input type="text" name="breed">
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Gender</label>
+                  <select name="gender">
+                    <option value="">Select Gender</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Weight (kg)</label>
+                  <input type="number" name="weight" step="0.1">
+                </div>
               </div>
-              <div class="form-group">
-                <label>Age</label>
-                <input type="text" name="age" placeholder="e.g., 2 years, 6 months">
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label>Gender</label>
-                <select name="gender">
-                  <option value="">Select Gender</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>Weight (kg)</label>
-                <input type="number" name="weight" step="0.1">
-              </div>
-            </div>
 
-            <h2 style="color: var(--background-color); margin: 30px 0 20px 0;">Service Required</h2>
+                      <h2 style="color: var(--background-color); margin: 30px 0 20px 0;">Service Required</h2>
             <div class="form-group">
               <label>Service Type *</label>
-              <select name="serviceType" required>
+              <select name="serviceType" id="serviceType" required>
                 <option value="">Select Service</option>
-                <option value="consultation">General Consultation</option>
                 <option value="vaccination">Vaccination</option>
-                <option value="checkup">Health Check-up</option>
+                <option value="consultation">Consultation</option>
                 <option value="grooming">Grooming</option>
-                <option value="surgery">Surgery</option>
+                <option value="treatment">Treatment</option>
                 <option value="deworming">Deworming</option>
-                <option value="emergency">Emergency</option>
+                <option value="laboratory">Laboratory</option>
               </select>
             </div>
+
+            <!-- 🔽 Dynamic service variants will load here -->
+            <div id="serviceVariants" class="form-group"></div>
+
+            <!-- 🔽 Fee display -->
+            <div class="form-group">
+              <label>Service Fee:</label>
+              <p id="serviceFee">₱0.00</p>
+            </div>
+
             <div class="form-group">
               <label>Reason for Visit</label>
               <textarea name="reason" placeholder="Describe the reason for this visit"></textarea>
@@ -317,10 +326,11 @@
               </select>
             </div>
 
-            <button type="submit" class="btn-primary" style="margin-top: 20px; padding: 15px 30px; font-size: 16px;">Register Walk-in Patient</button>
-          </form>
+              <button type="submit" class="btn-primary" style="margin-top: 20px; padding: 15px 30px; font-size: 16px;">Register Walk-in Patient</button>
+            </form>
+          </div>
         </div>
-      </div>
+      
 
        <!-- Calendar View Section -->
             <div id="calendar-view" class="content-section">

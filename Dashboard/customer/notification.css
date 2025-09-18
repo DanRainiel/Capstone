@@ -1,0 +1,498 @@
+@import url('https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,100..900;1,100..900&display=swap');
+
+:root {
+  --green: #1efdf2;
+  --white: #fff;
+  --black: #2e2525;
+  --orange: #f8732b;
+  --background-color: #01949A;
+  --light-color: #28fa79;
+  --box-shadow: .5rem .5rem 0 rgba(0, 0, 0, 0.2);
+  --text-shadow: .2rem .2rem 0 rgba(0, 133, 129, 0.2);
+  --border: .2rem solid var(--green);
+}
+
+* {
+  font-family: "Raleway", sans-serif;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.container {
+  position: relative;
+  width: 100%;
+}
+
+.navigation {
+  position: fixed;
+  width: 300px;
+  height: 100%;
+  background: var(--background-color);
+  transition: 0.5s;
+  overflow-y: auto; /* so it scrolls if needed */
+}
+
+.navigation.active {
+  width: 80px;
+}
+
+.main.active {
+    width: calc(100% - 80px);
+    left: 80px;
+}
+
+.navigation ul {
+  width: 100%;
+  list-style: none;
+}
+
+.navigation ul.logo-section {
+  margin-bottom: 40px;
+  pointer-events: none;
+}
+
+.navigation ul li a {
+  display: flex;
+  align-items: center;
+  padding: 15px 20px;
+  text-decoration: none;
+  border-top-left-radius: 30px;
+  margin-left: auto;
+}
+
+.navigation ul li a i {
+  font-size: 2rem;
+  color: var(--white);
+  text-shadow: var(--text-shadow);
+  margin-right: 40px; 
+  width: 30px;
+  text-align: center;
+}
+
+.navigation ul li a .title,
+.navigation ul li a .side-btn {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--white);
+}
+
+.navigation ul li a .title {
+  font-size: 1.6rem;
+  font-weight: 900;
+}
+
+.navigation ul li:hover {
+  background: var(--orange);
+}
+
+
+
+.main {
+  position: absolute;
+  width: calc(100% - 300px);
+  left: 300px;
+  min-height: 100vh;
+  background: var(--white);
+  transition: 0.5s;
+}
+
+.topbar {
+  width: 100%;
+  height: 60px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 10px;
+}
+
+.toggle {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 2rem;
+  cursor: pointer;
+  color: var(--background-color);
+}
+
+.search {
+  position: relative;
+  width: 400px;
+  margin: 0 10px;
+}
+
+.search label {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.search label input {
+  width: 100%;
+  height: 40px;
+  border-radius: 40px;
+  padding: 5px 20px;
+  padding-left: 35px;
+  font-size: 18px;
+  outline: none;
+  border: 1px solid var(--background-color);
+}
+
+.search label i {
+  position: absolute;
+  left: 10px;
+  font-size: 1.2rem;
+  color: var(--background-color);
+}
+
+
+.user {
+  padding: 10px;
+  width: 40px;
+  height: 40px; /* add height to make it perfectly square */
+  border-radius: 50%;
+  cursor: pointer;
+  border-color: var(--background-color);
+  border-width: .1rem;
+  border-style: solid;
+  
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+
+.user i {
+color:var(--background-color);
+}
+
+.details {
+  position: relative;
+  width: 150%;
+  padding: 20px;
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  grid-gap:30px;
+  margin-top: 10px;
+}
+
+.details .recentOrders {
+ position: relative;
+ display: grid;
+ min-height: 500px;
+ background: var(--white);
+ padding: 20px;
+ box-shadow: 0 7px 25px rgba(0, 0, 0, 0.8);
+ border-radius: 20px;
+
+}
+.details .recentOrders table {
+    margin-bottom: 100rem;
+}
+
+.details .cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+ 
+}
+
+.cardHeader h2 {
+  color: var(--background-color);
+  font-weight: 600;
+}
+
+.cardHeader .btn{
+  position: relative;
+  padding: 5px 10px;
+  background: var(--background-color);
+  text-decoration: none;
+  color: var(--white);
+  border-radius: 6px;
+}
+
+.cardHeader .btn:hover{
+  background: var(--orange);
+}
+
+#appointments tr:first-child td {
+  padding-top: 20px;
+}
+
+.btn {
+  padding: 8px 14px;
+  background-color: var(--background-color);
+  color: var(--white);
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.btn:hover {
+  background-color: var(--orange);
+}
+
+/* Table container */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px; /* space under the cardHeader */
+  font-size: 16px;
+  background-color: #ffffff;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+/* Table header */
+.table thead tr {
+  background-color: var(--background-color);
+  color: white;
+  text-align: left;
+  font-weight: bold;
+}
+
+.table thead td {
+  padding: 14px 16px;
+}
+
+/* Table body */
+.table tbody tr {
+  border-bottom: 1px solid #ddd;
+  transition: background-color 0.3s ease;
+}
+
+.table tbody tr:hover {
+  background-color: #f3f3f3;
+}
+
+.table tbody td {
+  padding: 12px 16px;
+  color: #333;
+}
+
+/* Optional: Status badge styling */
+.table .status {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: bold;
+  display: inline-block;
+}
+
+.table .status.Pending {
+  background-color: #fdf3c3;
+  color: #b38800;
+}
+
+.table .status.Completed {
+  background-color: #d4f4dd;
+  color: #2e7d32;
+}
+
+.table .status.Cancelled {
+  background-color: #fde0e0;
+  color: #d32f2f;
+}
+
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+  background: #fff;
+  margin: 10% auto;
+  padding: 20px;
+  border-radius: 12px;
+  width: 400px;
+  max-width: 90%;
+  animation: slideDown 0.3s ease;
+}
+
+.close-btn {
+  float: right;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+textarea {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  resize: none;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 15px;
+  gap: 10px;
+}
+
+.danger-btn {
+  background: red;
+  color: white;
+
+}
+
+.danger-btn:hover {
+  background: darkred;
+  transition: background 0.3s, color 0.3s, box-shadow 0.3s;
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-30px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+
+/* ===== Responsive Enhancements ===== */
+
+@media (max-width: 1200px) {
+  .navigation {
+    width: 220px;
+  }
+  .navigation.active {
+    width: 70px;
+  }
+  .main {
+    width: calc(100% - 220px);
+    left: 220px;
+  }
+  .main.active {
+    width: calc(100% - 70px);
+    left: 70px;
+  }
+  .search {
+    width: 250px;
+  }
+}
+
+@media (max-width: 992px) {
+  .navigation {
+    left: -220px;
+    position: fixed;
+    z-index: 100;
+  }
+  .navigation.active {
+    left: 0;
+  }
+  .main {
+    width: 100%;
+    left: 0;
+  }
+  .main.active {
+    width: calc(100% - 220px);
+    left: 220px;
+  }
+  .topbar {
+    flex-wrap: wrap;
+    justify-content: space-between;
+    padding: 10px;
+    height: auto;
+  }
+  .search {
+    width: 100%;
+    margin-top: 10px;
+  }
+}
+
+@media (max-width: 768px) {
+  .navigation {
+    width: 200px;
+  }
+  .navigation.active {
+    width: 60px;
+  }
+  .main.active {
+    left: 60px;
+    width: calc(100% - 60px);
+  }
+  .topbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .search {
+    width: 100%;
+    margin: 10px 0;
+  }
+  .navigation ul li a {
+    padding: 12px 15px;
+  }
+  .navigation ul li a i {
+    font-size: 1.5rem;
+    margin-right: 10px;
+  }
+  .navigation ul li a .title {
+    font-size: 1.4rem;
+  }
+  .user {
+    width: 35px;
+    height: 35px;
+  }
+  .user i {
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .navigation {
+    width: 180px;
+  }
+  .navigation.active {
+    width: 60px;
+  }
+  .main.active {
+    left: 60px;
+    width: calc(100% - 60px);
+  }
+  .navigation ul li a .title {
+    display: none !important;
+  }
+  .navigation.active ul li a .title {
+    display: none !important;
+  }
+  .search label input {
+    font-size: 16px;
+    padding-left: 30px;
+  }
+  .user {
+    width: 30px;
+    height: 30px;
+  }
+  .user i {
+    font-size: 1.3rem;
+  }
+}
+
+@media (max-width: 400px) {
+  .topbar {
+    padding: 5px;
+  }
+  .navigation ul li a {
+    padding: 10px;
+  }
+  .search label input {
+    font-size: 14px;
+  }
+}
+

@@ -1399,6 +1399,9 @@ body.modal-open {
 
 .pet-details {
   display: grid;
+   flex: 2;            /* takes more space than list (adjust as you like) */
+  height: 100%;   
+  
   grid-template-columns: 1fr 1fr;
   gap: 10px;
   margin-bottom: 20px;
@@ -2118,5 +2121,10 @@ color: var(--white);
 }
 
 
+#appointmentsList {
+  max-height: 300px;   /* adjust based on your layout */
+  overflow-y: auto;    /* enables vertical scrolling */
+  padding-right: 5px;  /* prevent text from hiding behind scrollbar */
+}
 
 

@@ -474,61 +474,68 @@ document.addEventListener("DOMContentLoaded", initializeCalendar);
 
 
 // WALK IN FORM//
-    document.getElementById("walkinForm")?.addEventListener("submit", async function(e) {
-        e.preventDefault();
+document.getElementById("walkinForm")?.addEventListener("submit", async function(e) {
+    e.preventDefault();
 
-        const userId = sessionStorage.getItem("userId");
-        if (!userId) {
-            alert("User not logged in.");
-            return;
-        }
+    const userId = sessionStorage.getItem("userId");
+    if (!userId) {
+        alert("User not logged in.");
+        return;
+    }
 
-        const formData = new FormData(e.target);
+    const formData = new FormData(e.target);
 
-        const petData = {
-            petName: formData.get("petName"),
-            species: formData.get("petType"),
-            breed: formData.get("breed"),
-            age: formData.get("age"),
-            sex: formData.get("gender"),
-            weight: formData.get("weight"),
-            size: "",
-            color: "",
-            medicalHistory: ""
-        };
+    // ✅ Get variant & fee from the form/UI
+    const selectedVariant = formData.get("variant") || "";
+    const feeText = document.getElementById("serviceFee").textContent.replace("₱", "").replace(",", "");
+    const totalAmount = parseFloat(feeText) || 0;
 
-        const appointmentData = {
-            userId,
-            firstName: formData.get("firstName"),
-            lastName: formData.get("lastName"),
-            contact: formData.get("contact"),
-            email: formData.get("email"),
-            address: formData.get("address"),
-            serviceType: formData.get("serviceType"),
-            reason: formData.get("reason"),
-            priority: formData.get("priority"),
-            timestamp: Date.now(),
-            pet: petData
-        };
+    const petData = {
+        petName: formData.get("petName"),
+        species: formData.get("petType"),
+        breed: formData.get("breed"),
+        age: formData.get("age"),
+        sex: formData.get("gender"),
+        weight: formData.get("weight"),
+        size: "",
+        color: "",
+        medicalHistory: ""
+    };
 
-        try {
-            const appointmentId = `${userId}_${petData.petName}_${appointmentData.timestamp}`;
-            await setDoc(doc(db, "WalkInAppointment", appointmentId), appointmentData);
+    const appointmentData = {
+        userId,
+        firstName: formData.get("firstName"),
+        lastName: formData.get("lastName"),
+        contact: formData.get("contact"),
+        email: formData.get("email"),
+        address: formData.get("address"),
+        serviceType: formData.get("serviceType"),
+        variant: selectedVariant,     // ✅ Save chosen variant
+        totalAmount: totalAmount,     // ✅ Save calculated fee
+        reason: formData.get("reason"),
+        priority: formData.get("priority"),
+        timestamp: Date.now(),
+        pet: petData
+    };
 
-            await addPetToFirestore(petData);
+    try {
+        const appointmentId = `${userId}_${petData.petName}_${appointmentData.timestamp}`;
+        await setDoc(doc(db, "WalkInAppointment", appointmentId), appointmentData);
 
-            alert("Walk-in appointment and pet saved successfully!");
-            e.target.reset();
+        await addPetToFirestore(petData);
 
-            // Refresh data after saving
-            await loadAllAppointments();
-            await loadAllUsers();
-            await loadRecentActivity();
-        } catch (error) {
-            console.error("Error saving walk-in appointment:", error);
-            alert("Failed to save appointment. Please try again.");
-        }
-    });
+        alert("Walk-in appointment and pet saved successfully!");
+        e.target.reset();
+
+        // Refresh data after saving
+        await loadAllAppointments();
+        await loadAllUsers();
+        await loadRecentActivity();
+    } catch (error) {
+        console.error("Error saving walk-in appointment:", error);
+        alert("Failed to save appointment. Please try again.");
+    }
+});
 
     async function addPetToFirestore(petData) {
         const userId = sessionStorage.getItem("userId");
@@ -550,6 +557,286 @@ document.addEventListener("DOMContentLoaded", initializeCalendar);
         });
     }
 
+    // Service pricing table
+const servicePrices = {
+  vaccination: {
+    "5n1": { small: 500, medium: 500, large: 500 },
+    "8in1": { small: 600, medium: 600, large: 600 },
+    "Kennel Cough": { small: 500, medium: 500, large: 500 },
+    "4n1": { small: 950, medium: 950, large: 950, cat: 950 },
+    "Anti-Rabies": { small: 350, medium: 350, large: 350, cat: 350 }
+  },
+  grooming: {
+    basic: { small: 450, medium: 600, large: 800, cat: 600 }
+  },
+  consultation: {
+    regular: { small: 350, medium: 350, large: 350, cat: 350 }
+  },
+  treatment: {
+    tickFlea: { small: 650, medium: 700, large: 800 },
+    heartwormPrevention: {
+      small: 2000, medium: 2500, large: 3000, xl: 4500
+    },
+    catTickFleaDeworm: { small: 650, large: 750 }
+  },
+  deworming: {
+    regular: { small: 200, medium: 300, large: 400, cat: 300 }
+  },
+  laboratory: {
+    "4 Way Test": 1200,
+    "CBC Bloodchem Package": 1500,
+    "Cat FIV/Felv Test": 1000,
+    "Leptospirosis Test": 950,
+    "Canine Distemper Test": 850,
+    "Canine Parvo Test": 859,
+    "Parvo/Corona Virus Test": 950,
+    "Earmite Test": 150,
+    "Skin Scraping": 150,
+    "Stool Exam": 300,
+    "Urinalysis": 950
+  }
+};
+
+// Elements
+const serviceTypeSelect = document.getElementById("serviceType");
+const serviceVariantsDiv = document.getElementById("serviceVariants");
+const serviceFeeDisplay = document.getElementById("serviceFee");
+
+// Auto detect pet size from weight
+function getPetSize(weight) {
+  if (!weight) return "small";
+  if (weight <= 10) return "small";
+  if (weight <= 20) return "medium";
+  if (weight <= 40) return "large";
+  return "xl";
+}
+
+// Update variants dynamically
+serviceTypeSelect.addEventListener("change", function () {
+  const selectedService = this.value;
+  serviceVariantsDiv.innerHTML = ""; // clear old
+  serviceFeeDisplay.textContent = "₱0.00";
+
+  if (!selectedService || !servicePrices[selectedService]) return;
+
+  const serviceOptions = servicePrices[selectedService];
+
+  Object.keys(serviceOptions).forEach((variantKey) => {
+    const variant = serviceOptions[variantKey];
+
+    const option = document.createElement("div");
+    option.classList.add("variant-option");
+
+    if (typeof variant === "object") {
+      option.innerHTML = `
+        <label>
+          <input type="radio" name="variant" value="${variantKey}">
+          ${variantKey}
+        </label>
+      `;
+    } else {
+      option.innerHTML = `
+        <label>
+          <input type="radio" name="variant" value="${variantKey}">
+          ${variantKey} - ₱${variant}
+        </label>
+      `;
+    }
+
+    serviceVariantsDiv.appendChild(option);
+  });
+
+  // Listen for variant selection
+  document.querySelectorAll('input[name="variant"]').forEach((radio) => {
+    radio.addEventListener("change", () => {
+      const variantKey = radio.value;
+      const weight = parseFloat(document.querySelector("input[name='weight']").value);
+      const sizeKey = getPetSize(weight);
+
+      const variantData = serviceOptions[variantKey];
+      let price = 0;
+
+      if (typeof variantData === "object") {
+        price = variantData[sizeKey] || variantData.small || 0;
+      } else {
+        price = variantData;
+      }
+
+      serviceFeeDisplay.textContent = `₱${price}`;
+    });
+  });
+});
+
+  // Handle Decline button click
+document.addEventListener("click", async (e) => {
+  if (e.target.classList.contains("decline")) {
+    const docId = e.target.getAttribute("data-id");
+    const type = e.target.getAttribute("data-type");
+
+    try {
+      // 🔹 1. Get reference to the appointment document
+      const colName = type === "walkin" ? "WalkInAppointment" : "Appointment";
+      const docRef = doc(db, colName, docId);
+      const docSnap = await getDoc(docRef);
+
+      if (!docSnap.exists()) {
+        Swal.fire("Error", "Appointment not found.", "error");
+        return;
+      }
+
+      const appointmentData = docSnap.data();
+
+      // 🔹 2. Update appointment status to "Declined"
+      await updateDoc(docRef, { status: "Declined" });
+
+      // 🔹 3. Store notification in Notifications collection
+      // Make sure you have userId (or email) stored in appointment data
+      await addDoc(collection(db, "Notifications"), {
+        userId: appointmentData.userId || "", // depends on how you store customer reference
+        appointmentId: docId,
+        type: "decline",
+        message: `Your appointment for ${appointmentData.pet?.petName || "your pet"} has been declined.`,
+        service: appointmentData.service || "Unknown service",
+        status: "unread",
+        createdAt: serverTimestamp()
+      });
+
+      Swal.fire("Declined", "The appointment has been declined and a notification was sent.", "success");
+    } catch (err) {
+      console.error("Error declining appointment:", err);
+      Swal.fire("Error", "Something went wrong while declining the appointment.", "error");
+    }
+  }
+});
+    // Handle "View" button
+    document.addEventListener("click", async (e) => {
+      if (e.target.classList.contains("view")) {
+        const docId = e.target.getAttribute("data-id");
+        const type = e.target.getAttribute("data-type");
+    
+        try {
+          const docRef = doc(db, type === "walkin" ? "WalkInAppointment" : "Appointment", docId);
+          const snap = await getDoc(docRef);
+    
+          if (snap.exists()) {
+            const data = snap.data();
+    
+            Swal.fire({
+              title: "Appointment Details",
+              html: `
+                <p><strong>Name:</strong> ${data.name || `${data.firstName || ""} ${data.lastName || ""}`}</p>
+                <p><strong>Pet:</strong> ${data.petName || data.pet?.petName || "N/A"}</p>
+                <p><strong>Service:</strong> ${data.service || data.serviceType}</p>
+                <p><strong>Date:</strong> ${data.date}</p>
+                <p><strong>Time:</strong> ${data.time}</p>
+                <p><strong>Contact:</strong> ${data.contact}</p>
+                <p><strong>Status:</strong> ${data.status}</p>
+                <p><strong>Total Amount:</strong> ${data.totalAmount || "0.00"}</p>
+              `,
+              width: "600px",
+              confirmButtonText: "Close"
+            });
+    
+          } else {
+            Swal.fire("Error", "Appointment not found.", "error");
+          }
+        } catch (err) {
+          console.error("Error viewing appointment:", err);
+          Swal.fire("Error", "Something went wrong while fetching appointment details.", "error");
+        }
+      }
+    });
+    
+    // Handle "Edit" button
+    document.addEventListener("click", async (e) => {
+      if (e.target.classList.contains("edit")) {
+        const docId = e.target.getAttribute("data-id");
+        const type = e.target.getAttribute("data-type");
+    
+        try {
+          const docRef = doc(db, type === "walkin" ? "WalkInAppointment" : "Appointment", docId);
+          const snap = await getDoc(docRef);
+    
+          if (snap.exists()) {
+            const data = snap.data();
+    
+            const { value: formValues } = await Swal.fire({
+              title: "Edit Appointment",
+              html: `
+                <input id="swal-name" class="swal2-input" placeholder="Name" value="${data.name || `${data.firstName || ""} ${data.lastName || ""}`}">
+                <input id="swal-pet" class="swal2-input" placeholder="Pet Name" value="${data.petName || data.pet?.petName || ""}">
+                <input id="swal-service" class="swal2-input" placeholder="Service" value="${data.service || data.serviceType || ""}">
+                <input id="swal-date" type="date" class="swal2-input" value="${data.date || ""}">
+                <input id="swal-time" type="time" class="swal2-input" value="${data.time || ""}">
+                <input id="swal-contact" class="swal2-input" placeholder="Contact" value="${data.contact || ""}">
+              `,
+              focusConfirm: false,
+              showCancelButton: true,
+              confirmButtonText: "Save",
+              preConfirm: () => {
+                return {
+                  name: document.getElementById("swal-name").value,
+                  petName: document.getElementById("swal-pet").value,
+                  service: document.getElementById("swal-service").value,
+                  date: document.getElementById("swal-date").value,
+                  time: document.getElementById("swal-time").value,
+                  contact: document.getElementById("swal-contact").value
+                };
+              }
+            });
+    
+            if (formValues) {
+              await updateDoc(docRef, formValues);
+              Swal.fire("Updated!", "Appointment has been updated.", "success");
+              loadAllAppointments(); // 🔄 refresh the tables
+            }
+          } else {
+            Swal.fire("Error", "Appointment not found.", "error");
+          }
+        } catch (err) {
+          console.error("Error editing appointment:", err);
+          Swal.fire("Error", "Something went wrong while editing appointment.", "error");
+        }
+      }
+    });
+
+    document.addEventListener("click", async (e) => {
+      if (e.target.classList.contains("viewreason")) {
+        const docId = e.target.getAttribute("data-id");
+        console.log("🔍 Fetching cancel reason for docId:", docId);
+    
+        try {
+          const docRef = doc(db, "Appointment", docId); // make sure "Appointment" matches your collection name
+          const snap = await getDoc(docRef);
+    
+          if (snap.exists()) {
+            const data = snap.data();
+            console.log("✅ Appointment data:", data);
+    
+            const reason = data.cancelReason || "No reason provided.";
+            const cancelledAt = data.cancelledAt?.toDate
+              ? data.cancelledAt.toDate().toLocaleString()
+              : "Unknown time";
+    
+            Swal.fire({
+              title: "Cancellation Reason",
+              html: `
+                <p><strong>Reason:</strong> ${reason}</p>
+                <p><strong>Cancelled At:</strong> ${cancelledAt}</p>
+              `,
+              icon: "info",
+              confirmButtonText: "Close"
+            });
+          } else {
+            console.warn("❌ Appointment not found for docId:", docId);
+            Swal.fire("Error", "Appointment not found.", "error");
+          }
+        } catch (error) {
+          console.error("🔥 Error fetching cancel reason:", error);
+          Swal.fire("Error", "Failed to load cancellation reason.", "error");
+        }
+      }
+    });
 // 📅 Load appointments into tables
 async function loadAllAppointments() {
   const dashboardTable = document.getElementById("table-dashboard");
@@ -623,6 +910,7 @@ async function loadAllAppointments() {
         dashboardTable.insertAdjacentHTML(
           "beforeend",
           `<tr>
+          
             <td>${displayData.name}</td>
             <td>${displayData.petName}</td>
             <td>${displayData.service}</td>
@@ -633,6 +921,7 @@ async function loadAllAppointments() {
         );
       }
 
+      
       // ✅ Appointment table
       if (appointmentTable) {
         const normalizedStatus = status;
@@ -654,6 +943,10 @@ async function loadAllAppointments() {
             <button class="btn view" data-id="${docId}" data-type="${type}">View</button>
             <button class="btn edit" data-id="${docId}" data-type="${type}">Edit</button>
           `;
+           } else if (normalizedStatus === "cancelled") {
+    actionButtons = `
+      <button class="btn viewreason" data-id="${docId}" data-type="${type}">View Reason</button>
+    `;
         }
 
         const fullRow = document.createElement("tr");
@@ -686,9 +979,44 @@ async function loadAllAppointments() {
       }
     };
 
-    // Render all rows
-    snapshot.forEach(doc => renderRow(doc.data(), "appointment", doc.id));
-    walkInSnapshot.forEach(doc => renderRow(doc.data(), "walkin", doc.id));
+   // Collect all appointments first
+const allAppointments = [];
+
+snapshot.forEach((doc) => {
+  allAppointments.push({ ...doc.data(), id: doc.id, type: "appointment" });
+});
+
+walkInSnapshot.forEach((doc) => {
+  allAppointments.push({ ...doc.data(), id: doc.id, type: "walkin" });
+});
+
+// ✅ Custom sort: latest date/time first, but completed always at bottom
+allAppointments.sort((a, b) => {
+  const statusOrder = { pending: 1, "in progress": 2, completed: 3 };
+  const aStatus = statusOrder[a.status?.toLowerCase()] || 99;
+  const bStatus = statusOrder[b.status?.toLowerCase()] || 99;
+
+  // Completed always comes last
+  if (aStatus === 3 && bStatus !== 3) return 1;
+  if (bStatus === 3 && aStatus !== 3) return -1;
+
+  // Compare date (latest first)
+  if (a.date && b.date && a.date !== b.date) {
+    return new Date(b.date) - new Date(a.date);
+  }
+
+  // Compare time (latest first) - safe handling
+  const aTime = a.time || "";
+  const bTime = b.time || "";
+  return bTime.localeCompare(aTime);
+});
+
+// ✅ Render into the correct table
+allAppointments.forEach((apt) => {
+  const rowHTML = renderRow(apt, apt.type, apt.id);
+
+  
+});
 
     // ✅ Update dashboard stats
     document.querySelector(".card:nth-child(1) .numbers").textContent = totalAppointmentsToday;
@@ -1062,22 +1390,193 @@ loadAllAppointments();
   const vaccinationRecordsBody = document.getElementById("vaccinationRecordsBody");
   const remindersBody = document.getElementById("RemindersBody");
 
+  // Map of owner -> pets
+// Global map
+let ownerPetMap = {};
+
+// Fetch owners and pets
+async function populateOwnerPetMap() {
+  ownerPetMap = {};
+
+  const [appointmentsSnap, walkinsSnap] = await Promise.all([
+    getDocs(collection(db, "Appointment")),
+    getDocs(collection(db, "WalkInAppointment")),
+  ]);
+
+  function processDoc(data) {
+  const ownerNameRaw =
+    data.ownerName ||
+    data.name ||
+    ((data.firstName || "") + " " + (data.lastName || "")).trim();
+
+  const petNameRaw = data.petName || data.pet?.petName;
+
+  if (!ownerNameRaw || !petNameRaw) return;
+
+  const ownerName = ownerNameRaw.trim();
+  const petName = petNameRaw.trim();
+
+  if (!ownerPetMap[ownerName]) ownerPetMap[ownerName] = new Set();
+  ownerPetMap[ownerName].add(petName);
+}
+
+  appointmentsSnap.forEach(doc => processDoc(doc.data()));
+  walkinsSnap.forEach(doc => processDoc(doc.data()));
+
+  // ✅ Populate owner dropdown
+  updateOwnerDropdown();
+}
+
+async function findUserIdByOwnerAndPet(ownerName, petName) {
+  // normalize for comparison
+  const normOwner = (ownerName || "").trim().toLowerCase();
+  const normPet = (petName || "").trim().toLowerCase();
+
+  // search Appointment first
+  const apptSnap = await getDocs(collection(db, "Appointment"));
+  for (const docSnap of apptSnap.docs) {
+    const appt = docSnap.data();
+
+    // ✅ use ownerName OR fallback to "name"
+    const apptOwner = (appt.ownerName || appt.name || "").trim().toLowerCase();
+    const apptPet   = (appt.petName || "").trim().toLowerCase();
+
+    if (apptOwner === normOwner && apptPet === normPet) {
+      console.log("✅ Match found in Appointment:", {
+        owner: apptOwner,
+        pet: apptPet,
+        userId: appt.userId || null,
+        appointmentId: docSnap.id
+      });
+
+      return { 
+        userId: appt.userId || null,   // may still be null if not saved in doc
+        appointmentId: docSnap.id, 
+        sourceType: "appointment" 
+      };
+    }
+  }
+
+  // if not found, search WalkInAppointment
+  const walkInSnap = await getDocs(collection(db, "WalkInAppointment"));
+  for (const docSnap of walkInSnap.docs) {
+    const walkIn = docSnap.data();
+
+    const walkInOwner = `${(walkIn.firstName || "").trim()} ${(walkIn.lastName || "").trim()}`.toLowerCase();
+    const walkInPet   = (walkIn.pet?.petName || "").trim().toLowerCase();
+
+    if (walkInOwner === normOwner && walkInPet === normPet) {
+      console.log("✅ Match found in WalkInAppointment:", {
+        owner: walkInOwner,
+        pet: walkInPet,
+        userId: walkIn.userId || null,
+        appointmentId: docSnap.id
+      });
+
+      return { 
+        userId: walkIn.userId || null, 
+        appointmentId: docSnap.id, 
+        sourceType: "walkin", 
+        contactNumber: walkIn.contact || walkIn.contactNumber || "" 
+      };
+    }
+  }
+
+  console.warn("⚠️ No match found for owner/pet:", ownerName, petName);
+  return { userId: null, appointmentId: null };
+}
+
+
+
+
+
+// Replace owner input with dropdown
+function updateOwnerDropdown() {
+  const ownerInput = vaccinationForm.querySelector('input[name="ownerName"], select[name="ownerName"]');
+  if (!ownerInput) return;
+
+  const select = document.createElement("select");
+  select.name = "ownerName";
+  select.required = true;
+
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = "-- Select Owner --";
+  select.appendChild(placeholder);
+
+  Object.keys(ownerPetMap).forEach(owner => {
+    const option = document.createElement("option");
+    option.value = owner;
+    option.textContent = owner;
+    select.appendChild(option);
+  });
+
+  ownerInput.replaceWith(select);
+
+  // ✅ Call updatePetDropdown on change
+  select.addEventListener("change", () => {
+    updatePetDropdown(select.value);
+  });
+}
+
+// Your updatePetDropdown stays the same
+function updatePetDropdown(owner) {
+  const petInput = vaccinationForm.querySelector('input[name="petName"], select[name="petName"]');
+  if (!petInput) return;
+
+  const select = document.createElement("select");
+  select.name = "petName";
+  select.required = true;
+
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = "-- Select Pet --";
+  select.appendChild(placeholder);
+
+  if (ownerPetMap[owner]) {
+    ownerPetMap[owner].forEach(pet => {
+      const option = document.createElement("option");
+      option.value = pet;
+      option.textContent = pet;
+      select.appendChild(option);
+    });
+  }
+
+  petInput.replaceWith(select);
+}
+
+// ✅ Call populate on page load
+document.addEventListener("DOMContentLoaded", async () => {
+  await populateOwnerPetMap();
+});
+
   // Stats elements
   const vaccinationsTodayEl = document.querySelector("#vaccination-labeling .stat-card:nth-child(1) .stat-number");
   const vaccinationsMonthEl = document.querySelector("#vaccination-labeling .stat-card:nth-child(2) .stat-number");
   const vaccinationsDueWeekEl = document.querySelector("#vaccination-labeling .stat-card:nth-child(3) .stat-number");
 
-  // Fetch existing records on page load
-  document.addEventListener("DOMContentLoaded", async () => {
-    const querySnapshot = await getDocs(collection(db, "VaccinationLabel"));
-    querySnapshot.forEach(doc => {
-      const data = doc.data();
-      appendToTables(data);
-    });
-    updateVaccinationStats();
-  });
+// Fetch existing records on page load
+document.addEventListener("DOMContentLoaded", async () => {
+  const vaccSnapshot = await getDocs(collection(db, "VaccinationLabel"));
 
-  // Form submission
+ vaccSnapshot.forEach(doc => {
+  const data = doc.data();
+
+  // 🔹 Attach Firestore document ID so reminder buttons work
+  data._id = doc.id;
+
+  // 🔹 Only set a default if missing
+  if (!data.sourceType) {
+    data.sourceType = "appointment";
+  }
+
+  appendToTables(data);
+});
+
+updateVaccinationStats();
+
+});
+
 vaccinationForm.addEventListener("submit", async (e) => {
   e.preventDefault();
 
@@ -1086,22 +1585,88 @@ vaccinationForm.addEventListener("submit", async (e) => {
   const vaccinationDateStr = formData.get("vaccinationDate");
   const nextDueDateStr = formData.get("nextDueDate");
 
-  const record = {
-    ownerName: formData.get("ownerName"),
-    petName: formData.get("petName"),
-    vaccineType: formData.get("vaccineType"),
-    batchNumber: formData.get("batchNumber"),
+  // ✅ Normalize form inputs FIRST
+  const formOwner = (formData.get("ownerName") || "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
 
-    // Always save as YYYY-MM-DD strings
-    vaccinationDate: formatDateOnly(parseDateOnly(vaccinationDateStr)),
-    nextDueDate: formatDateOnly(parseDateOnly(nextDueDateStr)),
+  const formPet = (formData.get("petName") || "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
 
-    veterinarian: formData.get("veterinarian"),
-    labelQuantity: parseInt(formData.get("labelQuantity"), 10) || 1,
-    createdAt: serverTimestamp()
-  };
+  // Default values
+  let sourceType = "appointment";
+  let contactNumber = "";
+  let matchedAppointmentId = null;
+  let matchedAppointmentData = null; // 🔹 store appointment
+  let matchedWalkInData = null;      // 🔹 store walkin
+
+  // 🔹 Now it's safe to compare against formOwner + formPet
+  const apptSnapshot = await getDocs(collection(db, "Appointment"));
+  for (const docSnap of apptSnapshot.docs) {
+    const appt = docSnap.data();
+    const apptOwner = (appt.ownerName || "").trim().toLowerCase();
+    const apptPet = (appt.petName || "").trim().toLowerCase();
+
+    if (apptOwner === formOwner && apptPet === formPet) {
+      matchedAppointmentId = docSnap.id;
+      matchedAppointmentData = appt;
+      break;
+    }
+  }
+
+  // 🔹 Check WalkIns if no match
+  if (!matchedAppointmentId) {
+    const walkInSnapshot = await getDocs(collection(db, "WalkInAppointment"));
+    for (const docSnap of walkInSnapshot.docs) {
+      const walkIn = docSnap.data();
+      const walkInOwner = `${(walkIn.firstName || "").trim()} ${(walkIn.lastName || "").trim()}`.toLowerCase();
+      const walkInPet = (walkIn.pet?.petName || "").trim().toLowerCase();
+
+      if (walkInOwner === formOwner && walkInPet === formPet) {
+        matchedAppointmentId = docSnap.id;
+        matchedWalkInData = walkIn;
+        sourceType = "walkin";
+        contactNumber = walkIn.contact || walkIn.contactNumber || "";
+        break;
+      }
+    }
+  }
+
+
+  const ownerName = (formData.get("ownerName") || "").trim();
+const petName = (formData.get("petName") || "").trim();
+
+const { userId, appointmentId, sourceType: foundSourceType, contactNumber: foundContact } =
+  await findUserIdByOwnerAndPet(ownerName, petName);
+
+const record = {
+  ownerName,
+  petName,
+  vaccineType: formData.get("vaccineType"),
+  batchNumber: formData.get("batchNumber"),
+  vaccinationDate: formatDateOnly(parseDateOnly(vaccinationDateStr)),
+  nextDueDate: formatDateOnly(parseDateOnly(nextDueDateStr)),
+  veterinarian: formData.get("veterinarian"),
+  labelQuantity: parseInt(formData.get("labelQuantity"), 10) || 1,
+  createdAt: serverTimestamp(),
+
+  appointmentId,
+  sourceType: foundSourceType || "appointment",
+  contactNumber: foundContact || "",
+
+  // ✅ always include userId if found
+  userId,
+  service: formData.get("vaccineType") || "Vaccination"
+};
+
+
 
   try {
+    console.log("💾 Saving vaccination record:", record);
+
     await addDoc(collection(db, "VaccinationLabel"), record);
     appendToTables(record);
     vaccinationForm.reset();
@@ -1112,13 +1677,10 @@ vaccinationForm.addEventListener("submit", async (e) => {
 });
 
 
-
-  // Append record to both tables
-  function appendToTables(data) {
-    // ===== Reminders table =====
+// ===== Append to tables =====
+function appendToTables(data) {
+  // ===== Reminders table =====
   const daysDelta = daysFromToday(data.nextDueDate);
-
-  // FIX: overdue means negative daysDelta
   const isOverdue = daysDelta < 0;
 
   const labelText =
@@ -1130,35 +1692,114 @@ vaccinationForm.addEventListener("submit", async (e) => {
 
   const labelColor = isOverdue ? "red" : "orange";
 
-
-    const reminderRow = document.createElement("tr");
-    reminderRow.innerHTML = `
-      <td>${data.ownerName}</td>
-      <td>${data.petName}</td>
-      <td>${formatVaccineName(data.vaccineType)} Booster</td>
-      <td>${data.nextDueDate}</td>
-      <td style="color: ${labelColor}; font-weight: bold;">${labelText}</td>
-      <td>
-        <button class="btn-primary">Send Reminder</button>
-        <button class="btn-primary">Book Appointment</button>
-      </td>
-    `;
-    remindersBody.appendChild(reminderRow);
-
-    // ===== Vaccination records table =====
-    const recordRow = document.createElement("tr");
-    recordRow.innerHTML = `
-      <td>${data.ownerName}</td>
-      <td>${data.petName}</td>
-      <td>${formatVaccineName(data.vaccineType)}</td>
-      <td>${data.batchNumber || "-"}</td>
-      <td>${data.vaccinationDate || "-"}</td>
-      <td>${data.nextDueDate || "-"}</td>
-      <td>${formatVetName(data.veterinarian)}</td>
+  const reminderRow = document.createElement("tr");
+reminderRow.innerHTML = `
+  <td>${data.ownerName}</td>
+  <td>${data.petName}</td>
+  <td>${formatVaccineName(data.vaccineType)} Booster</td>
+  <td>${data.nextDueDate}</td>
+  <td style="color: ${labelColor}; font-weight: bold;">${labelText}</td>
+  <td>
+    <button 
+      class="btn-primary send-reminder" 
+          data-id="${data.appointmentId || ""}"   
       
-    `;
-    vaccinationRecordsBody.appendChild(recordRow);
+      data-type="${data.sourceType}">
+      Send Reminder
+    </button>
+  </td>
+`;
+
+  remindersBody.appendChild(reminderRow);
+
+  // 🔹 Auto-fill owner → pet
+  if (!ownerPetMap[data.ownerName]) ownerPetMap[data.ownerName] = new Set();
+  ownerPetMap[data.ownerName].add(data.petName);
+
+const reminderBtn = reminderRow.querySelector(".send-reminder");
+
+if (data.sourceType === "appointment") {
+  reminderBtn.textContent = "Send Reminder";
+
+  reminderBtn.addEventListener("click", async (e) => {
+  try {
+    const docId = e.target.getAttribute("data-id");
+    const type = e.target.getAttribute("data-type");
+
+    
+if (!docId) {
+  return Swal.fire("Error", "This vaccination record isn’t linked to any appointment.", "error");
+}
+
+    const colName = type === "walkin" ? "WalkInAppointment" : "Appointment";
+    const docRef = doc(db, colName, docId);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists()) {
+      return Swal.fire("Error", "Appointment not found.", "error");
+    }
+
+    const appointmentData = docSnap.data();
+    const userId = appointmentData.userId;
+
+    if (!userId) {
+      return Swal.fire({
+        title: "⚠️ Cannot send reminder",
+        text: "No linked userId found for this appointment.",
+        icon: "error",
+        confirmButtonText: "Close"
+      });
+    }
+
+    // ✅ Build the notification
+    await addDoc(collection(db, "Notifications"), {
+      appointmentId: docId,
+      userId,
+      type: "reminder",
+      service: appointmentData.service || appointmentData.vaccineType || "Unknown service",
+      status: "unread",
+      message: `Your appointment for ${appointmentData.petName || "your pet"} is scheduled for ${appointmentData.service || appointmentData.vaccineType || "a service"}.`,
+      createdAt: serverTimestamp()
+    });
+
+    Swal.fire("✅ Reminder Sent!", `A notification has been sent to ${appointmentData.ownerName || "the owner"}.`, "success");
+
+
+  } catch (err) {
+    console.error("❌ Error sending reminder:", err);
+    Swal.fire("Error", "Something went wrong while sending reminder.", "error");
   }
+});
+
+} else if (data.sourceType === "walkin") {
+  reminderBtn.textContent = "View Contact";
+
+  reminderBtn.addEventListener("click", () => {
+    Swal.fire({
+      title: `Contact Info for ${data.ownerName || "Unknown Owner"}`,
+      text: `📞 ${data.contactNumber || "No contact number available"}`,
+      icon: "info",
+      confirmButtonText: "Close"
+    });
+  });
+}
+
+
+  // ===== Vaccination records table =====
+  const recordRow = document.createElement("tr");
+  recordRow.innerHTML = `
+    <td>${data.ownerName}</td>
+    <td>${data.petName}</td>
+    <td>${formatVaccineName(data.vaccineType)}</td>
+    <td>${data.batchNumber || "-"}</td>
+    <td>${data.vaccinationDate || "-"}</td>
+    <td>${data.nextDueDate || "-"}</td>
+    <td>${formatVetName(data.veterinarian)}</td>
+  `;
+  vaccinationRecordsBody.appendChild(recordRow);
+}
+
+
 
 
   async function updateVaccinationStats() {

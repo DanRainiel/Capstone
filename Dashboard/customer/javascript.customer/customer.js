@@ -357,6 +357,8 @@ function toMinutes(timeStr) {
   return hours * 60 + minutes;
 }
 
+
+
 document.addEventListener("DOMContentLoaded", () => {
     // ================================
     // 📌 Logic for Main Appointment Form
@@ -370,7 +372,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // ✅ Pre-fill timeslot from sessionStorage (if booking was used)
         const savedSlot = sessionStorage.getItem("selectedSlot");
         if (savedSlot) {
-            document.getElementById("appt-time").value = savedSlot; // directly fill input
+            document.getElementById("appt-time").value = savedSlot;
             sessionStorage.removeItem("selectedSlot");
         }
 
@@ -378,6 +380,9 @@ document.addEventListener("DOMContentLoaded", () => {
             e.preventDefault();
 
             const selectedDate = document.getElementById("appt-date").value;
+            const selectedTime = formatTo12Hour(document.getElementById("appt-time").value);
+            const selectedService = document.getElementById("appt-service").value;
+            const currentUser = document.getElementById("appt-number").value.trim();
 
             // 🚫 Check if date is blocked in Firestore
             try {
@@ -391,7 +396,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         text: "This date is blocked. Please choose another.",
                         confirmButtonColor: "#f8732b"
                     });
-                    return; // ❌ stop here
+                    return;
                 }
             } catch (err) {
                 console.error("Error checking blocked date:", err);
@@ -401,20 +406,64 @@ document.addEventListener("DOMContentLoaded", () => {
                     text: "Could not verify blocked dates. Try again later.",
                     confirmButtonColor: "#f8732b"
                 });
-                return; // ❌ don’t proceed if error
+                return;
             }
 
-            // ✅ Continue as normal if not blocked
+            // 🚫 Check if same service/time/date already booked
+            try {
+                const q2 = query(collection(db, "Appointment"), where("date", "==", selectedDate));
+                const querySnapshot = await getDocs(q2);
+
+                const newTime = toMinutes(selectedTime);
+                let conflict = false;
+
+                querySnapshot.forEach(docSnap => {
+                    const existing = docSnap.data();
+                    const existingTime = toMinutes(existing.time);
+
+                    if (existingTime !== null && newTime !== null) {
+                        // ❌ Block if same date + same time + same service
+                        if (existingTime === newTime && existing.service === selectedService) {
+                            conflict = true;
+                        }
+                        // ❌ Block if same user books same slot + same service
+                        if (existingTime === newTime && existing.service === selectedService && existing.number === currentUser) {
+                            conflict = true;
+                        }
+                    }
+                });
+
+                if (conflict) {
+                    await Swal.fire({
+                        icon: "error",
+                        title: "Slot Unavailable",
+                        text: "This time slot with the same service is already booked. Please choose another.",
+                        confirmButtonColor: "#f8732b"
+                    });
+                    return;
+                }
+            } catch (err) {
+                console.error("Error checking appointment conflicts:", err);
+                await Swal.fire({
+                    icon: "error",
+                    title: "Error",
+                    text: "Could not verify appointment conflicts. Try again later.",
+                    confirmButtonColor: "#f8732b"
+                });
+                return;
+            }
+
+            // ✅ Continue as normal if not blocked/conflicted
             const appointmentData = {
                 name: document.getElementById("appt-name").value.trim(),
-                number: document.getElementById("appt-number").value.trim(),
+                number: currentUser,
                 petName: document.getElementById("appt-petname").value.trim(),
                 breed: document.getElementById("appt-breed").value.trim(),
                 petSize: document.getElementById("appt-size").value,
                 sex: document.getElementById("appt-sex").value,
-                service: document.getElementById("appt-service").value,
-                time: formatTo12Hour(document.getElementById("appt-time").value), // formatted output
-                date: selectedDate, // ✅ pulled above
+                service: selectedService,
+                time: selectedTime,
+                date: selectedDate,
                 serviceFee: 0,
                 selectedServices: [],
                 vaccines: [],
@@ -456,64 +505,65 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 
-    // ================================
-    // 📌 Logic for Calendar Booking Button
-    // ================================
-    const bookBtn = document.getElementById("bookBtn");
-    if (bookBtn) {
-        bookBtn.addEventListener("click", async () => {
-            // ❌ Removed error check, default to 09:00 AM if nothing selected
-            const selectedSlot = document.querySelector(".time-slot.selected")?.dataset.value || "09:00 AM";
+// ================================
+// 📌 Logic for Calendar Booking Button
+// ================================
+const bookBtn = document.getElementById("bookBtn");
+if (bookBtn) {
+    bookBtn.addEventListener("click", async () => {
+        const selectedSlot = document.querySelector(".time-slot.selected")?.dataset.value || "09:00 AM";
+        const today = new Date().toISOString().split("T")[0];
+        const formattedTime = formatTo12Hour(selectedSlot);
+        const selectedService = document.getElementById("appt-service")?.value;
+        const currentUser = document.getElementById("appt-number")?.value?.trim();
 
-            const today = new Date().toISOString().split("T")[0]; // always current date
-            const formattedTime = formatTo12Hour(selectedSlot);
+        try {
+            const q = query(collection(db, "Appointment"), where("date", "==", today));
+            const querySnapshot = await getDocs(q);
 
-            
+            let conflict = false;
+            const newTime = toMinutes(formattedTime);
 
-            try {
-                // 🔎 Query Firestore for same date
-                const q = query(collection(db, "Appointment"), where("date", "==", today));
-                const querySnapshot = await getDocs(q);
+            querySnapshot.forEach(docSnap => {
+                const existing = docSnap.data();
+                const existingTime = toMinutes(existing.time);
 
-                let conflict = false;
-                const newTime = toMinutes(formattedTime);
-
-                querySnapshot.forEach(docSnap => {
-                    const existing = docSnap.data();
-                    const existingTime = toMinutes(existing.time);
-
-                    if (existingTime !== null && newTime !== null && existingTime === newTime) {
+                if (existingTime !== null && newTime !== null) {
+                    // ❌ Block if same date + same time + same service
+                    if (existingTime === newTime && existing.service === selectedService) {
                         conflict = true;
                     }
-                });
-
-                if (conflict) {
-                    await Swal.fire({
-                        icon: "error",
-                        title: "Slot Unavailable",
-                        text: "This time is already booked. Please choose another.",
-                        confirmButtonColor: "#f8732b"
-                    });
-                    return;
+                    // ❌ Block if same user books same slot + same service
+                    if (existingTime === newTime && existing.service === selectedService && existing.number === currentUser) {
+                        conflict = true;
+                    }
                 }
+            });
 
-             
-
-                // 🔽 Scroll smoothly to booking section
-                document.querySelector("#booking").scrollIntoView({ behavior: "smooth" });
-
-            } catch (error) {
-                console.error("Error checking slot:", error);
-                Swal.fire({
+            if (conflict) {
+                await Swal.fire({
                     icon: "error",
-                    title: "Something went wrong",
-                    text: "Unable to check slot availability. Please try again.",
+                    title: "Slot Unavailable",
+                    text: "This time slot with the same service is already booked. Please choose another.",
                     confirmButtonColor: "#f8732b"
                 });
+                return;
             }
-        });
-    }
 
+            // 🔽 Scroll smoothly to booking section
+            document.querySelector("#booking").scrollIntoView({ behavior: "smooth" });
+
+        } catch (error) {
+            console.error("Error checking slot:", error);
+            Swal.fire({
+                icon: "error",
+                title: "Something went wrong",
+                text: "Unable to check slot availability. Please try again.",
+                confirmButtonColor: "#f8732b"
+            });
+        }
+    });
+}
 
 
 
@@ -568,13 +618,19 @@ loadClinicHours();
         
                   let appointments = {}; // This will hold real-time Firestore data
 
-      function formatTo12Hour(timeStr) {
-      const [hour, minute] = timeStr.split(':');
-      const h = parseInt(hour, 10);
-      const suffix = h >= 12 ? 'PM' : 'AM';
-      const hour12 = h % 12 === 0 ? 12 : h % 12;
-      return `${hour12}:${minute} ${suffix}`;
+    function formatTo12Hour(timeStr) {
+  // If the string already has AM/PM, just return it
+  if (/am|pm/i.test(timeStr)) {
+    return timeStr.toUpperCase();
   }
+
+  const [hour, minute] = timeStr.split(':');
+  const h = parseInt(hour, 10);
+  const suffix = h >= 12 ? 'PM' : 'AM';
+  const hour12 = h % 12 === 0 ? 12 : h % 12;
+  return `${hour12}:${minute} ${suffix}`;
+}
+
 
 
   async function loadAppointmentsFromFirestore() {
@@ -821,54 +877,56 @@ loadClinicHours();
                           timeSlotsDiv.appendChild(timeSlot);
                       });
                       
-                      // Update appointments list
-                      appointmentsListDiv.innerHTML = '';
-                      if (dayAppointments.length > 0) {
-                    const filteredAppointments = selectedTimeSlot
-                    ? dayAppointments.filter(apt => apt.time <= selectedTimeSlot)
-                      : dayAppointments;
+                     appointmentsListDiv.innerHTML = '';
 
-                      // Remove duplicates (based on time, petName, owner, type)
+if (dayAppointments.length > 0) {
+  const filteredAppointments = selectedTimeSlot
+    ? dayAppointments.filter(apt => apt.time === selectedTimeSlot) // ✅ show only selected slot if chosen
+    : dayAppointments;
+
+  // Remove duplicates (based on time, petName, owner, type)
   const seen = new Set();
   const uniqueAppointments = filteredAppointments.filter(apt => {
-      const key = `${apt.time}_${apt.petName}_${apt.owner}_${apt.type}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
+    const key = `${apt.time}_${apt.petName}_${apt.owner}_${apt.type}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
   });
 
-                    if (uniqueAppointments.length > 0) {
-                    uniqueAppointments.forEach(apt => {
+  if (uniqueAppointments.length > 0) {
+    uniqueAppointments.forEach(apt => {
+      const appointmentDiv = document.createElement('div');
+      appointmentDiv.className = 'calendar-appointment';
 
-                  const appointmentDiv = document.createElement('div');
-                appointmentDiv.className = 'calendar-appointment';
-                  appointmentDiv.innerHTML = `
-                  <div class="calendar-appointment-time">${formatTo12Hour(apt.time)}</div>
-                  <div class="calendar-appointment-details">
-                      <strong>${apt.petName}</strong> - ${apt.owner}
-                      <div class="calendar-appointment-type calendar-type-${apt.type}">${getTypeDisplayName(apt.type)}</div>
-                  </div>
-              `;appointmentDiv.innerHTML = `
-    <div class="calendar-appointment-time">${formatTo12Hour(apt.time)}</div>
-    <div class="calendar-appointment-details">
-        <strong>${apt.petName}</strong> - ${apt.owner}
-        <div class="calendar-appointment-type calendar-type-${apt.type}">${getTypeDisplayName(apt.type)}</div>
+     appointmentDiv.innerHTML = `
+  <div class="calendar-appointment-time">
+    ⏰ ${formatTo12Hour(apt.time)}
+  </div>
+  <div class="calendar-appointment-details">
+    <strong>🐾 ${apt.petName}</strong> <span style="color:#555">(${apt.owner})</span>
+    <div class="calendar-appointment-type calendar-type-${apt.type}">
+      📌 ${getTypeDisplayName(apt.type)}
     </div>
-  `;
-  appointmentDiv.addEventListener('click', () => {
-      sessionStorage.setItem('selectedAppointmentId', apt.id); // Save appointment ID
-      window.location.href = 'custConfirm.html'; // Go to confirmation page
-  });
+    ${apt.phone ? `<div class="calendar-appointment-phone">📞 ${apt.phone}</div>` : ""}
+  </div>
+`;
 
-              appointmentsListDiv.appendChild(appointmentDiv);
-          });
-          
-      } else {
-          appointmentsListDiv.innerHTML = '<p style="text-align: center; color: #6c757d;">No appointments for this time slot</p>';
-      }
+
+      appointmentDiv.addEventListener('click', () => {
+        sessionStorage.setItem('selectedAppointmentId', apt.id);
+        window.location.href = 'custConfirm.html';
+      });
+
+      appointmentsListDiv.appendChild(appointmentDiv);
+    });
   } else {
-      appointmentsListDiv.innerHTML = '<p style="text-align: center; color: #6c757d;">No appointments scheduled</p>';
+    appointmentsListDiv.innerHTML =
+      '<p style="text-align: center; color: #6c757d;">No appointments for this time slot</p>';
   }
+} else {
+  appointmentsListDiv.innerHTML =
+    '<p style="text-align: center; color: #6c757d;">No appointments scheduled</p>';
+}
 
                       
                       // Update book button
@@ -913,6 +971,7 @@ loadClinicHours();
                       document.getElementById('bookingForm').reset();
                   }
 
+                  
                   
 
               

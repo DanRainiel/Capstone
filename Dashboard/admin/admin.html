@@ -1,1204 +1,1089 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-  <link rel="stylesheet" href="/Dashboard/admin/admin.css">
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <title>Admin</title>
-</head>
-<body>
+  <!DOCTYPE html>
+  <html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="/Dashboard/admin/admin.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <title>Admin</title>
+  </head>
   <body>
+    <body>
 
-  <div class="container">
-    <div class="navigation">
-      <ul>
-        <li>
-          <a href="#">
-            <span class="icon"><i class="fa-solid fa-paw"></i></span>
-            <span class="title">PetStop Veterinary Clinic</span>
-          </a>
-        </li>
+    <div class="container">
+      <div class="navigation">
+        <ul>
+          <li>
+            <a href="#">
+              <span class="icon"><i class="fa-solid fa-paw"></i></span>
+              <span class="title">PetStop Veterinary Clinic</span>
+            </a>
+          </li>
 
-        <li class="hovered">
-          <a href="#" data-section="dashboard">
-            <span class="icon"><i class="fa-solid fa-house-user"></i></span>
-            <span class="title">Home</span>
-          </a>
-        </li>
+          <li class="hovered">
+            <a href="#" data-section="dashboard">
+              <span class="icon"><i class="fa-solid fa-house-user"></i></span>
+              <span class="title">Home</span>
+            </a>
+          </li>
 
-        <li>
-          <a href="#" data-section="appointments">
-            <span class="icon"><i class="fa-solid fa-calendar-check"></i></span>
-            <span class="title">Appointments</span>
-          </a>
-        </li>
+          <li>
+            <a href="#" data-section="appointments">
+              <span class="icon"><i class="fa-solid fa-calendar-check"></i></span>
+              <span class="title">Appointments</span>
+            </a>
+          </li>
 
-        <li>
-          <a href="#" data-section="walkIn-form">
-            <span class="icon"><i class="fa-solid fa-shoe-prints"></i></span>
-            <span class="title">Walk-in Form</span>
-          </a>
-        </li>
+          <li>
+            <a href="#" data-section="walkIn-form">
+              <span class="icon"><i class="fa-solid fa-shoe-prints"></i></span>
+              <span class="title">Walk-in Form</span>
+            </a>
+          </li>
 
-        <li>
-          <a href="#" data-section="user-management">
-            <span class="icon"><i class="fa-solid fa-users"></i></span>
-            <span class="title">User Management</span>
-          </a>
-        </li>
+          <li>
+            <a href="#" data-section="user-management">
+              <span class="icon"><i class="fa-solid fa-users"></i></span>
+              <span class="title">User Management</span>
+            </a>
+          </li>
 
-        <li>
-          <a href="#" data-section="history">
-            <span class="icon"><i class="fa-solid fa-clock-rotate-left"></i></span>
-            <span class="title">History</span>
-          </a>
-        </li>
+          <li>
+            <a href="#" data-section="history">
+              <span class="icon"><i class="fa-solid fa-clock-rotate-left"></i></span>
+              <span class="title">History</span>
+            </a>
+          </li>
 
-        <li>
-          <a href="#" data-section="sales-report">
-            <span class="icon"><i class="fa-solid fa-file-invoice"></i></span>
-            <span class="title">Sales Report</span>
-          </a>
-        </li>
+          <li>
+            <a href="#" data-section="sales-report">
+              <span class="icon"><i class="fa-solid fa-file-invoice"></i></span>
+              <span class="title">Sales Report</span>
+            </a>
+          </li>
 
-        <li>
-          <a href="#" data-section="news-management">
-            <span class="icon"><i class="fa-solid fa-newspaper"></i></span>
-            <span class="title">News Management</span>
-          </a>
-        </li>
+          <li>
+            <a href="#" data-section="news-management">
+              <span class="icon"><i class="fa-solid fa-newspaper"></i></span>
+              <span class="title">News Management</span>
+            </a>
+          </li>
 
-        <li>
-          <a href="#" data-section="fee-discount">
-            <span class="icon"><i class="fa-solid fa-tags"></i></span>
-            <span class="title">Fee/Discount Monitoring</span>
-          </a>
-        </li>
+          <li>
+            <a href="#" data-section="fee-discount">
+              <span class="icon"><i class="fa-solid fa-tags"></i></span>
+              <span class="title">Fee/Discount Monitoring</span>
+            </a>
+          </li>
 
-        <li>
-          <a href="#" data-section="calendar-management">
-            <span class="icon"><i class="fa-solid fa-calendar-days"></i></span>
-            <span class="title">Calendar Management</span>
-          </a>
-        </li>
+          <li>
+            <a href="#" data-section="calendar-management">
+              <span class="icon"><i class="fa-solid fa-calendar-days"></i></span>
+              <span class="title">Calendar Management</span>
+            </a>
+          </li>
 
-        <li>
-          <a href="#" data-section="vaccination-labeling">
-            <span class="icon"><i class="fa-solid fa-syringe"></i></span>
-            <span class="title">Vaccination Labeling</span>
-          </a>
-        </li>
+          <li>
+            <a href="#" data-section="vaccination-labeling">
+              <span class="icon"><i class="fa-solid fa-syringe"></i></span>
+              <span class="title">Vaccination Labeling</span>
+            </a>
+          </li>
 
-         <li>
-          <a href="#" data-section="pet-management">
-            <span class="icon"><i class="fa-solid fa-cat"></i></span>
-            <span class="title">Pet Management</span>
-          </a>
-        </li>
+          <li>
+            <a href="#" data-section="pet-management">
+              <span class="icon"><i class="fa-solid fa-cat"></i></span>
+              <span class="title">Pet Management</span>
+            </a>
+          </li>
 
-        <li>
-          <a href="#" onclick="logout()">
-            <span class="icon"><i class="fa-solid fa-right-from-bracket"></i></span>
-            <span class="title">Logout</span>
-          </a>
-        </li>
+          <li>
+            <a href="#" onclick="logout()">
+              <span class="icon"><i class="fa-solid fa-right-from-bracket"></i></span>
+              <span class="title">Logout</span>
+            </a>
+          </li>
 
-      </ul>
-    </div>
-
-    <!-- Main Content -->
-    <div class="main">
-      <div class="topbar">
-        <div class="toggle">
-          <i class="fa-solid fa-bars"></i>
-        </div>
-        <div class="search">
-          <label>
-            <input type="text" placeholder="Search here" />
-            <i class="fa-solid fa-magnifying-glass"></i>
-          </label>
-        </div>
-        <div class="user">
-          <i class="fa-solid fa-user" style="font-size: 1.5rem; color: var(--white);"></i>
-        </div>
+        </ul>
       </div>
 
-      <!-- Dashboard Section -->
-      <div id="dashboard" class="content-section active">
-        <div class="cardBox">
-          <div class="card">
-            <div>
-              <div class="numbers">24</div>
-              <div class="cardName">Today's Schedule</div>
-            </div>
-            <div class="iconBx"><i class="fa-solid fa-calendar"></i></div>
+      <!-- Main Content -->
+      <div class="main">
+        <div class="topbar">
+          <div class="toggle">
+            <i class="fa-solid fa-bars"></i>
           </div>
-          <div class="card">
-            <div>
-              <div class="numbers">18</div>
-              <div class="cardName">Finished Appointments</div>
-            </div>
-            <div class="iconBx"><i class="fa-solid fa-check"></i></div>
+          <div class="search">
+            <label>
+              <input type="text" placeholder="Search here" />
+              <i class="fa-solid fa-magnifying-glass"></i>
+            </label>
           </div>
-          <div class="card">
-            <div>
-              <div class="numbers">4</div>
-              <div class="cardName">Walk-ins</div>
-            </div>
-            <div class="iconBx"><i class="fa-solid fa-person-walking-arrow-right"></i></div>
-          </div>
-          <div class="card">
-            <div>
-              <div class="numbers">11,500</div>
-              <div class="cardName">Today's Earnings</div>
-            </div>
-            <div class="iconBx"><i class="fa-solid fa-money-bill"></i></div>
+          <div class="user">
+            <i class="fa-solid fa-user" style="font-size: 1.5rem; color: var(--white);"></i>
           </div>
         </div>
 
-        <div class="details">
-          <div class="recentOrders">
-            <div class="cardHeader">
-              <h2>Recent Appointments</h2>
-              <button class="btn">View All</button>
+        <!-- Dashboard Section -->
+        <div id="dashboard" class="content-section active">
+          <div class="cardBox">
+            <div class="card">
+              <div>
+                <div class="numbers">24</div>
+                <div class="cardName">Today's Schedule</div>
+              </div>
+              <div class="iconBx"><i class="fa-solid fa-calendar"></i></div>
             </div>
-            <div class="data-table">
-              <table>
-                 <thead>
-                  <tr>
-                    <th>Pet Owner</th>
-                    <th>Pet Name</th>
-                    <th>Service</th>
-                    <th>Time</th>
-                    <th>Mode</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody id="table-dashboard">
-
-                </tbody>
-              </table>
+            <div class="card">
+              <div>
+                <div class="numbers">18</div>
+                <div class="cardName">Finished Appointments</div>
+              </div>
+              <div class="iconBx"><i class="fa-solid fa-check"></i></div>
+            </div>
+            <div class="card">
+              <div>
+                <div class="numbers">4</div>
+                <div class="cardName">Walk-ins</div>
+              </div>
+              <div class="iconBx"><i class="fa-solid fa-person-walking-arrow-right"></i></div>
+            </div>
+            <div class="card">
+              <div>
+                <div class="numbers">11,500</div>
+                <div class="cardName">Today's Earnings</div>
+              </div>
+              <div class="iconBx"><i class="fa-solid fa-money-bill"></i></div>
             </div>
           </div>
 
-          <div class="recent-activity">
-            <div class="cardHeader">
-              <h2>Recent Activity</h2>
+          <div class="details">
+            <div class="recentOrders">
+              <div class="cardHeader">
+                <h2>Recent Appointments</h2>
+                <button class="btn">View All</button>
+              </div>
+              <div class="data-table">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Pet Owner</th>
+                      <th>Pet Name</th>
+                      <th>Service</th>
+                      <th>Time</th>
+                      <th>Mode</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="table-dashboard">
+
+                  </tbody>
+                </table>
+              </div>
             </div>
-          
-          </div>
-        </div>
-      </div>
 
-      <!-- Appointments Section -->
-      <div id="appointments" class="content-section">
-        <h1>Appointment Management</h1>
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-number">47</div>
-            <div class="stat-label">Total Appointments Today</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-number">8</div>
-            <div class="stat-label">Pending Appointments</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-number">2</div>
-            <div class="stat-label">Cancelled Today</div>
-          </div>
-        </div>
-
-        <div class="data-table">
-          <table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Time</th>
-                <th>Pet Owner</th>
-               
-                <th>Pet Name</th>
-                <th>Service</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="appointmentTable">
+            <div class="recent-activity">
+              <div class="cardHeader">
+                <h2>Recent Activity</h2>
+              </div>
             
-             
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Walk-in Form Section -->
-      <div id="walkIn-form" class="content-section">
-        <h1>Walk-in Registration</h1>
-        <div class="form-container">
-          <form id="walkinForm">
-            <h2 style="color: var(--background-color); margin-bottom: 20px;">Pet Owner Information</h2>
-            <div class="form-row">
-              <div class="form-group">
-                <label>First Name *</label>
-                <input type="text" name="firstName" required>
-              </div>
-              <div class="form-group">
-                <label>Last Name *</label>
-                <input type="text" name="lastName" required>
-              </div>
             </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label>Contact Number *</label>
-                <input type="tel" name="contact" required>
-              </div>
-              <div class="form-group">
-                <label>Email Address</label>
-                <input type="email" name="email">
-              </div>
-            </div>
-            <div class="form-group">
-              <label>Address</label>
-              <textarea name="address" placeholder="Complete address"></textarea>
-            </div>
-
-            <h2 style="color: var(--background-color); margin: 30px 0 20px 0;">Pet Information</h2>
-            <div class="form-row">
-              <div class="form-group">
-                <label>Pet Name *</label>
-                <input type="text" name="petName" required>
-              </div>
-              <div class="form-group">
-                <label>Pet Type *</label>
-                <select name="petType" required>
-                  <option value="">Select Pet Type</option>
-                  <option value="dog">Dog</option>
-                  <option value="cat">Cat</option>
-                  <option value="bird">Bird</option>
-                  <option value="rabbit">Rabbit</option>
-                  <option value="hamster">Hamster</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label>Breed</label>
-                <input type="text" name="breed">
-              </div>
-              <div class="form-group">
-                <label>Age</label>
-                <input type="text" name="age" placeholder="e.g., 2 years, 6 months">
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label>Gender</label>
-                <select name="gender">
-                  <option value="">Select Gender</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>Weight (kg)</label>
-                <input type="number" name="weight" step="0.1">
-              </div>
-            </div>
-
-            <h2 style="color: var(--background-color); margin: 30px 0 20px 0;">Service Required</h2>
-            <div class="form-group">
-              <label>Service Type *</label>
-              <select name="serviceType" required>
-                <option value="">Select Service</option>
-                <option value="consultation">General Consultation</option>
-                <option value="vaccination">Vaccination</option>
-                <option value="checkup">Health Check-up</option>
-                <option value="grooming">Grooming</option>
-                <option value="surgery">Surgery</option>
-                <option value="deworming">Deworming</option>
-                <option value="emergency">Emergency</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Reason for Visit</label>
-              <textarea name="reason" placeholder="Describe the reason for this visit"></textarea>
-            </div>
-            <div class="form-group">
-              <label>Priority Level</label>
-              <select name="priority">
-                <option value="normal">Normal</option>
-                <option value="urgent">Urgent</option>
-                <option value="emergency">Emergency</option>
-              </select>
-            </div>
-
-            <button type="submit" class="btn-primary" style="margin-top: 20px; padding: 15px 30px; font-size: 16px;">Register Walk-in Patient</button>
-          </form>
-        </div>
-      </div>
-    
-
-      <!-- User Management Section -->
-      <div id="user-management" class="content-section">
-        <h1>User Management</h1>
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-number">156</div>
-            <div class="stat-label">Total Registered Users</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-number">12</div>
-            <div class="stat-label">New Users This Month</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-number">3</div>
-            <div class="stat-label">Deactivated Accounts</div>
           </div>
         </div>
 
-        <div class="data-table">
-          <table>
-            <thead>
-              <tr>
-                <th>User ID</th>
-                <th>Name</th>
-                <th>Email</th>            
-                <th>Pets</th>        
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="userTable">
-             
-          
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- History Section -->
-      <div id="history" class="content-section">
-        <h1>Medical History & Records</h1>
-        <div class="form-container" style="max-width: none;">
-          <div class="form-row">
-            <div class="form-group">
-              <label>Search by Pet Owner</label>
-              <input type="text" id="searchOwner" placeholder="Enter owner name">
+        <!-- Appointments Section -->
+        <div id="appointments" class="content-section">
+          <h1>Appointment Management</h1>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-number">47</div>
+              <div class="stat-label">Total Appointments Today</div>
             </div>
-            <div class="form-group">
-              <label>Search by Pet Name</label>
-              <input type="text" id="searchPet" placeholder="Enter pet name">
+            <div class="stat-card">
+              <div class="stat-number">8</div>
+              <div class="stat-label">Pending Appointments</div>
             </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Date Range From</label>
-              <input type="date" id="dateFrom">
-            </div>
-            <div class="form-group">
-              <label>Date Range To</label>
-              <input type="date" id="dateTo">
+            <div class="stat-card">
+              <div class="stat-number">2</div>
+              <div class="stat-label">Cancelled Today</div>
             </div>
           </div>
 
-        </div>
-
-        <div class="data-table">
-          <table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Time</th>
-                <th>Pet Owner</th>
-                <th>Pet Name</th>
-                <th>Service</th>
-                
-                <th>Cost</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="historytable">
-              
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-        <!-- Sales Report Section -->
-        <div id="sales-report" class="content-section">
-          <h1>Sales Report & Analytics</h1>
-        <div class="stats-grid">
-  <div class="stat-card">
-    <div class="stat-number" id="todayRevenue"></div>
-    <div class="stat-label">Today's Revenue</div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-number" id="weekRevenue"></div>
-    <div class="stat-label">This Week's Revenue</div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-number" id="monthRevenue"></div>
-    <div class="stat-label">This Month's Revenue</div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-number" id="servicesCompleted"></div>
-    <div class="stat-label">Services Completed</div>
-  </div>
-  </div>
-
-
-        <div class="form-container" style="max-width: none;">
-          <h2 style="color: var(--background-color); margin-bottom: 20px;">Generate Report</h2>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Report Type</label>
-              <select id="reportType">
-                <option value="daily">Daily Report</option>
-                <option value="weekly">Weekly Report</option>
-                <option value="monthly">Monthly Report</option>
-                <option value="yearly">Yearly Report</option>
-                <option value="custom">Custom Date Range</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Service Category</label>
-              <select id="serviceCategory">
-                <option value="all">All Services</option>
-                <option value="consultation">Consultations</option>
-                <option value="vaccination">Vaccinations</option>
-                <option value="surgery">Surgeries</option>
-                <option value="grooming">Grooming</option>
-                <option value="deworming">Deworming</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>From Date</label>
-              <input type="date" id="reportDateFrom">
-            </div>
-            <div class="form-group">
-              <label>To Date</label>
-              <input type="date" id="reportDateTo">
-            </div>
-          </div>
-        <button id="generateReportBtn" type="button" class="btn-primary">Generate Report</button>
-
-          <button class="btn-primary">Export to PDF</button>
-          <button class="btn-primary">Export to Excel</button>
-        </div>
-
-        <div class="data-table">
-          <table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Service Type</th>
-     
-                <th>Revenue</th>
-                <th>Average per Service</th>
-                <th>Growth %</th>
-              </tr>
-            </thead>
-            <tbody id="reportTableBody">
-             
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- News Management Section -->
-      <div id="news-management" class="content-section">
-        <h1>News & Announcements Management</h1>
-        <div class="form-container">
-          <h2 style="color: var(--background-color); margin-bottom: 20px;">Create New Post</h2>
-          <form id="newsForm">
-            <div class="form-group">
-              <label>Title *</label>
-              <input type="text" name="newsTitle" required>
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label>Category</label>
-                <select name="newsCategory">
-                  <option value="announcement">Announcement</option>
-                  <option value="health-tips">Health Tips</option>
-                  <option value="clinic-updates">Clinic Updates</option>
-                  <option value="promotions">Promotions</option>
-                  <option value="events">Events</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>Priority</label>
-                <select name="newsPriority">
-                  <option value="normal">Normal</option>
-                  <option value="important">Important</option>
-                  <option value="urgent">Urgent</option>
-                </select>
-              </div>
-            </div>
-            <div class="form-group">
-              <label>Content *</label>
-              <textarea name="newsContent" rows="6" required></textarea>
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label>Publish Date</label>
-                <input type="datetime-local" name="publishDate">
-              </div>
-              <div class="form-group">
-                <label>Expiry Date (Optional)</label>
-                <input type="datetime-local" name="expiryDate">
-              </div>
-            </div>
-            <button type="submit" class="btn-primary">Publish News</button>
-            <button type="button" class="btn-primary">Save as Draft</button>
-          </form>
-        </div>
-
-        <div class="data-table">
-          <table>
-            <thead>
-              <tr>
-                <th>Title</th>
-                <th>Category</th>
-                <th>Published Date</th>
-                <th>Status</th>
-                <th>Views</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>New Vaccination Schedule Available</td>
-                <td>Announcement</td>
-                <td>2025-08-01</td>
-                <td><span class="status completed">Published</span></td>
-                <td>245</td>
-                <td>
-                  <button class="btn-primary">Edit</button>
-                  <button class="btn-primary">View</button>
-                  <button class="btn-danger">Unpublish</button>
-                </td>
-              </tr>
-              <tr>
-                <td>Summer Pet Care Tips</td>
-                <td>Health Tips</td>
-                <td>2025-07-30</td>
-                <td><span class="status completed">Published</span></td>
-                <td>189</td>
-                <td>
-                  <button class="btn-primary">Edit</button>
-                  <button class="btn-primary">View</button>
-                  <button class="btn-danger">Unpublish</button>
-                </td>
-              </tr>
-              <tr>
-                <td>Clinic Holiday Schedule</td>
-                <td>Clinic Updates</td>
-                <td>2025-07-28</td>
-                <td><span class="status pending">Draft</span></td>
-                <td>0</td>
-                <td>
-                  <button class="btn-primary">Edit</button>
-                  <button class="btn-primary">Publish</button>
-                  <button class="btn-danger">Delete</button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Fee/Discount Monitoring Section -->
-      <div id="fee-discount" class="content-section">
-        <h1>Fee & Discount Management</h1>
-        <div class="form-container">
-          <h2 style="color: var(--background-color); margin-bottom: 20px;">Service Pricing</h2>
           <div class="data-table">
             <table>
               <thead>
                 <tr>
-                  <thead>
-                <tr>
+                  <th>Date</th>
+                  <th>Time</th>
+                  <th>Pet Owner</th>
+                
+                  <th>Pet Name</th>
                   <th>Service</th>
-                  <th>Base Price</th>
-                  <th>Senior Discount</th>
-                  <th>PWD Discount</th>
-                  <th>Loyalty Discount</th>
-                  <th>Special Discounts</th> 
+                  <th>Status</th>
                   <th>Actions</th>
                 </tr>
               </thead>
+              <tbody id="appointmentTable">
+              
+              
+              </tbody>
+            </table>
+          </div>
+        </div>
 
+       <!-- Walk-in Form Section -->
+<div id="walkIn-form" class="content-section">
+  <h1>Walk-in Registration</h1>
+  <div class="form-container">
+    <form id="walkinForm">
+      <h2 style="color: var(--background-color); margin-bottom: 20px;">Pet Owner Information</h2>
+      <div class="form-row">
+        <div class="form-group">
+          <label>First Name *</label>
+          <input type="text" name="firstName" required>
+        </div>
+        <div class="form-group">
+          <label>Last Name *</label>
+          <input type="text" name="lastName" required>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Contact Number *</label>
+          <input type="tel" name="contact" required>
+        </div>
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" name="email">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Address</label>
+        <textarea name="address" placeholder="Complete address"></textarea>
+      </div>
+
+      <h2 style="color: var(--background-color); margin: 30px 0 20px 0;">Pet Information</h2>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Pet Name *</label>
+          <input type="text" name="petName" required>
+        </div>
+        <div class="form-group">
+          <label>Pet Type *</label>
+          <select name="petType" required>
+            <option value="">Select Pet Type</option>
+            <option value="dog">Dog</option>
+            <option value="cat">Cat</option>
+            <option value="bird">Bird</option>
+            <option value="rabbit">Rabbit</option>
+            <option value="hamster">Hamster</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Breed</label>
+          <input type="text" name="breed">
+        </div>
+        <div class="form-group">
+          <label>Age</label>
+          <input type="text" name="age" placeholder="e.g., 2 years, 6 months">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Gender</label>
+          <select name="gender">
+            <option value="">Select Gender</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Weight (kg)</label>
+          <input type="number" name="weight" step="0.1">
+        </div>
+      </div>
+
+      <h2 style="color: var(--background-color); margin: 30px 0 20px 0;">Service Required</h2>
+      <div class="form-group">
+        <label>Service Type *</label>
+        <select name="serviceType" id="serviceType" required>
+          <option value="">Select Service</option>
+          <option value="vaccination">Vaccination</option>
+          <option value="consultation">Consultation</option>
+          <option value="grooming">Grooming</option>
+          <option value="treatment">Treatment</option>
+          <option value="deworming">Deworming</option>
+          <option value="laboratory">Laboratory</option>
+        </select>
+      </div>
+
+      <!-- Dynamic service variants -->
+      <div id="serviceVariants" class="form-group"></div>
+
+      <!-- Fee display -->
+      <div class="form-group">
+        <label>Service Fee:</label>
+        <p id="serviceFee">₱0.00</p>
+      </div>
+
+      <div class="form-group">
+        <label>Reason for Visit</label>
+        <textarea name="reason" placeholder="Describe the reason for this visit"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Priority Level</label>
+        <select name="priority">
+          <option value="normal">Normal</option>
+          <option value="urgent">Urgent</option>
+          <option value="emergency">Emergency</option>
+        </select>
+      </div>
+
+      <button type="submit" class="btn-primary" style="margin-top: 20px; padding: 15px 30px; font-size: 16px;">
+        Register Walk-in Patient
+      </button>
+    </form>
+  </div>
+
+  <!-- Walk-in Data Table -->
+  <div class="data-table">
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Time</th>
+          <th>Pet Owner</th>
+          <th>Pet Name</th>
+          <th>Service</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="walkinTableBody">
+        <!-- Rows will be added dynamically with JS -->
+      </tbody>
+    </table>
+  </div>
+</div>
+
+    
+
+        <!-- User Management Section -->
+        <div id="user-management" class="content-section">
+          <h1>User Management</h1>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-number">156</div>
+              <div class="stat-label">Total Registered Users</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number">12</div>
+              <div class="stat-label">New Users This Month</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number">3</div>
+              <div class="stat-label">Deactivated Accounts</div>
+            </div>
+          </div>
+
+          <div class="data-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>User ID</th>
+                  <th>Name</th>
+                  <th>Email</th>            
+                  <th>Pets</th>        
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="userTable">
+       
+            
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      
+
+        <!-- History Section -->
+        <div id="history" class="content-section">
+          <h1>Medical History & Records</h1>
+          <div class="form-container" style="max-width: none;">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Search by Pet Owner</label>
+                <input type="text" id="searchOwner" placeholder="Enter owner name">
+              </div>
+              <div class="form-group">
+                <label>Search by Pet Name</label>
+                <input type="text" id="searchPet" placeholder="Enter pet name">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Date Range From</label>
+                <input type="date" id="dateFrom">
+              </div>
+              <div class="form-group">
+                <label>Date Range To</label>
+                <input type="date" id="dateTo">
+              </div>
+            </div>
+
+          </div>
+
+          <div class="data-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Time</th>
+                  <th>Pet Owner</th>
+                  <th>Pet Name</th>
+                  <th>Service</th>
+                  
+                  <th>Cost</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="historytable">
+                
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+          <!-- Sales Report Section -->
+          <div id="sales-report" class="content-section">
+            <h1>Sales Report & Analytics</h1>
+          <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-number" id="todayRevenue"></div>
+      <div class="stat-label">Today's Revenue</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number" id="weekRevenue"></div>
+      <div class="stat-label">This Week's Revenue</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number" id="monthRevenue"></div>
+      <div class="stat-label">This Month's Revenue</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number" id="servicesCompleted"></div>
+      <div class="stat-label">Services Completed</div>
+    </div>
+    </div>
+
+
+          <div class="form-container" style="max-width: none;">
+            <h2 style="color: var(--background-color); margin-bottom: 20px;">Generate Report</h2>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Report Type</label>
+                <select id="reportType">
+                  <option value="daily">Daily Report</option>
+                  <option value="weekly">Weekly Report</option>
+                  <option value="monthly">Monthly Report</option>
+                  <option value="yearly">Yearly Report</option>
+                  <option value="custom">Custom Date Range</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Service Category</label>
+                <select id="serviceCategory">
+                  <option value="all">All Services</option>
+                  <option value="consultation">Consultations</option>
+                  <option value="vaccination">Vaccinations</option>
+                  <option value="surgery">Surgeries</option>
+                  <option value="grooming">Grooming</option>
+                  <option value="deworming">Deworming</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>From Date</label>
+                <input type="date" id="reportDateFrom">
+              </div>
+              <div class="form-group">
+                <label>To Date</label>
+                <input type="date" id="reportDateTo">
+              </div>
+            </div>
+          <button id="generateReportBtn" type="button" class="btn-primary">Generate Report</button>
+
+            <button class="btn-primary">Export to PDF</button>
+            <button class="btn-primary">Export to Excel</button>
+          </div>
+
+          <div class="data-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Service Type</th>
+      
+                  <th>Revenue</th>
+                  <th>Average per Service</th>
+                  <th>Growth %</th>
+                </tr>
+              </thead>
+              <tbody id="reportTableBody">
+              
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- News Management Section -->
+        <div id="news-management" class="content-section">
+          <h1>News & Announcements Management</h1>
+          <div class="form-container">
+            <h2 style="color: var(--background-color); margin-bottom: 20px;">Create New Post</h2>
+            <form id="newsForm">
+              <div class="form-group">
+                <label>Title *</label>
+                <input type="text" name="newsTitle" required>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Category</label>
+                  <select name="newsCategory">
+                    <option value="announcement">Announcement</option>
+                    <option value="health-tips">Health Tips</option>
+                    <option value="clinic-updates">Clinic Updates</option>
+                    <option value="promotions">Promotions</option>
+                    <option value="events">Events</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Priority</label>
+                  <select name="newsPriority">
+                    <option value="normal">Normal</option>
+                    <option value="important">Important</option>
+                    <option value="urgent">Urgent</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Content *</label>
+                <textarea name="newsContent" rows="6" required></textarea>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Publish Date</label>
+                  <input type="datetime-local" name="publishDate">
+                </div>
+                <div class="form-group">
+                  <label>Expiry Date (Optional)</label>
+                  <input type="datetime-local" name="expiryDate">
+                </div>
+              </div>
+              <button type="submit" class="btn-primary">Publish News</button>
+              <button type="button" class="btn-primary">Save as Draft</button>
+            </form>
+          </div>
+
+          <div class="data-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Category</th>
+                  <th>Published Date</th>
+                  <th>Status</th>
+                  <th>Views</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td>General Consultation</td>
-                  <td>₱500</td>
-                  <td>20%</td>
-                  <td>20%</td>
-                  <td>10%</td>
-                  <td><button class="btn-primary">Edit</button></td>
+                  <td>New Vaccination Schedule Available</td>
+                  <td>Announcement</td>
+                  <td>2025-08-01</td>
+                  <td><span class="status completed">Published</span></td>
+                  <td>245</td>
+                  <td>
+                    <button class="btn-primary">Edit</button>
+                    <button class="btn-primary">View</button>
+                    <button class="btn-danger">Unpublish</button>
+                  </td>
                 </tr>
                 <tr>
-                  <td>Vaccination</td>
-                  <td>₱800</td>
-                  <td>15%</td>
-                  <td>15%</td>
-                  <td>5%</td>
-                  <td><button class="btn-primary">Edit</button></td>
+                  <td>Summer Pet Care Tips</td>
+                  <td>Health Tips</td>
+                  <td>2025-07-30</td>
+                  <td><span class="status completed">Published</span></td>
+                  <td>189</td>
+                  <td>
+                    <button class="btn-primary">Edit</button>
+                    <button class="btn-primary">View</button>
+                    <button class="btn-danger">Unpublish</button>
+                  </td>
                 </tr>
                 <tr>
-                  <td>Surgery (Minor)</td>
-                  <td>₱3,000</td>
-                  <td>10%</td>
-                  <td>10%</td>
-                  <td>5%</td>
-                  <td><button class="btn-primary">Edit</button></td>
-                </tr>
-                <tr>
-                  <td>Grooming</td>
-                  <td>₱800</td>
-                  <td>15%</td>
-                  <td>15%</td>
-                  <td>10%</td>
-                  <td><button class="btn-primary">Edit</button></td>
+                  <td>Clinic Holiday Schedule</td>
+                  <td>Clinic Updates</td>
+                  <td>2025-07-28</td>
+                  <td><span class="status pending">Draft</span></td>
+                  <td>0</td>
+                  <td>
+                    <button class="btn-primary">Edit</button>
+                    <button class="btn-primary">Publish</button>
+                    <button class="btn-danger">Delete</button>
+                  </td>
                 </tr>
               </tbody>
             </table>
           </div>
         </div>
 
-        <!-- Edit Service Modal -->
-  <div id="editServiceModal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2>Edit Service Pricing</h2>
-        <span class="close">&times;</span>
-      </div>
-      <div class="modal-body">
-        <form id="editServiceForm">
-          <div class="form-group">
-            <label>Service Name</label>
-            <input type="text" id="editServiceName" readonly style="background-color: #f8f9fa;">
-          </div>
-          
-          <div class="form-group">
-            <label>Base Price (₱) *</label>
-            <input type="number" id="editBasePrice" step="0.01" min="0" required>
-          </div>
-          
-          <div class="form-row">
-            <div class="form-group">
-              <label>Senior Citizen Discount (%)</label>
-              <input type="number" id="editSeniorDiscount" min="0" max="100" step="0.1">
-            </div>
-            <div class="form-group">
-              <label>PWD Discount (%)</label>
-              <input type="number" id="editPwdDiscount" min="0" max="100" step="0.1">
-            </div>
-          </div>
-          
-          <div class="form-group">
-            <label>Loyalty Discount (%)</label>
-            <input type="number" id="editLoyaltyDiscount" min="0" max="100" step="0.1">
-          </div>
-          
-          <div class="form-group">
-            <label>Notes (Optional)</label>
-            <textarea id="editNotes" rows="3" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; resize: vertical;" placeholder="Add any special notes or conditions..."></textarea>
-          </div>
-        </form>
-      </div>
-      
-      <div id="specialDiscountsList" style="margin-top: 15px;"></div>
+        <!-- Fee/Discount Monitoring Section -->
+        <div id="fee-discount" class="content-section">
+          <h1>Fee & Discount Management</h1>
+          <div class="form-container">
+            <h2 style="color: var(--background-color); margin-bottom: 20px;">Service Pricing</h2>
+            <div class="data-table">
+              <table>
+                <thead>
+                  <tr>
+                    <thead>
+                  <tr>
+                    <th>Service</th>
+                    <th>Base Price</th>
+                    <th>Senior Discount</th>
+                    <th>PWD Discount</th>
+                    <th>Loyalty Discount</th>
+                    <th>Special Discounts</th> 
+                    <th>Actions</th>
+                  </tr>
+                </thead>
 
-      <div class="modal-footer">
-        <button type="button" class="btn-secondary" id="cancelEdit">Cancel</button>
-        <button type="button" class="btn-success" id="saveServiceChanges">Save Changes</button>
-        
-      </div>
-    </div>
-  </div>
-        
- <!-- PUBLISH NEW DISCOUNT -->
-        <div class="form-container">
-          <h2 style="color: var(--background-color); margin-bottom: 20px;">Create Special Discount</h2>
-          <form id="discountForm">
-            <div class="form-row">
-              <div class="form-group">
-                <label>Discount Name *</label>
-                <input type="text" name="discountName" required>
-              </div>
-              <div class="form-group">
-                <label>Discount Type</label>
-                <select name="discountType">
-                  <option value="percentage">Percentage</option>
-                  <option value="fixed">Fixed Amount</option>
-                </select>
-              </div>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>General Consultation</td>
+                    <td>₱500</td>
+                    <td>20%</td>
+                    <td>20%</td>
+                    <td>10%</td>
+                    <td><button class="btn-primary">Edit</button></td>
+                  </tr>
+                  <tr>
+                    <td>Vaccination</td>
+                    <td>₱800</td>
+                    <td>15%</td>
+                    <td>15%</td>
+                    <td>5%</td>
+                    <td><button class="btn-primary">Edit</button></td>
+                  </tr>
+                  <tr>
+                    <td>Surgery (Minor)</td>
+                    <td>₱3,000</td>
+                    <td>10%</td>
+                    <td>10%</td>
+                    <td>5%</td>
+                    <td><button class="btn-primary">Edit</button></td>
+                  </tr>
+                  <tr>
+                    <td>Grooming</td>
+                    <td>₱800</td>
+                    <td>15%</td>
+                    <td>15%</td>
+                    <td>10%</td>
+                    <td><button class="btn-primary">Edit</button></td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label>Discount Value *</label>
-                <input type="number" name="discountValue" required>
-              </div>
-              <div class="form-group">
-                <label>Applicable Services</label>
-                <select name="applicableServices" multiple>
-                  <option value="all">All Services</option>
-                  <option value="consultation">Consultation</option>
-                  <option value="vaccination">Vaccination</option>
-                  <option value="surgery">Surgery</option>
-                  <option value="grooming">Grooming</option>
-                </select>
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label>Valid From</label>
-                <input type="date" name="validFrom">
-              </div>
-              <div class="form-group">
-                <label>Valid Until</label>
-                <input type="date" name="validUntil">
-              </div>
-            </div>
-            <button type="submit" class="btn-primary">Create Discount</button>
-          </form>
+          </div>
+
+          <!-- Edit Service Modal -->
+    <div id="editServiceModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Edit Service Pricing</h2>
+          <span class="close">&times;</span>
         </div>
-      </div>
-
-      <!-- Discount Modal -->
-<div id="discountModal" class="modal hidden">
-  <div class="modal-content">
-    <h2>Select Discounts</h2>
-    <div class="discount-options">
-      <label><input type="checkbox" class="discount-option" value="pwdDiscount"> PWD</label><br>
-      <label><input type="checkbox" class="discount-option" value="seniorDiscount"> Senior</label><br>
-      <label><input type="checkbox" class="discount-option" value="loyaltyDiscount"> Loyalty</label>
-    </div>
-
-    <div class="modal-actions">
-      <button id="applyDiscountBtn" class="btn">Apply</button>
-      <button id="closeDiscountModal" class="btn">Cancel</button>
-    </div>
-  </div>
-</div>
-
-
-      <!-- Calendar Management Section -->
-      <div id="calendar-management" class="content-section">
-        <h1>Calendar & Schedule Management</h1>
-        <div class="calendar-widget">
-          <div class="calendar-header">
-            <button class="calendar-nav" id="prevMonth">&lt;</button>
-            <h2 id="currentMonth">August 2025</h2>
-            <button class="calendar-nav" id="nextMonth">&gt;</button>
-          </div>
-          <div class="calendar-grid" id="calendarGrid">
-            <div style="font-weight: bold; padding: 10px;">Sun</div>
-            <div style="font-weight: bold; padding: 10px;">Mon</div>
-            <div style="font-weight: bold; padding: 10px;">Tue</div>
-            <div style="font-weight: bold; padding: 10px;">Wed</div>
-            <div style="font-weight: bold; padding: 10px;">Thu</div>
-            <div style="font-weight: bold; padding: 10px;">Fri</div>
-            <div style="font-weight: bold; padding: 10px;">Sat</div>
+        <div class="modal-body">
+          <form id="editServiceForm">
+            <div class="form-group">
+              <label>Service Name</label>
+              <input type="text" id="editServiceName" readonly style="background-color: #f8f9fa;">
+            </div>
             
-        
-          </div>
-        </div>
-
-        <div class="form-container">
-          <h2 style="color: var(--background-color); margin-bottom: 20px;">Schedule Management</h2>
-          <div class="form-row">
             <div class="form-group">
-              <label>Clinic Hours (Monday-Friday)</label>
-              <div style="display: flex; gap: 10px; align-items: center;">
-                <input type="time" value="08:00" style="width: auto;">
-                <span>to</span>
-                <input type="time" value="18:00" style="width: auto;">
+              <label>Base Price (₱) *</label>
+              <input type="number" id="editBasePrice" step="0.01" min="0" required>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label>Senior Citizen Discount (%)</label>
+                <input type="number" id="editSeniorDiscount" min="0" max="100" step="0.1">
+              </div>
+              <div class="form-group">
+                <label>PWD Discount (%)</label>
+                <input type="number" id="editPwdDiscount" min="0" max="100" step="0.1">
               </div>
             </div>
+            
             <div class="form-group">
-              <label>Saturday Hours</label>
-              <div style="display: flex; gap: 10px; align-items: center;">
-                <input type="time" value="08:00" style="width: auto;">
-                <span>to</span>
-                <input type="time" value="16:00" style="width: auto;">
-              </div>
+              <label>Loyalty Discount (%)</label>
+              <input type="number" id="editLoyaltyDiscount" min="0" max="100" step="0.1">
             </div>
-          </div>
-          <div class="form-group">
-            <label>Appointment Duration (minutes)</label>
-            <select>
-              <option value="30">30 minutes</option>
-              <option value="45">45 minutes</option>
-              <option value="60">60 minutes</option>
-            </select>
-          </div>
-          <div class="form-group">
-  <label>Block Time Slots (for maintenance, etc.)</label>
-  <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-top: 10px;">
-    <div style="display: flex; gap: 5px; align-items: center;">
-      <input type="date" id="blockDate" style="width: auto;" required>
-      <input type="time" id="blockStartTime" style="width: auto;" required>
-
-      <span>to</span>
-      <input type="time" id="blockEndTime" style="width: auto;" required>
-      <input type="text" id="blockReason" placeholder="Reason" style="flex-grow: 1;" required>
-     
-    </div>
-  </div>
-</div>
-<button class="btn-primary" id="updateScheduleBtn">Update Schedule Settings</button>
-        </div>
-
-
-        <div class="data-table">
-          <table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Time Slot</th>
-                <th>Status</th>
-                <th>Reason</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody  id="blockedSlotsTableBody">
-              
-              
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Vaccination Labeling Section -->
-      <div id="vaccination-labeling" class="content-section">
-        <h1>Vaccination Labeling System</h1>
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-number">47</div>
-            <div class="stat-label">Vaccinations Today</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-number">234</div>
-            <div class="stat-label">This Month</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-number">12</div>
-            <div class="stat-label">Due This Week</div>
-          </div>
-        </div>
-
-        <div class="form-container">
-          <h2 style="color: var(--background-color); margin-bottom: 20px;">Generate Vaccination Label</h2>
-          <form id="vaccinationLabelForm">
-            <div class="form-row">
-              <div class="form-group">
-                <label>Pet Owner *</label>
-                <input type="text" name="ownerName" required>
-              </div>
-              <div class="form-group">
-                <label>Pet Name *</label>
-                <input type="text" name="petName" required>
-              </div>
+            
+            <div class="form-group">
+              <label>Notes (Optional)</label>
+              <textarea id="editNotes" rows="3" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; resize: vertical;" placeholder="Add any special notes or conditions..."></textarea>
             </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label>Vaccine Type *</label>
-                <select name="vaccineType" required>
-                  <option value="">Select Vaccine</option>
-                  <option value="rabies">Rabies</option>
-                  <option value="5in1">5-in-1 (DHPPL)</option>
-                  <option value="6in1">6-in-1 (DHPPLC)</option>
-                  <option value="bordetella">Bordetella</option>
-                  <option value="feline-3in1">Feline 3-in-1</option>
-                  <option value="feline-4in1">Feline 4-in-1</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>Batch Number *</label>
-                <input type="text" name="batchNumber" required>
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label>Vaccination Date *</label>
-                <input type="date" name="vaccinationDate" required>
-              </div>
-              <div class="form-group">
-                <label>Next Due Date *</label>
-                <input type="date" name="nextDueDate" required>
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label>Veterinarian *</label>
-                <select name="veterinarian" required>
-                  <option value="">Select Veterinarian</option>
-                  <option value="dr-rodriguez">Dr. Rodriguez</option>
-                  <option value="dr-martinez">Dr. Martinez</option>
-                  <option value="dr-santos">Dr. Santos</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>Label Quantity</label>
-                <input type="number" name="labelQuantity" value="1" min="1">
-              </div>
-            </div>
-            <button type="submit" class="btn-primary">Generate & Print Label</button>
           </form>
         </div>
+        
+        <div id="specialDiscountsList" style="margin-top: 15px;"></div>
 
-        <div class="data-table">
-          <table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Pet Owner</th>
-                <th>Pet Name</th>
-                <th>Vaccine Type</th>
-                <th>Batch #</th>
-                <th>Next Due</th>
-                <th>Veterinarian</th>
-               
-              </tr>
-            </thead>
-            <tbody id="vaccinationRecordsBody">
-
-            </tbody>
-          </table>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" id="cancelEdit">Cancel</button>
+          <button type="button" class="btn-success" id="saveServiceChanges">Save Changes</button>
+          
+        </div>
+      </div>
+    </div>
+          
+  <!-- PUBLISH NEW DISCOUNT -->
+          <div class="form-container">
+            <h2 style="color: var(--background-color); margin-bottom: 20px;">Create Special Discount</h2>
+            <form id="discountForm">
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Discount Name *</label>
+                  <input type="text" name="discountName" required>
+                </div>
+                <div class="form-group">
+                  <label>Discount Type</label>
+                  <select name="discountType">
+                    <option value="percentage">Percentage</option>
+                    <option value="fixed">Fixed Amount</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Discount Value *</label>
+                  <input type="number" name="discountValue" required>
+                </div>
+                <div class="form-group">
+                  <label>Applicable Services</label>
+                  <select name="applicableServices" multiple>
+                    <option value="all">All Services</option>
+                    <option value="consultation">Consultation</option>
+                    <option value="vaccination">Vaccination</option>
+                    <option value="surgery">Surgery</option>
+                    <option value="grooming">Grooming</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Valid From</label>
+                  <input type="date" name="validFrom">
+                </div>
+                <div class="form-group">
+                  <label>Valid Until</label>
+                  <input type="date" name="validUntil">
+                </div>
+              </div>
+              <button type="submit" class="btn-primary">Create Discount</button>
+            </form>
+          </div>
         </div>
 
-        <div class="form-container">
-          <h2 style="color: var(--background-color); margin-bottom: 20px;">Vaccination Reminders</h2>
+        <!-- Discount Modal -->
+  <div id="discountModal" class="modal hidden">
+    <div class="modal-content">
+      <h2>Select Discounts</h2>
+      <div class="discount-options">
+        <label><input type="checkbox" class="discount-option" value="pwdDiscount"> PWD</label><br>
+        <label><input type="checkbox" class="discount-option" value="seniorDiscount"> Senior</label><br>
+        <label><input type="checkbox" class="discount-option" value="loyaltyDiscount"> Loyalty</label>
+      </div>
+
+      <div class="modal-actions">
+        <button id="applyDiscountBtn" class="btn">Apply</button>
+        <button id="closeDiscountModal" class="btn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+
+        <!-- Calendar Management Section -->
+        <div id="calendar-management" class="content-section">
+          <h1>Calendar & Schedule Management</h1>
+          <div class="calendar-widget">
+            <div class="calendar-header">
+              <button class="calendar-nav" id="prevMonth">&lt;</button>
+              <h2 id="currentMonth">August 2025</h2>
+              <button class="calendar-nav" id="nextMonth">&gt;</button>
+            </div>
+            <div class="calendar-grid" id="calendarGrid">
+              <div style="font-weight: bold; padding: 10px;">Sun</div>
+              <div style="font-weight: bold; padding: 10px;">Mon</div>
+              <div style="font-weight: bold; padding: 10px;">Tue</div>
+              <div style="font-weight: bold; padding: 10px;">Wed</div>
+              <div style="font-weight: bold; padding: 10px;">Thu</div>
+              <div style="font-weight: bold; padding: 10px;">Fri</div>
+              <div style="font-weight: bold; padding: 10px;">Sat</div>
+              
+          
+            </div>
+          </div>
+
+          <div class="form-container">
+            <h2 style="color: var(--background-color); margin-bottom: 20px;">Schedule Management</h2>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Clinic Hours (Monday-Friday)</label>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                  <input type="time" value="08:00" style="width: auto;">
+                  <span>to</span>
+                  <input type="time" value="18:00" style="width: auto;">
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Saturday Hours</label>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                  <input type="time" value="08:00" style="width: auto;">
+                  <span>to</span>
+                  <input type="time" value="16:00" style="width: auto;">
+                </div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Appointment Duration (minutes)</label>
+              <select>
+                <option value="30">30 minutes</option>
+                <option value="45">45 minutes</option>
+                <option value="60">60 minutes</option>
+              </select>
+            </div>
+            <div class="form-group">
+    <label>Block Time Slots (for maintenance, etc.)</label>
+    <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-top: 10px;">
+      <div style="display: flex; gap: 5px; align-items: center;">
+        <input type="date" id="blockDate" style="width: auto;" required>
+        <input type="time" id="blockStartTime" style="width: auto;" required>
+
+        <span>to</span>
+        <input type="time" id="blockEndTime" style="width: auto;" required>
+        <input type="text" id="blockReason" placeholder="Reason" style="flex-grow: 1;" required>
+      
+      </div>
+    </div>
+  </div>
+  <button class="btn-primary" id="updateScheduleBtn">Update Schedule Settings</button>
+          </div>
+
+
+          <div class="data-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Time Slot</th>
+                  <th>Status</th>
+                  <th>Reason</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody  id="blockedSlotsTableBody">
+                
+                
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Vaccination Labeling Section -->
+        <div id="vaccination-labeling" class="content-section">
+          <h1>Vaccination Labeling System</h1>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-number">47</div>
+              <div class="stat-label">Vaccinations Today</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number">234</div>
+              <div class="stat-label">This Month</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number">12</div>
+              <div class="stat-label">Due This Week</div>
+            </div>
+          </div>
+
+          <div class="form-container">
+            <h2 style="color: var(--background-color); margin-bottom: 20px;">Generate Vaccination Label</h2>
+            <form id="vaccinationLabelForm">
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Pet Owner *</label>
+                  <input type="text" name="ownerName" required>
+                </div>
+                <div class="form-group">
+                  <label>Pet Name *</label>
+                  <input type="text" name="petName" required>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Vaccine Type *</label>
+                  <select name="vaccineType" required>
+                    <option value="">Select Vaccine</option>
+                    <option value="rabies">Rabies</option>
+                    <option value="5in1">5-in-1 (DHPPL)</option>
+                    <option value="6in1">6-in-1 (DHPPLC)</option>
+                    <option value="bordetella">Bordetella</option>
+                    <option value="feline-3in1">Feline 3-in-1</option>
+                    <option value="feline-4in1">Feline 4-in-1</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Batch Number *</label>
+                  <input type="text" name="batchNumber" required>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Vaccination Date *</label>
+                  <input type="date" name="vaccinationDate" required>
+                </div>
+                <div class="form-group">
+                  <label>Next Due Date *</label>
+                  <input type="date" name="nextDueDate" required>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Veterinarian *</label>
+                  <select name="veterinarian" required>
+                    <option value="">Select Veterinarian</option>
+                    <option value="dr-rodriguez">Dr. Rodriguez</option>
+                    <option value="dr-martinez">Dr. Martinez</option>
+                    <option value="dr-santos">Dr. Santos</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Label Quantity</label>
+                  <input type="number" name="labelQuantity" value="1" min="1">
+                </div>
+              </div>
+              <button type="submit" class="btn-primary">Generate & Print Label</button>
+            </form>
+          </div>
+
           <div class="data-table">
             <table>
               <thead>
                 <tr>
                   <th>Pet Owner</th>
                   <th>Pet Name</th>
-                  <th>Vaccine Due</th>
-                  <th>Due Date</th>
-                  <th>Days Overdue</th>
+                  <th>Vaccine Type</th>
+                  <th>Batch #</th>
+                  <th>Date</th>
+                  <th>Next Due</th>
+                  <th>Veterinarian</th>
                 
-                  <th>Actions</th>
                 </tr>
               </thead>
-              <tbody id="RemindersBody">
-                
+              <tbody id="vaccinationRecordsBody">
+
               </tbody>
             </table>
           </div>
-        </div>
-      </div>
-         <!-- Pet Management Section -->
-  <div id="pet-management" class="content-section">
-    <h1>Pet Management</h1>
-    
 
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-number" id="totalPetsCount">0</div>
-        <div class="stat-label">Total Pets Registered</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-number" id="activePetsCount">0</div>
-        <div class="stat-label">Active Pets</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-number" id="recentPetsCount">0</div>
-        <div class="stat-label">New Pets This Month</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-number" id="upcomingAppointmentsCount">0</div>
-        <div class="stat-label">Upcoming Appointments</div>
-      </div>
-    </div>
+          <div class="form-container">
+            <h2 style="color: var(--background-color); margin-bottom: 20px;">Vaccination Reminders</h2>
+            <div class="data-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Pet Owner</th>
+                    <th>Pet Name</th>
+                    <th>Vaccine Due</th>
+                    <th>Due Date</th>
+                    <th>Days Overdue</th>
+                  
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="RemindersBody">
+                  
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+          <!-- Pet Management Section -->
+    <div id="pet-management" class="content-section">
+      <h1>Pet Management</h1>
+      
 
-    <!-- Add New Pet Form -->
-    <div class="form-container">
-      <h2 style="color: var(--background-color); margin-bottom: 20px;">Add New Pet</h2>
-      <form id="addPetForm">
-        <div class="form-row">
-          <div class="form-group">
-            <label>Owner Name *</label>
-            <input type="text" name="ownerName" required>
-          </div>
-          <div class="form-group">
-            <label>Owner Contact</label>
-            <input type="tel" name="ownerContact">
-          </div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-number" id="totalPetsCount">0</div>
+          <div class="stat-label">Total Pets Registered</div>
         </div>
-        
-        <div class="form-row">
-          <div class="form-group">
-            <label>Pet Name *</label>
-            <input type="text" name="petName" required>
-          </div>
-          <div class="form-group">
-            <label>Species *</label>
-            <select name="species" required>
-              <option value="">Select Species</option>
-              <option value="Dog">Dog</option>
-              <option value="Cat">Cat</option>
-              <option value="Bird">Bird</option>
-              <option value="Rabbit">Rabbit</option>
-              <option value="Hamster">Hamster</option>
-              <option value="Guinea Pig">Guinea Pig</option>
-              <option value="Fish">Fish</option>
-              <option value="Other">Other</option>
-            </select>
-          </div>
+        <div class="stat-card">
+          <div class="stat-number" id="activePetsCount">0</div>
+          <div class="stat-label">Active Pets</div>
         </div>
-        
-        <div class="form-row">
-          <div class="form-group">
-            <label>Breed</label>
-            <input type="text" name="breed">
-          </div>
-          <div class="form-group">
-            <label>Age</label>
-            <input type="text" name="age" placeholder="e.g., 2 years, 6 months">
-          </div>
+        <div class="stat-card">
+          <div class="stat-number" id="recentPetsCount">0</div>
+          <div class="stat-label">New Pets This Month</div>
         </div>
-        
-        <div class="form-row">
-          <div class="form-group">
-            <label>Sex</label>
-            <select name="sex">
-              <option value="">Select Sex</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Weight (kg)</label>
-            <input type="number" name="weight" step="0.1" min="0">
-          </div>
+        <div class="stat-card">
+          <div class="stat-number" id="upcomingAppointmentsCount">0</div>
+          <div class="stat-label">Upcoming Appointments</div>
         </div>
-        
-        <div class="form-row">
-          <div class="form-group">
-            <label>Size</label>
-            <select name="size">
-              <option value="">Select Size</option>
-              <option value="Small">Small</option>
-              <option value="Medium">Medium</option>
-              <option value="Large">Large</option>
-              <option value="Extra Large">Extra Large</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Color</label>
-            <input type="text" name="color" placeholder="Primary color/markings">
-          </div>
-        </div>
-        
-        <div class="form-group">
-          <label>Medical History</label>
-          <textarea name="medicalHistory" placeholder="Any known medical conditions, allergies, or previous treatments..."></textarea>
-        </div>
-        
-        <div class="form-group">
-          <label>Special Notes</label>
-          <textarea name="specialNotes" placeholder="Behavioral notes, special care instructions, etc..."></textarea>
-        </div>
-        
-        <button type="submit" class="btn-primary" style="padding: 15px 30px; font-size: 16px;">
-          <i class="fa-solid fa-plus"></i> Add Pet
-        </button>
-      </form>
-    </div>
+      </div>
 
-    <!-- Search and Filter -->
-    <div class="search-container">
-      <div class="search-group">
-        <label>Search by Pet Name</label>
-        <input type="text" id="searchPetName" placeholder="Enter pet name...">
-      </div>
-      <div class="search-group">
-        <label>Search by Owner</label>
-        <input type="text" id="searchOwnerName" placeholder="Enter owner name...">
-      </div>
-      <div class="search-group">
-        <label>Filter by Species</label>
-        <select id="filterSpecies">
-          <option value="">All Species</option>
-          <option value="Dog">Dog</option>
-          <option value="Cat">Cat</option>
-          <option value="Bird">Bird</option>
-          <option value="Rabbit">Rabbit</option>
-          <option value="Other">Other</option>
-        </select>
-      </div>
-      <div class="search-group">
-        <button class="btn-primary" id="searchBtn">
-          <i class="fa-solid fa-magnifying-glass"></i> Search
-        </button>
-        <button class="btn-secondary" id="clearSearchBtn">Clear</button>
-      </div>
-    </div>
-
-    <!-- Pets Table -->
-    <div class="data-table">
-      <table>
-        <thead>
-          <tr>
-            <th>Pet Name</th>
-            <th>Species</th>
-            <th>Breed</th>
-            <th>Age</th>
-            <th>Owner</th>
-            <th>Contact</th>
-            <th>Last Visit</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="petsTableBody">
-          <!-- Pet data will be populated here -->
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- Edit Pet Modal -->
-  <div id="editPetModal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2>Edit Pet Information</h2>
-        <span class="close">&times;</span>
-      </div>
-      <div class="modal-body">
-        <form id="editPetForm">
-          <input type="hidden" id="editPetId">
-          
+      <!-- Add New Pet Form -->
+      <div class="form-container">
+        <h2 style="color: var(--background-color); margin-bottom: 20px;">Add New Pet</h2>
+        <form id="addPetForm">
           <div class="form-row">
             <div class="form-group">
               <label>Owner Name *</label>
-              <input type="text" id="editOwnerName" required>
+              <input type="text" name="ownerName" required>
             </div>
             <div class="form-group">
               <label>Owner Contact</label>
-              <input type="tel" id="editOwnerContact">
+              <input type="tel" name="ownerContact">
             </div>
           </div>
           
           <div class="form-row">
             <div class="form-group">
               <label>Pet Name *</label>
-              <input type="text" id="editPetName" required>
+              <input type="text" name="petName" required>
             </div>
             <div class="form-group">
               <label>Species *</label>
-              <select id="editSpecies" required>
+              <select name="species" required>
                 <option value="">Select Species</option>
                 <option value="Dog">Dog</option>
                 <option value="Cat">Cat</option>
@@ -1215,18 +1100,18 @@
           <div class="form-row">
             <div class="form-group">
               <label>Breed</label>
-              <input type="text" id="editBreed">
+              <input type="text" name="breed">
             </div>
             <div class="form-group">
               <label>Age</label>
-              <input type="text" id="editAge">
+              <input type="text" name="age" placeholder="e.g., 2 years, 6 months">
             </div>
           </div>
           
           <div class="form-row">
             <div class="form-group">
               <label>Sex</label>
-              <select id="editSex">
+              <select name="sex">
                 <option value="">Select Sex</option>
                 <option value="Male">Male</option>
                 <option value="Female">Female</option>
@@ -1234,14 +1119,14 @@
             </div>
             <div class="form-group">
               <label>Weight (kg)</label>
-              <input type="number" id="editWeight" step="0.1" min="0">
+              <input type="number" name="weight" step="0.1" min="0">
             </div>
           </div>
           
           <div class="form-row">
             <div class="form-group">
               <label>Size</label>
-              <select id="editSize">
+              <select name="size">
                 <option value="">Select Size</option>
                 <option value="Small">Small</option>
                 <option value="Medium">Medium</option>
@@ -1251,54 +1136,208 @@
             </div>
             <div class="form-group">
               <label>Color</label>
-              <input type="text" id="editColor">
+              <input type="text" name="color" placeholder="Primary color/markings">
             </div>
           </div>
           
           <div class="form-group">
             <label>Medical History</label>
-            <textarea id="editMedicalHistory"></textarea>
+            <textarea name="medicalHistory" placeholder="Any known medical conditions, allergies, or previous treatments..."></textarea>
           </div>
           
           <div class="form-group">
             <label>Special Notes</label>
-            <textarea id="editSpecialNotes"></textarea>
+            <textarea name="specialNotes" placeholder="Behavioral notes, special care instructions, etc..."></textarea>
           </div>
+          
+          <button type="submit" class="btn-primary" style="padding: 15px 30px; font-size: 16px;">
+            <i class="fa-solid fa-plus"></i> Add Pet
+          </button>
         </form>
       </div>
-      <div class="modal-footer">
-        <button type="button" class="btn-secondary" id="cancelEditPet">Cancel</button>
-        <button type="button" class="btn-success" id="savePetChanges">Save Changes</button>
+
+      <!-- Search and Filter -->
+      <div class="search-container">
+        <div class="search-group">
+          <label>Search by Pet Name</label>
+          <input type="text" id="searchPetName" placeholder="Enter pet name...">
+        </div>
+        <div class="search-group">
+          <label>Search by Owner</label>
+          <input type="text" id="searchOwnerName" placeholder="Enter owner name...">
+        </div>
+        <div class="search-group">
+          <label>Filter by Species</label>
+          <select id="filterSpecies">
+            <option value="">All Species</option>
+            <option value="Dog">Dog</option>
+            <option value="Cat">Cat</option>
+            <option value="Bird">Bird</option>
+            <option value="Rabbit">Rabbit</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="search-group">
+          <button class="btn-primary" id="searchBtn">
+            <i class="fa-solid fa-magnifying-glass"></i> Search
+          </button>
+          <button class="btn-secondary" id="clearSearchBtn">Clear</button>
+        </div>
+      </div>
+
+      <!-- Pets Table -->
+      <div class="data-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Pet Name</th>
+              <th>Species</th>
+              <th>Breed</th>
+              <th>Age</th>
+              <th>Owner</th>
+              <th>Contact</th>
+              <th>Last Visit</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="petsTableBody">
+            <!-- Pet data will be populated here -->
+          </tbody>
+        </table>
       </div>
     </div>
-  </div>
 
-  <!-- View Pet Details Modal -->
-  <div id="viewPetModal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2>Pet Details</h2>
-        <span class="close">&times;</span>
-      </div>
-      <div class="modal-body" id="petDetailsContent">
-        <!-- Pet details will be populated here -->
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn-secondary" id="closePetDetails">Close</button>
+    <!-- Edit Pet Modal -->
+    <div id="editPetModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Edit Pet Information</h2>
+          <span class="close">&times;</span>
+        </div>
+        <div class="modal-body">
+          <form id="editPetForm">
+            <input type="hidden" id="editPetId">
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label>Owner Name *</label>
+                <input type="text" id="editOwnerName" required>
+              </div>
+              <div class="form-group">
+                <label>Owner Contact</label>
+                <input type="tel" id="editOwnerContact">
+              </div>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label>Pet Name *</label>
+                <input type="text" id="editPetName" required>
+              </div>
+              <div class="form-group">
+                <label>Species *</label>
+                <select id="editSpecies" required>
+                  <option value="">Select Species</option>
+                  <option value="Dog">Dog</option>
+                  <option value="Cat">Cat</option>
+                  <option value="Bird">Bird</option>
+                  <option value="Rabbit">Rabbit</option>
+                  <option value="Hamster">Hamster</option>
+                  <option value="Guinea Pig">Guinea Pig</option>
+                  <option value="Fish">Fish</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label>Breed</label>
+                <input type="text" id="editBreed">
+              </div>
+              <div class="form-group">
+                <label>Age</label>
+                <input type="text" id="editAge">
+              </div>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label>Sex</label>
+                <select id="editSex">
+                  <option value="">Select Sex</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Weight (kg)</label>
+                <input type="number" id="editWeight" step="0.1" min="0">
+              </div>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label>Size</label>
+                <select id="editSize">
+                  <option value="">Select Size</option>
+                  <option value="Small">Small</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Large">Large</option>
+                  <option value="Extra Large">Extra Large</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Color</label>
+                <input type="text" id="editColor">
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label>Medical History</label>
+              <textarea id="editMedicalHistory"></textarea>
+            </div>
+            
+            <div class="form-group">
+              <label>Special Notes</label>
+              <textarea id="editSpecialNotes"></textarea>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" id="cancelEditPet">Cancel</button>
+          <button type="button" class="btn-success" id="savePetChanges">Save Changes</button>
+        </div>
       </div>
     </div>
-  </div>
 
+    <!-- View Pet Details Modal -->
+    <div id="viewPetModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Pet Details</h2>
+          <span class="close">&times;</span>
+        </div>
+        <div class="modal-body" id="petDetailsContent">
+          <!-- Pet details will be populated here -->
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" id="closePetDetails">Close</button>
+        </div>
+      </div>
     </div>
-  </div>
+
+      </div>
+    </div>
 
 
-    
       
+        
 
+  <script src="notificationdatabase.js"></script>
+    <script src="/Dashboard/admin/admin.js" defer></script>
+  <script type="module" src="./javascript.admin/admindatabase.js" defer></script>
 
-  <script src="/Dashboard/admin/admin.js" defer></script>
-<script type="module" src="./javascript.admin/admindatabase.js" defer></script>
-
-</body>
-</html>
+  </body>
+  </html>

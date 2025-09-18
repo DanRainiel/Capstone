@@ -72,6 +72,8 @@
     sessionStorage.setItem("role", "customer");
     sessionStorage.setItem("userName", data.name);
     
+    localStorage.setItem("currentUserId", docItem.id);
+    
     await logActivity(docItem.id, "Logged In", `User ${data.name} logged in.`);
     sessionStorage.setItem("welcomeMessage", `Welcome back, ${data.name}!`);
 
@@ -96,6 +98,8 @@ for (const docItem of adminSnapshot.docs) {
     sessionStorage.setItem("role", "admin");
     sessionStorage.setItem("userName", data.name);
     sessionStorage.setItem("welcomeMessage", `Welcome back, Admin ${data.name}!`);
+
+localStorage.setItem("currentUserId", docItem.id);
 
     Swal.fire({
       icon: "success",
@@ -124,6 +128,8 @@ for (const docItem of staffSnapshot.docs) {
     sessionStorage.setItem("role", "staff");
     sessionStorage.setItem("userName", data.name);
     sessionStorage.setItem("welcomeMessage", `Welcome back, Staff ${data.name}!`);
+
+    localStorage.setItem("currentUserId", docItem.id);
 
     Swal.fire({
       icon: "success",
@@ -238,6 +244,8 @@ Swal.fire({
       sessionStorage.setItem("role", "customer");
       sessionStorage.setItem("userName", name);
       sessionStorage.setItem("welcomeMessage", `Welcome, ${name}!`);
+
+      localStorage.setItem("currentUserId", docItem.id);
 
       setTimeout(() => {
         location.replace("../Dashboard/customer/customer.html");

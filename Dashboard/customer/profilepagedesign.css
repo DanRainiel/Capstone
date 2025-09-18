@@ -92,15 +92,42 @@ body {
   display: flex;
   margin: 50px 10px;
   margin-top: 100px;
-  gap: 5px; /* space between left and right columns */
+  gap: 10px;
+  
+  max-height: 400px;  /* adjust as you like */
+  overflow-y: auto;
 }
+ /* space between left and right columns */
+
 .pets-list {
   flex: 1;
+  
   display: flex;
   flex-direction: column;
-  gap: 15px; /* bigger space between cards */
+  gap: 15px;
+    max-height: 2000px;  /* adjust height as needed */
+  overflow-y: auto;   /* adds vertical scrollbar if content exceeds height */
+  overflow-x: hidden; /* hides horizontal scrollbar */
+  padding-right: 5px;  /* bigger space between cards */
 }
 
+.pets-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.pets-list::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+.pets-list::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+.pets-list, 
+.account {
+  overscroll-behavior: contain; /* 🚫 prevent scroll chaining */
+}
 
 
 
@@ -190,6 +217,7 @@ body {
 
 /* Form styling: shared by account and pet form */
 .account {
+  
   flex: 2;
   margin-left: 10px;
   background-color: var(--white);
@@ -197,6 +225,7 @@ body {
   border-radius: 5px;
   height: max-content;
 }
+
 
 .account-header {
   display: flex;
