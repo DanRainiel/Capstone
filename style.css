@@ -591,25 +591,29 @@ section:nth-child(even){
 }
 
 
+/* Simple priority badge with bigger font */
+.priority {
+  display: inline-block;
+  padding: 4px 8px;       /* slightly bigger padding */
+  border-radius: 4px;
+  font-size: 1rem;        /* bigger font */
+  font-weight: bold;
+  color: #fff;
+  margin-left: 5px;
+}
 
+/* Color based on priority */
+.priority.urgent {
+  background-color: #e74c3c; /* red */
+}
 
+.priority.important {
+  background-color: #f39c12; /* orange */
+}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+.priority.normal {
+  background-color: #3498db; /* blue */
+}
 
 
 

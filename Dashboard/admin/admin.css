@@ -936,23 +936,24 @@
   justify-content: space-between;
 }
 
-
-
-.checkbox-container {
+.checkbox-wrapper {
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+  flex-direction: column;
+  gap: 5px; /* spacing between checkboxes */
+  max-height: 200px; /* optional scroll height */
+  overflow-y: auto; /* enable vertical scrolling if needed */
+  background-color: #f0f0f0; /* light grey background */
   padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  background: #f9f9f9;
+  border-radius: 5px; /* optional rounded corners */
 }
 
-.checkbox-container label {
+.applicable-checkbox {
   display: flex;
-  align-items: center;
-  gap: 5px;
+  align-items: center; /* vertically centers checkbox and text */
+  gap: 8px; /* space between checkbox and text */
+  font-size: 16px; /* optional for readability */
 }
+
 
 
     @media (max-width: 991px) {

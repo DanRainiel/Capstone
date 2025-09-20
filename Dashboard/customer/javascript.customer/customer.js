@@ -1374,7 +1374,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 
-
 document.addEventListener("DOMContentLoaded", function () {
   const cardsContainer = document.querySelector('.cards');
   const boxesContainer = document.querySelector('#news .box-container');
@@ -1382,22 +1381,25 @@ document.addEventListener("DOMContentLoaded", function () {
   if (!newsContainer) return;
 
   const MODE = cardsContainer ? 'cards' : 'boxes'; // render style
-
   const PLACEHOLDER_IMAGE = "/images/news2.webp"; 
   const defaultNews = {
     title: "NO NEWS AVAILABLE",
     content: "Stay tuned for updates!",
     image: PLACEHOLDER_IMAGE,
-    publishDate: ""
+    publishDate: "",
+    priority: "normal"
   };
 
-  // ✅ Modified: filter only published + sort latest first
+  // ✅ Sort by priority first, then newest
+  const priorityOrder = { urgent: 1, important: 2, normal: 3 };
   function getTop3Published(newsList) {
     let published = (newsList || []).filter(n => n.status === 'published'); // only published
     published.sort((a, b) => {
+      const prioDiff = priorityOrder[a.priority] - priorityOrder[b.priority];
+      if (prioDiff !== 0) return prioDiff;
       const da = a.publishDate ? new Date(a.publishDate).getTime() : 0;
       const db = b.publishDate ? new Date(b.publishDate).getTime() : 0;
-      return db - da;
+      return db - da; // newest first
     });
     return published.slice(0, 3);
   }
@@ -1406,7 +1408,6 @@ document.addEventListener("DOMContentLoaded", function () {
     const stored = JSON.parse(localStorage.getItem('newsList')) || [];
     let list = getTop3Published(stored);
 
-    // ✅ Modified: always keep 3 slots filled
     while (list.length < 3) {
       list.push(defaultNews);
     }
@@ -1416,6 +1417,7 @@ document.addEventListener("DOMContentLoaded", function () {
     list.forEach(news => {
       const imgSrc = news.image || PLACEHOLDER_IMAGE;
       const dateText = news.publishDate ? new Date(news.publishDate).toLocaleDateString() : '';
+      const priorityText = news.priority ? news.priority.charAt(0).toUpperCase() + news.priority.slice(1) : '';
 
       if (MODE === 'cards') {
         const card = document.createElement('div');
@@ -1427,6 +1429,7 @@ document.addEventListener("DOMContentLoaded", function () {
           <div class="content">
             <h4>${news.title}</h4>
             <p>${news.content}</p>
+            <p><b>Priority:</b> ${priorityText}</p>
           </div>
           <div class="posted-date">
             <p>${dateText}</p>
@@ -1444,6 +1447,7 @@ document.addEventListener("DOMContentLoaded", function () {
             <div class="icons">
               <a href="#"><i class="fa-solid fa-calendar"></i> ${dateText}</a>
               <a href="#"><i class="fas fa-user"></i> By admin</a>
+              <span class="priority ${news.priority}">${priorityText}</span>
             </div>
             <h3>${news.title}</h3>
             <p>${news.content}</p>
@@ -1461,6 +1465,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (event.key === 'newsList') renderNews();
   });
 });
+
 
 
 

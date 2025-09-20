@@ -15,7 +15,8 @@
       setDoc,  
       onSnapshot,
       getDoc,
-      deleteDoc,  // ✅ needed for changing user status
+      deleteDoc,
+      writeBatch,  // ✅ needed for changing user status
       doc      
     } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
@@ -971,24 +972,27 @@ if (walkInTable && type === "walkin") {
           appointmentTable.appendChild(fullRow);
         }
 
-        // History table
-        if (historyTable) {
-          const totalAmount = data.totalAmount || 0;
-          const normalizedStatus = (status || "Pending").toLowerCase();
+      // History table
+if (historyTable) {
+  const totalAmount = data.totalAmount || 0;
+  const normalizedStatus = (status || "Pending").toLowerCase();
 
-          const historyRow = document.createElement("tr");
-          historyRow.innerHTML = `
-            <td>${displayData.date}</td>
-            <td>${displayData.time}</td>
-            <td>${displayData.name}</td>
-            <td>${displayData.petName}</td>
-            <td>${displayData.service}</td>
-            <td>${totalAmount}</td>
-            <td class="status ${normalizedStatus}">${status || "Pending"}</td>
-          `;
-          historyTable.appendChild(historyRow);
-        }
-      };
+  // Combine service + serviceType (if it exists)
+  const serviceDisplay = [displayData.service, data.serviceType].filter(Boolean).join(" - ");
+
+  const historyRow = document.createElement("tr");
+  historyRow.innerHTML = `
+    <td>${displayData.date}</td>
+    <td>${displayData.time}</td>
+    <td>${displayData.name}</td>
+    <td>${displayData.petName}</td>
+    <td>${serviceDisplay}</td>
+    <td>${totalAmount}</td>
+    <td class="status ${normalizedStatus}">${status || "Pending"}</td>
+  `;
+  historyTable.appendChild(historyRow);
+}
+    }
 
 // Collect all appointments first
 const allAppointments = [];
@@ -1580,6 +1584,14 @@ document.addEventListener("DOMContentLoaded", function () {
     localStorage.setItem('newsList', JSON.stringify(newsList));
   }
 
+  function sortByPriority(newsList) {
+  const priorityOrder = { urgent: 1, important: 2, normal: 3 };
+  return newsList.sort((a, b) => {
+    return priorityOrder[a.priority] - priorityOrder[b.priority];
+  });
+}
+
+
   // Render the table from localStorage
   function renderNewsTable() {
     let newsList = JSON.parse(localStorage.getItem('newsList')) || [];
@@ -1773,64 +1785,77 @@ if (btn.classList.contains('delete-btn')) {
         });
       } 
 
-      // --- VIEW ---
-      else if (btn.classList.contains('view-btn')) {
-        Swal.fire({
-          title: newsItem.title,
-          html: `
-            <p><b>Category:</b> ${capitalize(newsItem.category)}</p>
-            <p><b>Status:</b> ${newsItem.status === 'draft' ? 'Draft' : 'Published'}</p>
-            <p><b>Date:</b> ${newsItem.publishDate ? new Date(newsItem.publishDate).toLocaleDateString() : '-'}</p>
-            <hr>
-            <p>${newsItem.content || 'No content available.'}</p>
-          `,
-          icon: "info",
-          confirmButtonText: "Close"
-        });
-      }
+     else if (btn.classList.contains('view-btn')) {
+  Swal.fire({
+    title: newsItem.title,
+    html: `
+      <p><b>Category:</b> ${capitalize(newsItem.category)}</p>
+      <p><b>Priority:</b> ${capitalize(newsItem.priority)}</p>
+      <p><b>Status:</b> ${newsItem.status === 'draft' ? 'Draft' : 'Published'}</p>
+      <p><b>Date:</b> ${newsItem.publishDate ? new Date(newsItem.publishDate).toLocaleDateString() : '-'}</p>
+      <hr>
+      <p>${newsItem.content || 'No content available.'}</p>
+    `,
+    icon: "info",
+    confirmButtonText: "Close"
+  });
+}
+
     });
   }
 
   // Initial render of table
   renderNewsTable();
 
-    // --- CUSTOMER PAGE LOGIC (unchanged) ---
-    const newsContainer = document.querySelector('.cards');
-    if (newsContainer) {
-      const newsList = JSON.parse(localStorage.getItem('newsList')) || [];
-      newsContainer.innerHTML = '';
+  // --- CUSTOMER PAGE LOGIC (updated with priority) ---
+const newsContainer = document.querySelector('.cards');
+if (newsContainer) {
+  const newsList = JSON.parse(localStorage.getItem('newsList')) || [];
 
-      newsList.forEach(news => {
-        if (news.status === 'published') { // only show published news
-          const card = document.createElement('div');
-          card.classList.add('card');
-          card.innerHTML = `
-            <div class="image-section">
-              <img src="${news.image}" alt="${news.title}">
-            </div>
-            <div class="content">
-              <h4>${news.title}</h4>
-              <p>${news.content}</p>
-            </div>
-            <div class="posted-date">
-              <p>${news.publishDate ? new Date(news.publishDate).toLocaleDateString() : ''}</p>
-            </div>
-          `;
-          newsContainer.appendChild(card);
-        }
-      });
-    }
+  // Only published news & sort by priority first
+  const priorityOrder = { urgent: 1, important: 2, normal: 3 };
+  const publishedNews = newsList
+    .filter(news => news.status === 'published')
+    .sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
 
-  // --- INDEX PAGE LOGIC ---
+  newsContainer.innerHTML = '';
+
+  publishedNews.forEach(news => {
+    const card = document.createElement('div');
+    card.classList.add('card');
+    card.innerHTML = `
+      <div class="image-section">
+        <img src="${news.image}" alt="${news.title}">
+      </div>
+      <div class="content">
+        <h4>${news.title}</h4>
+        <p>${news.content}</p>
+        <p><b>Priority:</b> ${news.priority.charAt(0).toUpperCase() + news.priority.slice(1)}</p>
+      </div>
+      <div class="posted-date">
+        <p>${news.publishDate ? new Date(news.publishDate).toLocaleDateString() : ''}</p>
+      </div>
+    `;
+    newsContainer.appendChild(card);
+  });
+}
+
+
+ // --- INDEX PAGE LOGIC (updated with priority) ---
 function renderIndexNews() {
   const newsContainer = document.querySelector('#news .box-container');
   if (!newsContainer) return; // stop if not on index
 
   const newsList = JSON.parse(localStorage.getItem('newsList')) || [];
 
-  // Only published & sort newest first
+  // Only published news
   let publishedNews = newsList.filter(n => n.status === 'published');
-  publishedNews.sort((a, b) => new Date(b.publishDate) - new Date(a.publishDate));
+
+  // Sort by priority (urgent → important → normal) then by newest date
+  const priorityOrder = { urgent: 1, important: 2, normal: 3 };
+  publishedNews = publishedNews
+    .sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority])
+    .sort((a, b) => new Date(b.publishDate) - new Date(a.publishDate));
 
   // Take top 3 only
   publishedNews = publishedNews.slice(0, 3);
@@ -1850,6 +1875,7 @@ function renderIndexNews() {
             ${news.publishDate ? new Date(news.publishDate).toLocaleDateString() : ''}
           </a>
           <a href="#"><i class="fas fa-user"></i> By admin</a>
+          <span class="priority ${news.priority}">${news.priority.charAt(0).toUpperCase() + news.priority.slice(1)}</span>
         </div>
         <h3>${news.title}</h3>
         <p>${news.content}</p>
@@ -2671,7 +2697,6 @@ function daysFromToday(dueLike) {
 }
 
 
-
 //SALES REPORT//
 document.addEventListener("DOMContentLoaded", () => {
   const generateBtn = document.getElementById("generateReportBtn");
@@ -2682,8 +2707,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const reportTableBody = document.getElementById("reportTableBody");
 
 
-  // --- Update revenue cards from SalesReport ---
-async function updateRevenueCards(category = "all") {
+ // --- Update revenue cards from SalesReport ---
+async function updateRevenueCards(category = "all", reportType = "all") {
   try {
     const snapshot = await getDocs(collection(db, "SalesReport"));
 
@@ -2694,6 +2719,8 @@ async function updateRevenueCards(category = "all") {
     const today = new Date();
     const startOfWeek = new Date(today);
     startOfWeek.setDate(today.getDate() - today.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
+
     const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
     snapshot.forEach(docSnap => {
@@ -2709,7 +2736,12 @@ async function updateRevenueCards(category = "all") {
       if (createdAt >= startOfMonth) monthRevenue += amount;
     });
 
-    // ✅ Update cards by ID instead of nth-child
+    if (reportType === "daily") {
+      // Only today revenue
+      weekRevenue = 0;
+      monthRevenue = 0;
+    }
+
     document.getElementById("todayRevenue").textContent = `₱${todayRevenue.toLocaleString()}`;
     document.getElementById("weekRevenue").textContent = `₱${weekRevenue.toLocaleString()}`;
     document.getElementById("monthRevenue").textContent = `₱${monthRevenue.toLocaleString()}`;
@@ -2730,30 +2762,11 @@ generateBtn.addEventListener("click", async () => {
     let totalServices = 0;
     const rows = [];
 
-    // --- Base queries ---
-    let appointmentQuery = query(
-      collection(db, "Appointment"),
-      where("status", "==", "Completed")
-    );
-    let walkInQuery = query(
-      collection(db, "WalkInAppointment"),
-      where("status", "==", "Completed")
-    );
-
-    if (category.toLowerCase() !== "all") {
-      appointmentQuery = query(appointmentQuery, where("service", "==", category));
-      walkInQuery = query(walkInQuery, where("service", "==", category));
-    }
-
-    const [apptSnapshot, walkInSnapshot] = await Promise.all([
-      getDocs(appointmentQuery),
-      getDocs(walkInQuery),
-    ]);
-
-    // --- Date ranges based on report type ---
     const today = new Date();
+    today.setHours(0, 0, 0, 0); // normalize for comparisons
     let startDate = null;
-    let endDate = new Date(today.setHours(23, 59, 59, 999));
+    let endDate = new Date();
+    endDate.setHours(23, 59, 59, 999);
 
     switch (reportType) {
       case "daily":
@@ -2763,14 +2776,9 @@ generateBtn.addEventListener("click", async () => {
 
       case "weekly":
         startDate = new Date();
-        startDate.setDate(today.getDate() - today.getDay()); // start of week (Sunday)
+        startDate.setDate(today.getDate() - 6); // last 7 days
         startDate.setHours(0, 0, 0, 0);
-        break;case "weekly":
-  startDate = new Date();
-  startDate.setDate(today.getDate() - 6); // ⬅️ last 7 days including today
-  startDate.setHours(0, 0, 0, 0);
-  break;
-
+        break;
 
       case "monthly":
         startDate = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -2786,22 +2794,58 @@ generateBtn.addEventListener("click", async () => {
         break;
     }
 
-    const processDoc = (docSnap, type) => {
+    // --- Queries ---
+let appointmentQuery = query(
+  collection(db, "Appointment"),
+  where("status", "==", "Completed")
+);
+
+let walkInQuery = query(
+  collection(db, "WalkInAppointment"),
+  where("status", "==", "Completed")
+);
+
+if (category.toLowerCase() !== "all") {
+  // Appointment
+  appointmentQuery = query(
+    appointmentQuery,
+    where("service", "==", category.toLowerCase())
+  );
+
+  // Walk-in
+  walkInQuery = query(
+    walkInQuery,
+    where("serviceType", "==", category.toLowerCase())
+  );
+}
+
+
+
+    const [apptSnapshot, walkInSnapshot] = await Promise.all([
+      getDocs(appointmentQuery),
+      getDocs(walkInQuery),
+    ]);
+
+  const processDoc = (docSnap, type) => {
   const data = docSnap.data();
 
+  // ✅ Skip if not completed
+  if ((data.status || "").toLowerCase() !== "completed") return;
+
   let amount = Number((data.totalAmount || "0").toString().replace(/[^\d.-]/g, "")) || 0;
+
   const saleDate = data.createdAt?.toDate
     ? data.createdAt.toDate()
-    : (data.date ? new Date(data.date) : null);
+    : (data.timestamp ? new Date(data.timestamp) : new Date());
 
-  // ⏳ Skip invalid or missing dates
   if (!saleDate) return;
-
   if (startDate && saleDate < startDate) return;
   if (endDate && saleDate > endDate) return;
 
-  const serviceType =
-    type === "walkin" ? data.serviceType || "Walk-In" : data.service || "Appointment";
+  const serviceType = type === "walkin" ? data.serviceType || "Walk-In" : data.service || "Appointment";
+
+  // ✅ Skip if category filter is applied
+  if (category.toLowerCase() !== "all" && serviceType.toLowerCase() !== category.toLowerCase()) return;
 
   totalRevenue += amount;
   totalServices += 1;
@@ -2819,7 +2863,13 @@ generateBtn.addEventListener("click", async () => {
     apptSnapshot.forEach(doc => processDoc(doc, "appointment"));
     walkInSnapshot.forEach(doc => processDoc(doc, "walkin"));
 
-    // --- Save combined report to Firestore ---
+    // --- Clear old SalesReport docs ---
+    const salesSnapshot = await getDocs(collection(db, "SalesReport"));
+    const batch = writeBatch(db);
+    salesSnapshot.forEach(d => batch.delete(d.ref));
+    await batch.commit();
+
+    // --- Save new report ---
     await addDoc(collection(db, "SalesReport"), {
       reportType,
       category,
@@ -2841,19 +2891,18 @@ generateBtn.addEventListener("click", async () => {
           <td>${r.type}</td>
           <td>₱${r.revenue.toLocaleString()}</td>
           <td>₱${r.avg.toLocaleString()}</td>
-          
         `;
         reportTableBody.appendChild(tr);
       });
     } else {
-      reportTableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;">No data available</td></tr>`;
+      reportTableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;">No data found.</td></tr>`;
     }
 
     // ✅ Update stats
     document.getElementById("servicesCompleted").textContent = totalServices.toLocaleString();
     document.getElementById("todayRevenue").textContent = "₱" + totalRevenue.toLocaleString();
 
-    await updateRevenueCards(category);
+    await updateRevenueCards(category, reportType);
 
   } catch (err) {
     console.error("Error generating report:", err);

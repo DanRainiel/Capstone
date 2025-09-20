@@ -212,11 +212,11 @@ Swal.fire({
 
       const existingUser = snapshot.docs.find(doc => doc.data().email === email);
       if (existingUser) {
-        loader.style.display = "none";
-        await logActivity(docItem.id, "Registered", `User ${name} registered an account.`);
-        alert("Email is already registered.");
-        return;
-      }
+    loader.style.display = "none";
+    await logActivity(existingUser.id, "Registered", `User ${name} tried to register with an existing email.`);
+    alert("Email is already registered.");
+    return;
+}
 
     
       let index = 1;
@@ -237,19 +237,19 @@ Swal.fire({
   status: "Active"       
 });
 
+// Save session and redirect
+sessionStorage.setItem("isLoggedIn", "true");
+sessionStorage.setItem("userId", newId);
+sessionStorage.setItem("role", "customer");
+sessionStorage.setItem("userName", name);
+sessionStorage.setItem("welcomeMessage", `Welcome, ${name}!`);
 
-      // Save session and redirect
-      sessionStorage.setItem("isLoggedIn", "true");
-      sessionStorage.setItem("userId", newId);
-      sessionStorage.setItem("role", "customer");
-      sessionStorage.setItem("userName", name);
-      sessionStorage.setItem("welcomeMessage", `Welcome, ${name}!`);
+localStorage.setItem("currentUserId", newId); // <-- fixed
 
-      localStorage.setItem("currentUserId", docItem.id);
+setTimeout(() => {
+  location.replace("../Dashboard/customer/customer.html");
+}, 1500);
 
-      setTimeout(() => {
-        location.replace("../Dashboard/customer/customer.html");
-      }, 1500);
 
     } catch (error) {
       console.error("Registration error:", error);

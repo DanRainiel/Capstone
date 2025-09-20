@@ -466,7 +466,7 @@
           </div>
         </div>
 
-          <!-- Sales Report Section -->
+          <!--  Report Section -->
           <div id="sales-report" class="content-section">
             <h1>Sales Report & Analytics</h1>
           <div class="stats-grid">
@@ -508,9 +508,10 @@
                   <option value="all">All Services</option>
                   <option value="consultation">Consultations</option>
                   <option value="vaccination">Vaccinations</option>
-                  <option value="surgery">Surgeries</option>
+                  <option value="treatment">Treatment</option>
                   <option value="grooming">Grooming</option>
                   <option value="deworming">Deworming</option>
+                  <option value="laboratory">Laboratory</option>
                 </select>
               </div>
             </div>
@@ -571,12 +572,12 @@
                   </select>
                 </div>
                 <div class="form-group">
-                  <label>Priority</label>
-                  <select name="newsPriority">
-                    <option value="normal">Normal</option>
-                    <option value="important">Important</option>
-                    <option value="urgent">Urgent</option>
-                  </select>
+                    <label>Priority</label>
+                    <select name="newsPriority">
+                      <option value="normal">Normal</option>
+                      <option value="important">Important</option>
+                      <option value="urgent">Urgent</option>
+                    </select>
                 </div>
               </div>
               <div class="form-group">
@@ -742,26 +743,30 @@
                   <label>Discount Value *</label>
                   <input type="number" name="discountValue" required>
                 </div>
-                <div class="form-group">
+               <div class="form-group">
   <label>Applicable Services</label>
-  <div class="checkbox-container">
-    <label>
+  <div class="checkbox-wrapper">
+    <label class="applicable-checkbox">
       <input type="checkbox" name="applicableServices" value="all"> All Services
     </label>
-    <label>
+    <label class="applicable-checkbox">
       <input type="checkbox" name="applicableServices" value="consultation"> Consultation
     </label>
-    <label>
+    <label class="applicable-checkbox">
       <input type="checkbox" name="applicableServices" value="vaccination"> Vaccination
     </label>
-    <label>
-      <input type="checkbox" name="applicableServices" value="surgery"> Surgery
+    <label class="applicable-checkbox">
+      <input type="checkbox" name="applicableServices" value="treatment"> Treatment
     </label>
-    <label>
+    <label class="applicable-checkbox">
       <input type="checkbox" name="applicableServices" value="grooming"> Grooming
+    </label>
+    <label class="applicable-checkbox">
+      <input type="checkbox" name="applicableServices" value="laboratory"> Laboratory
     </label>
   </div>
 </div>
+
 
               </div>
               <div class="form-row">

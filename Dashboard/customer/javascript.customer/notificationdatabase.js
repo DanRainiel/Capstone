@@ -14,26 +14,37 @@ const firebaseConfig = {
   apiKey: "AIzaSyDtDApHuFcav9QIZaJ8CDIcyI_fxcO4Kzw",
   authDomain: "fir-demo-66ae2.firebaseapp.com",
   projectId: "fir-demo-66ae2",
-  storageBucket: "fir-demo-66ae2.appspot.com", // ✅ Fix the domain typo here
+  storageBucket: "fir-demo-66ae2.appspot.com",
   messagingSenderId: "505962707376",
   appId: "1:505962707376:web:4fb32e2e4b04e9bca93e75",
   measurementId: "G-JYDG36FQMX"
 };
 
-
 // 🔹 Initialize Firebase & Firestore
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// ✅ Mark notification as read
+// ✅ Mark notification as read with Swal confirmation
 async function markAsRead(notifId) {
-  try {
-    const notifRef = doc(db, "Notifications", notifId);
-    await updateDoc(notifRef, { status: "read" });
-    console.log("✅ Notification marked as read:", notifId);
-    loadNotifications(); // refresh
-  } catch (err) {
-    console.error("❌ Error marking notification as read:", err);
+  const result = await Swal.fire({
+    title: 'Mark as read?',
+    text: "This will mark the notification as read.",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Yes, mark as read',
+    cancelButtonText: 'Cancel'
+  });
+
+  if (result.isConfirmed) {
+    try {
+      const notifRef = doc(db, "Notifications", notifId);
+      await updateDoc(notifRef, { status: "read" });
+      Swal.fire('Marked!', 'Notification has been marked as read.', 'success');
+      loadNotifications(); // refresh table
+    } catch (err) {
+      console.error("❌ Error marking notification as read:", err);
+      Swal.fire('Error', 'Failed to mark notification as read.', 'error');
+    }
   }
 }
 
@@ -48,10 +59,7 @@ export async function loadNotifications() {
     return;
   }
 
-  console.log("🔍 Current User ID (from localStorage):", `"${currentUserId}"`);
-
   try {
-    // 🔹 Query notifications for this user
     const notifQuery = query(
       collection(db, "Notifications"),
       where("userId", "==", currentUserId)
@@ -59,17 +67,9 @@ export async function loadNotifications() {
 
     const snapshot = await getDocs(notifQuery);
 
-    // 🔹 Debug: log all notifications
-    const allSnapshot = await getDocs(collection(db, "Notifications"));
-    allSnapshot.forEach(d => {
-      const data = d.data();
-      console.log("📌 Notification doc:", d.id, "userId:", `"${data.userId}"`);
-    });
-
-    // 🔹 If query returned nothing, fallback to show all (debug)
     let notifs = [];
     if (snapshot.empty) {
-      console.warn("⚠️ No notifications matched this userId. Showing all for debug.");
+      const allSnapshot = await getDocs(collection(db, "Notifications"));
       notifs = allSnapshot.docs.map(doc => {
         const data = doc.data() || {};
         return {
@@ -97,10 +97,10 @@ export async function loadNotifications() {
       });
     }
 
-    // 🔹 Sort newest first
+    // Sort newest first
     notifs.sort((a, b) => b.ts - a.ts);
 
-    // 🔹 Render table
+    // Render table
     if (notifs.length === 0) {
       notifTable.innerHTML = `<tr><td colspan="6">No notifications found.</td></tr>`;
       return;
@@ -115,7 +115,7 @@ export async function loadNotifications() {
           <td>${n.status}</td>
           <td>${n.ts.toLocaleString()}</td>
           <td>
-            ${n.status === "unread" 
+            ${n.status === "unread"   
               ? `<button class="mark-read" data-id="${n.id}">Mark as Read</button>` 
               : ""}
           </td>
@@ -123,16 +123,18 @@ export async function loadNotifications() {
       `;
       notifTable.insertAdjacentHTML("beforeend", row);
     });
-
-    // 🔹 Attach button listeners
-    document.querySelectorAll(".mark-read").forEach(btn => {
-      btn.addEventListener("click", () => markAsRead(btn.getAttribute("data-id")));
-    });
-
   } catch (err) {
     console.error("❌ Error loading notifications:", err);
     notifTable.innerHTML = `<tr><td colspan="6">Error loading notifications.</td></tr>`;
   }
 }
+
+// 🔹 Attach event delegation for buttons
+document.addEventListener("click", (e) => {
+  if (e.target && e.target.classList.contains("mark-read")) {
+    markAsRead(e.target.getAttribute("data-id"));
+  }
+});
+
 window.loadNotifications = loadNotifications;
 document.addEventListener("DOMContentLoaded", loadNotifications);
