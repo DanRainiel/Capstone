@@ -647,6 +647,121 @@ document.addEventListener("click", async (e) => {
   }
 });
 
+// Handle "Reschedule" button
+document.addEventListener("click", async (e) => {
+  if (e.target.classList.contains("reschedule")) {
+    const docId = e.target.getAttribute("data-id");
+    const type = e.target.getAttribute("data-type");
+
+    if (!docId) {
+      return Swal.fire("Error", "Invalid appointment.", "error");
+    }
+
+    const colName = type === "walkin" ? "WalkInAppointment" : "Appointment";
+    const docRef = doc(db, colName, docId);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists()) {
+      return Swal.fire("Error", "Appointment not found.", "error");
+    }
+
+    const appointmentData = docSnap.data();
+    const userId = appointmentData.userId;
+
+    // ✅ Generate time slots dynamically (9:00 AM to 5:30 PM, 30min intervals)
+    function generateTimeSlots(startHour, endHour) {
+      const slots = [];
+      const start = new Date();
+      start.setHours(startHour, 0, 0, 0);
+
+      const end = new Date();
+      end.setHours(endHour, 30, 0, 0); // until 5:30 PM
+
+      while (start < end) {
+        const endSlot = new Date(start.getTime() + 30 * 60000); // add 30 minutes
+
+        const formatTime = (date) =>
+          date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+
+        slots.push(`${formatTime(start)} - ${formatTime(endSlot)}`);
+        start.setMinutes(start.getMinutes() + 30);
+      }
+
+      return slots;
+    }
+
+    const timeSlots = generateTimeSlots(9, 17); // 9:00 AM to 5:30 PM
+
+    const slotOptions = timeSlots
+      .map((slot) => `<option value="${slot}">${slot}</option>`)
+      .join("");
+
+    // ✅ SweetAlert with dynamic dropdown
+    const { value: formValues } = await Swal.fire({
+      title: "Reschedule Appointment",
+      width: 600,
+      html: `
+        <div style="text-align: left; font-size: 14px;">
+          <label for="new-date"><b>New Date</b></label>
+          <input type="date" id="new-date" class="swal2-input" style="width: 90%;" required>
+
+          <label for="new-time"><b>Time Slot</b></label>
+          <select id="new-time" class="swal2-input" style="width: 90%;" required>
+            <option value="">-- Select Time Slot --</option>
+            ${slotOptions}
+          </select>
+        </div>
+      `,
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: "Reschedule",
+      cancelButtonText: "Cancel",
+      preConfirm: () => {
+        const date = document.getElementById("new-date").value;
+        const slot = document.getElementById("new-time").value;
+
+        if (!date || !slot) {
+          Swal.showValidationMessage("Please select both date and time slot.");
+          return false;
+        }
+
+        // ✅ Extract starting time only (e.g., "9:00 AM")
+        const time = slot.split(" - ")[0];
+        return { date, time };
+      }
+    });
+
+    if (!formValues) return; // Cancelled
+
+    try {
+      // ✅ Update appointment in Firestore
+      await updateDoc(docRef, {
+        date: formValues.date,
+        time: formValues.time, // Only the starting time
+        status: "pending",     // 👈 Bring back to pending
+        updatedAt: serverTimestamp()
+      });
+
+      // ✅ Create reminder notification
+      await addDoc(collection(db, "Notifications"), {
+        appointmentId: docId,
+        userId,
+        type: "reminder",
+        service: appointmentData.service || "Appointment",
+        status: "unread",
+        message: `Your appointment for ${appointmentData.petName || "your pet"} has been rescheduled to ${formValues.date} at ${formValues.time}.`,
+        createdAt: serverTimestamp()
+      });
+
+      Swal.fire("Rescheduled", "The appointment has been updated and set back to pending. A reminder was sent to the user.", "success");
+    } catch (err) {
+      console.error("❌ Error during reschedule:", err);
+      Swal.fire("Error", "Something went wrong while rescheduling.", "error");
+    }
+  }
+});
+
+
 
 // 📅 Load appointments into two tables
 async function loadAllAppointments() {
@@ -1030,32 +1145,6 @@ document.addEventListener("click", async (e) => {
 
 
 
-
-  // ================== RESCHEDULE ==================
-async function rescheduleAppointment() {
-  const modal = document.getElementById("detailsModal");
-  const docId = modal.getAttribute("data-docid");
-
-  if (!docId) {
-    alert("No appointment selected.");
-    return;
-  }
-
-  try {
-    const docRef = doc(db, "Appointment", docId);
-
-    // ✅ Do not overwrite proposedDate here 
-    // (your other JS already sets proposedDate & time request)
-    await updateDoc(docRef, { status: "for-rescheduling" });
-
-    alert("Appointment marked for rescheduling!");
-    closeDetailsModal();
-    loadAppointments(); // refresh table
-  } catch (error) {
-    console.error("Error updating appointment:", error);
-    alert("Failed to update status.");
-  }
-}
 
 
 // 🔹 Globals
