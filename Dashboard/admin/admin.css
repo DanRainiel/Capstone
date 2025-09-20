@@ -542,7 +542,9 @@
         font-size: 1.1rem;
     }
 
-    .recent-activity {
+   
+
+   .recent-activity {
         background: var(--white);
         border-radius: 15px;
         padding: 20px;
@@ -550,6 +552,7 @@
         margin: 20px 0;
     }
 
+    
     .activity-item {
         display: flex;
         align-items: center;
@@ -583,6 +586,7 @@
         color: #666;
         font-size: 0.9rem;
     }
+
 
     .calendar-widget {
         background: var(--white);
@@ -934,6 +938,21 @@
 
 
 
+.checkbox-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background: #f9f9f9;
+}
+
+.checkbox-container label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
 
 
     @media (max-width: 991px) {

@@ -221,6 +221,7 @@
                   <th>Pet Name</th>
                   <th>Service</th>
                   <th>Status</th>
+                  <th>Type of Advance Payment</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -538,7 +539,7 @@
       
                   <th>Revenue</th>
                   <th>Average per Service</th>
-                  <th>Growth %</th>
+                  
                 </tr>
               </thead>
               <tbody id="reportTableBody">
@@ -605,7 +606,7 @@
                   <th>Category</th>
                   <th>Published Date</th>
                   <th>Status</th>
-                  <th>Views</th>
+                
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -652,65 +653,29 @@
         </div>
 
         <!-- Fee/Discount Monitoring Section -->
-        <div id="fee-discount" class="content-section">
-          <h1>Fee & Discount Management</h1>
-          <div class="form-container">
-            <h2 style="color: var(--background-color); margin-bottom: 20px;">Service Pricing</h2>
-            <div class="data-table">
-              <table>
-                <thead>
-                  <tr>
-                    <thead>
-                  <tr>
-                    <th>Service</th>
-                    <th>Base Price</th>
-                    <th>Senior Discount</th>
-                    <th>PWD Discount</th>
-                    <th>Loyalty Discount</th>
-                    <th>Special Discounts</th> 
-                    <th>Actions</th>
-                  </tr>
-                </thead>
+      <div id="fee-discount" class="content-section">
+  <h1>Fee & Discount Management</h1>
+  <div class="form-container">
+    <h2 style="color: var(--background-color); margin-bottom: 20px;">Service Pricing</h2>
+    <div class="data-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Service</th>
+            <th>Base Price</th>
+            <th>Loyalty Discount</th>
+            <th>Special Discounts</th> 
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- JS will fill this dynamically -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+    
 
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>General Consultation</td>
-                    <td>₱500</td>
-                    <td>20%</td>
-                    <td>20%</td>
-                    <td>10%</td>
-                    <td><button class="btn-primary">Edit</button></td>
-                  </tr>
-                  <tr>
-                    <td>Vaccination</td>
-                    <td>₱800</td>
-                    <td>15%</td>
-                    <td>15%</td>
-                    <td>5%</td>
-                    <td><button class="btn-primary">Edit</button></td>
-                  </tr>
-                  <tr>
-                    <td>Surgery (Minor)</td>
-                    <td>₱3,000</td>
-                    <td>10%</td>
-                    <td>10%</td>
-                    <td>5%</td>
-                    <td><button class="btn-primary">Edit</button></td>
-                  </tr>
-                  <tr>
-                    <td>Grooming</td>
-                    <td>₱800</td>
-                    <td>15%</td>
-                    <td>15%</td>
-                    <td>10%</td>
-                    <td><button class="btn-primary">Edit</button></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
 
           <!-- Edit Service Modal -->
     <div id="editServiceModal" class="modal">
@@ -731,16 +696,7 @@
               <input type="number" id="editBasePrice" step="0.01" min="0" required>
             </div>
             
-            <div class="form-row">
-              <div class="form-group">
-                <label>Senior Citizen Discount (%)</label>
-                <input type="number" id="editSeniorDiscount" min="0" max="100" step="0.1">
-              </div>
-              <div class="form-group">
-                <label>PWD Discount (%)</label>
-                <input type="number" id="editPwdDiscount" min="0" max="100" step="0.1">
-              </div>
-            </div>
+      
             
             <div class="form-group">
               <label>Loyalty Discount (%)</label>
@@ -787,15 +743,26 @@
                   <input type="number" name="discountValue" required>
                 </div>
                 <div class="form-group">
-                  <label>Applicable Services</label>
-                  <select name="applicableServices" multiple>
-                    <option value="all">All Services</option>
-                    <option value="consultation">Consultation</option>
-                    <option value="vaccination">Vaccination</option>
-                    <option value="surgery">Surgery</option>
-                    <option value="grooming">Grooming</option>
-                  </select>
-                </div>
+  <label>Applicable Services</label>
+  <div class="checkbox-container">
+    <label>
+      <input type="checkbox" name="applicableServices" value="all"> All Services
+    </label>
+    <label>
+      <input type="checkbox" name="applicableServices" value="consultation"> Consultation
+    </label>
+    <label>
+      <input type="checkbox" name="applicableServices" value="vaccination"> Vaccination
+    </label>
+    <label>
+      <input type="checkbox" name="applicableServices" value="surgery"> Surgery
+    </label>
+    <label>
+      <input type="checkbox" name="applicableServices" value="grooming"> Grooming
+    </label>
+  </div>
+</div>
+
               </div>
               <div class="form-row">
                 <div class="form-group">
@@ -812,22 +779,7 @@
           </div>
         </div>
 
-        <!-- Discount Modal -->
-  <div id="discountModal" class="modal hidden">
-    <div class="modal-content">
-      <h2>Select Discounts</h2>
-      <div class="discount-options">
-        <label><input type="checkbox" class="discount-option" value="pwdDiscount"> PWD</label><br>
-        <label><input type="checkbox" class="discount-option" value="seniorDiscount"> Senior</label><br>
-        <label><input type="checkbox" class="discount-option" value="loyaltyDiscount"> Loyalty</label>
-      </div>
-
-      <div class="modal-actions">
-        <button id="applyDiscountBtn" class="btn">Apply</button>
-        <button id="closeDiscountModal" class="btn">Cancel</button>
-      </div>
-    </div>
-  </div>
+     
 
 
         <!-- Calendar Management Section -->

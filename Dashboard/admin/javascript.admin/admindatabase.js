@@ -49,6 +49,7 @@
 
 
 document.addEventListener("DOMContentLoaded", async () => {
+
   let services = [];
 
   const tableBody = document.querySelector("#fee-discount table tbody");
@@ -62,28 +63,41 @@ document.addEventListener("DOMContentLoaded", async () => {
     await setDoc(doc(db, "services", docId), service);
   }
 
-  async function loadServicesFromFirestore() {
-    services = [];
-    const querySnapshot = await getDocs(collection(db, "services"));
+ async function loadServicesFromFirestore() {
+  services = [];
+  const querySnapshot = await getDocs(collection(db, "services"));
 
-    if (querySnapshot.empty) {
-      // Add default services if Firestore is empty
-      services = [
-        { name: "General Consultation", basePrice: 500, seniorDiscount: 20, pwdDiscount: 20, loyaltyDiscount: 10, notes: '', discounts: [] },
-        { name: "Vaccination", basePrice: 800, seniorDiscount: 15, pwdDiscount: 15, loyaltyDiscount: 5, notes: '', discounts: [] },
-        { name: "Surgery (Minor)", basePrice: 3000, seniorDiscount: 10, pwdDiscount: 10, loyaltyDiscount: 5, notes: '', discounts: [] },
-        { name: "Grooming", basePrice: 800, seniorDiscount: 15, pwdDiscount: 15, loyaltyDiscount: 10, notes: '', discounts: [] }
-      ];
+  if (querySnapshot.empty) {
+    // add default services if Firestore is totally empty
+    services = [
+      { name: "General Consultation", basePrice: 500, loyaltyDiscount: 10, notes: '', discounts: [] },
+      { name: "Vaccination", basePrice: 800, loyaltyDiscount: 5, notes: '', discounts: [] },
+      { name: "Deworming", basePrice: 300, loyaltyDiscount: 5, notes: '', discounts: [] },
+      { name: "Grooming", basePrice: 800, loyaltyDiscount: 10, notes: '', discounts: [] },
+      { name: "Treatment", basePrice: 800, loyaltyDiscount: 10, notes: '', discounts: [] },
+      { name: "Laboratory", basePrice: 800, loyaltyDiscount: 10, notes: '', discounts: [] }
+    ];
 
-      for (const s of services) {
-        await saveServiceToFirestore(s);
-      }
-    } else {
-      querySnapshot.forEach(docSnap => services.push(docSnap.data()));
+    for (const s of services) {
+      await saveServiceToFirestore(s);
     }
+  } else {
+    querySnapshot.forEach(docSnap => {
+      const data = docSnap.data();
 
-    renderServices();
+      services.push({
+        name: data.name || docSnap.id,  // fallback to doc ID
+        basePrice: data.basePrice || 0,
+        loyaltyDiscount: data.loyaltyDiscount || 0,
+        notes: data.notes || "",
+        discounts: data.discounts || []
+      });
+    });
   }
+
+  renderServices();
+}
+
 
   // ---------------- Rendering ----------------
   function renderServices() {
@@ -97,8 +111,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       row.innerHTML = `
         <td>${s.name}</td>
         <td>₱${s.basePrice}</td>
-        <td>${s.seniorDiscount}%</td>
-        <td>${s.pwdDiscount}%</td>
         <td>${s.loyaltyDiscount}%</td>
         <td>${discountList}</td>
         <td><button class="btn-primary" data-index="${index}">Edit</button></td>
@@ -115,8 +127,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       document.getElementById("editServiceName").value = service.name;
       document.getElementById("editBasePrice").value = service.basePrice;
-      document.getElementById("editSeniorDiscount").value = service.seniorDiscount;
-      document.getElementById("editPwdDiscount").value = service.pwdDiscount;
       document.getElementById("editLoyaltyDiscount").value = service.loyaltyDiscount;
       document.getElementById("editNotes").value = service.notes;
 
@@ -151,8 +161,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (currentServiceIndex !== null) {
       const service = services[currentServiceIndex];
       service.basePrice = parseFloat(document.getElementById("editBasePrice").value);
-      service.seniorDiscount = parseFloat(document.getElementById("editSeniorDiscount").value);
-      service.pwdDiscount = parseFloat(document.getElementById("editPwdDiscount").value);
       service.loyaltyDiscount = parseFloat(document.getElementById("editLoyaltyDiscount").value);
       service.notes = document.getElementById("editNotes").value;
 
@@ -162,28 +170,38 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // ---------------- Discounts ----------------
-  document.getElementById("discountForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-    const discount = {
-      name: formData.get("discountName"),
-      type: formData.get("discountType"),
-      value: parseFloat(formData.get("discountValue")),
-      applicableServices: formData.getAll("applicableServices"),
-    };
+ // ---------------- Discounts ----------------
+document.getElementById("discountForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const formData = new FormData(e.target);
 
-    for (const s of services) {
-      if (discount.applicableServices.includes("all") ||
-          discount.applicableServices.includes(s.name.toLowerCase().split(" ")[0])) {
-        s.discounts.push(discount);
-        await saveServiceToFirestore(s);
-      }
+  const discount = {
+    name: formData.get("discountName"),
+    type: formData.get("discountType"),
+    value: parseFloat(formData.get("discountValue")),
+    applicableServices: formData.getAll("applicableServices"),
+    validFrom: formData.get("validFrom") || null,
+    validUntil: formData.get("validUntil") || null,
+    createdAt: new Date().toISOString()
+  };
+
+  // Apply discount
+  for (const s of services) {
+    // Normalize service key (consultation, vaccination, etc.)
+    const key = s.name.toLowerCase().split(" ")[0]; 
+
+    if (discount.applicableServices.includes("all") ||
+        discount.applicableServices.includes(key)) {
+      if (!s.discounts) s.discounts = [];
+      s.discounts.push(discount);
+      await saveServiceToFirestore(s);
     }
+  }
 
-    renderServices();
-    e.target.reset();
-  });
+  renderServices();
+  e.target.reset();
+});
+
 
   // ---------------- Initial Load ----------------
   await loadServicesFromFirestore();
@@ -574,6 +592,62 @@ document.addEventListener("click", async (e) => {
   }
 });
 
+ // Handle "View Screenshot"
+document.addEventListener("click", async (e) => {
+  if (e.target.classList.contains("screenshot")) {
+    const docId = e.target.getAttribute("data-id");
+    const type = e.target.getAttribute("data-type");
+
+    console.log("Fetching screenshot for:", { docId, type }); // ✅ Debug log
+
+    try {
+      const docRef = doc(db, type, docId);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+
+        // Get reservation details
+        const reservationType = data.reservationType || "-";
+        const totalAmount = data.totalAmount || "-"; // ✅ don't parseFloat, use directly
+
+        // Build HTML content
+        let htmlContent = `
+          <div style="text-align:left">
+            <p><strong>Reservation Type:</strong> ${reservationType}</p>
+            <p><strong>Total Amount:</strong> ${totalAmount}</p>
+        `;
+
+        if (data.receiptImage) {
+          htmlContent += `
+            <p><strong>Uploaded Screenshot:</strong></p>
+            <img src="${data.receiptImage}" style="width:800px;max-width:100%;border-radius:8px">
+          `;
+        } else {
+          htmlContent += `
+            <p style="color:gray"><em>No screenshot uploaded.</em></p>
+          `;
+        }
+
+        htmlContent += `</div>`;
+
+        Swal.fire({
+          title: "Reservation Details",
+          html: htmlContent,
+          width: "auto",
+        });
+
+      } else {
+        Swal.fire("Error", "Appointment document could not be found.", "error");
+      }
+    } catch (err) {
+      console.error("Error fetching screenshot:", err);
+      Swal.fire("Error", "Something went wrong while loading the screenshot.", "error");
+    }
+  }
+});
+
+
 // 📅 Load appointments into two tables
 async function loadAllAppointments() {
   const dashboardTable = document.getElementById("table-dashboard");
@@ -635,9 +709,10 @@ const displayData = {
   contact: safe(data.contact),
   status: safe(status),
   mode: type === "walkin" ? "Walk-In" : "Appointment",
-
+    reservationType: safe(data.reservationType),
+  reservationFee: safe(data.reservationFee),
   userId: safe(data.userId),      // 🔹 include userId
-  appointmentId: docId,           // 🔹 include docId
+  appointmentId: docId,           // 🔹 include docId 
   sourceType: type
 };
 
@@ -730,8 +805,6 @@ if (walkInTable && type === "walkin") {
   walkInTable.appendChild(dashRow);
 }
 
-
-
           // Appointment table
         if (appointmentTable && type !== "walkin") {
             const normalizedStatus = (status || "Pending").toLowerCase();
@@ -768,43 +841,6 @@ if (walkInTable && type === "walkin") {
         `;
       }
 
-
-
-  // Handle "View Screenshot"
-  document.addEventListener("click", async (e) => {
-    if (e.target.classList.contains("screenshot")) {
-      const docId = e.target.getAttribute("data-id");
-      const type = e.target.getAttribute("data-type");
-
-      console.log("Fetching screenshot for:", { docId, type }); // ✅ Debug log
-
-      try {
-        const docRef = doc(db, type, docId);
-        const docSnap = await getDoc(docRef);
-
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          if (data.receiptImage) {
-          Swal.fire({
-    title: "Uploaded Screenshot",
-    html: `<img src="${data.receiptImage}" style="width:800px;max-width:100%;border-radius:8px">`,
-    width: "auto",
-  });
-
-          } else {
-            Swal.fire("No Screenshot", "This appointment has no uploaded screenshot.", "info");
-          }
-        } else {
-          Swal.fire("Error", "Appointment document could not be found.", "error");
-        }
-      } catch (err) {
-        console.error("Error fetching screenshot:", err);
-        Swal.fire("Error", "Something went wrong while loading the screenshot.", "error");
-      }
-    }
-  });
-
-
           const fullRow = document.createElement("tr");
           fullRow.innerHTML = `
             <td>${displayData.date}</td>
@@ -814,6 +850,7 @@ if (walkInTable && type === "walkin") {
             <td>${displayData.petName}</td>
             <td>${displayData.service}</td>
             <td class="status ${normalizedStatus}">${status || "Pending"}</td>
+              <td>${displayData.reservationType}</td>
             <td>${actionButtons}</td>
           `;
           appointmentTable.appendChild(fullRow);
@@ -916,10 +953,10 @@ if (earningsCard) {
     return Number(price.toString().replace(/[^\d.-]/g, "")) || 0;
   }
 
-  let currentDiscountDocRef = null; // store docRef temporarily
+
 
 document.addEventListener("click", async (e) => {
-  const btn = e.target.closest(".btn.accept, .btn.decline, .btn.complete, .btn.add-discount, .btn.reschedule");
+  const btn = e.target.closest(".btn.accept, .btn.decline, .btn.complete,  .btn.reschedule");
   if (!btn) return;
 
   const docId = btn.getAttribute("data-id");
@@ -931,12 +968,7 @@ document.addEventListener("click", async (e) => {
     await rescheduleAppointment(docId); // <-- call function with id
     return;
   }
-  // ✅ Open modal when Add Discount is clicked
-  if (btn.classList.contains("add-discount")) {
-    currentDiscountDocRef = docRef;
-    document.getElementById("discountModal").classList.remove("hidden");
-    return;
-  }
+  
 
   // ✅ Handle Reschedule button separately (if needed)
   if (btn.classList.contains("reschedule")) {
@@ -979,6 +1011,26 @@ document.addEventListener("click", async (e) => {
   loadAllAppointments();
 });
 
+document.addEventListener("click", async (e) => {
+  const btn = e.target.closest(".add-discount");
+  if (!btn) return;
+
+  const id = btn.getAttribute("data-id");
+  let type = btn.getAttribute("data-type") || "Appointment";
+
+  // normalize
+  if (type.toLowerCase() === "appointment") type = "Appointment";
+  if (type.toLowerCase() === "walkin" || type.toLowerCase() === "walkinappointment") {
+    type = "WalkInAppointment";
+  }
+
+  const docRef = doc(db, type, id);
+  await openDiscountModal(docRef, type);
+});
+
+
+
+
   // ================== RESCHEDULE ==================
 async function rescheduleAppointment() {
   const modal = document.getElementById("detailsModal");
@@ -1005,116 +1057,156 @@ async function rescheduleAppointment() {
   }
 }
 
-// ✅ Apply discounts when modal confirm button clicked
-document.getElementById("applyDiscountBtn").addEventListener("click", async () => {
-  if (!currentDiscountDocRef || !currentDiscountType) return; 
-  // 🔹 currentDiscountType should be "Appointment" or "WalkInAppointment"
+
+// 🔹 Globals
+let currentDiscountDocRef = null; // Firestore doc reference
+let currentDiscountType = null;   // "Appointment" or "WalkInAppointment"
+
+
+
+// ✅ Function to open Swal discount modal
+async function openDiscountModal(docRef, type) {
+  currentDiscountDocRef = docRef;
+  currentDiscountType = type;
 
   try {
-    const snap = await getDoc(currentDiscountDocRef);
-    if (!snap.exists()) return alert("Appointment not found.");
+    const snap = await getDoc(docRef);
+    if (!snap.exists()) return Swal.fire("Error", "Appointment not found.", "error");
+
     const data = snap.data();
+    const serviceName = data.service || data.serviceType;
 
-    const serviceName = data.service || data.serviceType; 
-    // 🔹 Walk-In uses serviceType
-
-    // 🔹 Get all services
+    // Fetch services from Firestore
     const q = query(collection(db, "services"));
     const querySnapshot = await getDocs(q);
 
-    if (querySnapshot.empty) {
-      return alert("No services found.");
-    }
-
     let service = null;
-
-    for (const docSnap of querySnapshot.docs) {
+    querySnapshot.forEach(docSnap => {
       const s = docSnap.data();
       const docId = docSnap.id;
 
-      // ✅ Match by either doc ID or name field (case-insensitive)
       if (
         docId.toLowerCase() === serviceName.toLowerCase() ||
         (s.name && s.name.toLowerCase() === serviceName.toLowerCase())
       ) {
-        service = s;
-        break;
+        service = { ...s, id: docId };
       }
-    }
+    });
 
     if (!service) {
-      return alert(`Service '${serviceName}' not found.`);
+      return Swal.fire("Error", `Service '${serviceName}' not found.`, "error");
     }
 
-    // 🔹 Base price
-    let totalAmount = parsePrice(service.basePrice ?? 0);
-
-    // ✅ Get checked discounts from modal
-    const selectedDiscounts = Array.from(
-      document.querySelectorAll("#discountModal .discount-option:checked")
-    ).map(cb => cb.value); // e.g. ["loyaltyDiscount"]
-
-    if (selectedDiscounts.length === 0) {
-      alert("Please select at least one discount.");
-      return;
-    }
-
-    let appliedDiscounts = [];
-    console.log("Service data from Firestore:", service);
-
-    // 🔹 Firestore discount fields (top-level)
+    // 🔹 Built-in discounts
     const discountObj = {
       pwdDiscount: service.pwdDiscount ?? 0,
       seniorDiscount: service.seniorDiscount ?? 0,
       loyaltyDiscount: service.loyaltyDiscount ?? 0
     };
 
-    console.log("Final discount object used:", discountObj);
-    console.log("Selected checkboxes:", selectedDiscounts);
+    // 🔹 Special discounts array (from Firestore)
+    const specialDiscounts = service.discounts ?? [];
 
-    // 🔹 Loop through selected discounts
-    selectedDiscounts.forEach(discountKey => {
-      console.log("Checking key:", discountKey, "=>", discountObj[discountKey]);
+    // 🔹 Build discount options
+    let discountHTML = "";
 
-      const discountValue = parseFloat(discountObj[discountKey]) || 0;
+    // Built-in
+    for (const [key, value] of Object.entries(discountObj)) {
+      if (value > 0) {
+        discountHTML += `
+          <div style="text-align:left;margin-bottom:5px">
+            <input type="checkbox" id="${key}" value="${key}" class="swal2-checkbox">
+            <label for="${key}">${key.replace("Discount", "")} (${value}%)</label>
+          </div>`;
+      }
+    }
 
-      if (discountValue > 0) {
+    // Special discounts
+    specialDiscounts.forEach((d, idx) => {
+      if (!d || !d.name) return;
+      discountHTML += `
+        <div style="text-align:left;margin-bottom:5px">
+          <input type="checkbox" id="special-${idx}" 
+                 value="special-${idx}" 
+                 class="swal2-checkbox" 
+                 data-type="${d.type}" 
+                 data-value="${d.value}">
+          <label for="special-${idx}">${d.name} (${d.type === "percentage" ? d.value + "%" : "₱" + d.value})</label>
+        </div>`;
+    });
+
+    if (!discountHTML) {
+      return Swal.fire("No Discounts", "This service has no available discounts.", "info");
+    }
+
+    // 🔹 Show SweetAlert2 modal
+    const { value: selectedDiscounts, dismiss } = await Swal.fire({
+      title: `Apply Discount for ${serviceName}`,
+      html: discountHTML,
+      focusConfirm: false,
+      preConfirm: () => {
+        const checkboxes = Swal.getPopup().querySelectorAll(".swal2-checkbox:checked");
+        return Array.from(checkboxes).map(cb => cb.value);
+      },
+      showCancelButton: true,
+      confirmButtonText: "Apply",
+      cancelButtonText: "Cancel"
+    });
+
+    if (dismiss === Swal.DismissReason.cancel) return;
+    if (!selectedDiscounts || selectedDiscounts.length === 0) {
+      return Swal.fire("No Selection", "Please select at least one discount.", "warning");
+    }
+
+    // 🔹 Calculate new total
+    let totalAmount = parsePrice(service.basePrice ?? 0);
+    let appliedDiscounts = [];
+
+    selectedDiscounts.forEach(selected => {
+      if (discountObj[selected]) {
+        // Built-in discount
+        const discountValue = parseFloat(discountObj[selected]) || 0;
         const discountPercent = discountValue / 100;
-
-        // Deduct from base price
         totalAmount -= service.basePrice * discountPercent;
-
-        appliedDiscounts.push(`${discountKey.replace("Discount", "")}: ${discountValue}%`);
+        appliedDiscounts.push(`${selected.replace("Discount", "")}: ${discountValue}%`);
+      } else if (selected.startsWith("special-")) {
+        // Special discount
+        const idx = parseInt(selected.split("-")[1], 10);
+        const d = specialDiscounts[idx];
+        if (d) {
+          if (d.type === "percentage") {
+            totalAmount -= service.basePrice * (d.value / 100);
+            appliedDiscounts.push(`${d.name}: ${d.value}%`);
+          } else {
+            totalAmount -= d.value;
+            appliedDiscounts.push(`${d.name}: ₱${d.value}`);
+          }
+        }
       }
     });
 
     totalAmount = Math.max(0, Math.round(totalAmount * 100) / 100);
 
-    // ✅ Update in correct collection
+    // ✅ Save to Firestore
     await updateDoc(currentDiscountDocRef, {
       totalAmount,
       appliedDiscounts
     });
 
-    alert(`✅ Applied Discounts:\n${appliedDiscounts.join("\n")}\n\nNew Total: ₱${totalAmount}`);
+    Swal.fire(
+      "Discounts Applied ✅",
+      `Applied:\n${appliedDiscounts.join("\n")}\n\nNew Total: ₱${totalAmount}`,
+      "success"
+    );
+
+    currentDiscountDocRef = null;
+    currentDiscountType = null;
 
   } catch (err) {
     console.error("Discount error:", err);
-    alert("Something went wrong applying the discount.");
+    Swal.fire("Error", "Something went wrong applying the discount.", "error");
   }
-
-  // Close modal
-  document.getElementById("discountModal").classList.add("hidden");
-  currentDiscountDocRef = null;
-  currentDiscountType = null;
-});
-
-// ✅ Close modal without saving
-document.getElementById("closeDiscountModal").addEventListener("click", () => {
-  document.getElementById("discountModal").classList.add("hidden");
-  currentDiscountDocRef = null;
-  currentDiscountType = null;
-});
+}
 
 
 
@@ -1137,36 +1229,43 @@ document.getElementById("closeDiscountModal").addEventListener("click", () => {
 
 // 🔍 Filter History Table
 async function filterHistory() {
-  const ownerFilter = document.getElementById("searchOwner").value.toLowerCase();
-  const petFilter = document.getElementById("searchPet").value.toLowerCase();
+  const ownerFilter = document.getElementById("searchOwner").value.toLowerCase().trim();
+  const petFilter = document.getElementById("searchPet").value.toLowerCase().trim();
   const fromDate = document.getElementById("dateFrom").value;
   const toDate = document.getElementById("dateTo").value;
 
   const historyTable = document.getElementById("historytable");
   if (!historyTable) return;
 
-  const rows = historyTable.querySelectorAll("tr");
+  // only select tbody rows (ignore thead)
+  const rows = historyTable.querySelectorAll("tbody tr");
 
-  rows.forEach((row, index) => {
-    // Skip header row if present
-    if (index === 0) return;
-
+  rows.forEach((row) => {
     const cells = row.getElementsByTagName("td");
     if (!cells.length) return;
 
-    const ownerName = (cells[2]?.textContent || "").toLowerCase(); // column 3 = owner
-    const petName = (cells[3]?.textContent || "").toLowerCase();   // column 4 = pet
-    const dateText = cells[0]?.textContent || "";                  // column 1 = date
+    const ownerName = (cells[2]?.textContent || "").toLowerCase().trim();
+    const petName = (cells[3]?.textContent || "").toLowerCase().trim();
+    const dateText = cells[0]?.textContent || "";
     const rowDate = new Date(dateText);
 
-    let matchesOwner = ownerName.includes(ownerFilter) || ownerFilter === "";
-    let matchesPet = petName.includes(petFilter) || petFilter === "";
+    let matchesName = true;
 
+    // ✅ Enforce pair matching
+    if (ownerFilter && petFilter) {
+      matchesName = ownerName.includes(ownerFilter) && petName.includes(petFilter);
+    } else if (ownerFilter) {
+      matchesName = ownerName.includes(ownerFilter);
+    } else if (petFilter) {
+      matchesName = petName.includes(petFilter);
+    }
+
+    // ✅ Date filtering
     let matchesDate = true;
     if (fromDate) matchesDate = matchesDate && rowDate >= new Date(fromDate);
     if (toDate) matchesDate = matchesDate && rowDate <= new Date(toDate);
 
-    row.style.display = matchesOwner && matchesPet && matchesDate ? "" : "none";
+    row.style.display = matchesName && matchesDate ? "" : "none";
   });
 }
 
@@ -1408,7 +1507,7 @@ document.addEventListener("DOMContentLoaded", function () {
         <td>${capitalize(news.category)}</td>
         <td>${news.publishDate ? new Date(news.publishDate).toLocaleDateString() : '-'}</td>
         <td><span class="status ${isDraft ? 'pending' : 'completed'}">${isDraft ? 'Draft' : 'Published'}</span></td>
-        <td>${news.views || 0}</td>
+      
         <td>
           <button class="btn-primary edit-btn">Edit</button>
           ${isDraft 
@@ -1448,7 +1547,7 @@ document.addEventListener("DOMContentLoaded", function () {
         publishDate,
         image: "/images/news2.webp",
         status,
-        views: 0
+       
       };
 
       let newsList = JSON.parse(localStorage.getItem('newsList')) || [];
@@ -1508,30 +1607,30 @@ document.addEventListener("DOMContentLoaded", function () {
       const index = row.dataset.index;
       let newsList = JSON.parse(localStorage.getItem('newsList')) || [];
       let newsItem = newsList[index];
-
-      // --- DELETE / UNPUBLISH ---
-      if (btn.classList.contains('delete-btn')) {
-        const isDraft = newsItem.status === 'draft';
-        Swal.fire({
-          title: isDraft ? "Delete this draft?" : "Unpublish this news?",
-          text: isDraft ? "This draft will be removed permanently." : "The news will no longer be visible.",
-          icon: "warning",
-          showCancelButton: true,
-          confirmButtonText: isDraft ? "Yes, delete" : "Yes, unpublish"
-        }).then((result) => {
-          if (result.isConfirmed) {
-            if (isDraft) {
-              newsList.splice(index, 1);
-            } else {
-              newsList[index].status = 'draft';
-              newsList[index].publishDate = null;
-            }
-            saveNewsList(newsList);
-            renderNewsTable();
-            Swal.fire("Done!", isDraft ? "Draft deleted." : "News unpublished.", "success");
-          }
-        });
-      } 
+// --- DELETE / UNPUBLISH ---
+if (btn.classList.contains('delete-btn')) {
+  const isDraft = newsItem.status === 'draft';
+  Swal.fire({
+    title: isDraft ? "Delete this draft?" : "Unpublish this news?",
+    text: isDraft ? "This draft will be removed permanently." : "The news will no longer be visible.",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: isDraft ? "Yes, delete" : "Yes, unpublish"
+  }).then((result) => {
+    if (result.isConfirmed) {
+      if (isDraft) {
+        newsList.splice(index, 1);
+      } else {
+        newsList[index].status = 'draft';
+        newsList[index].publishDate = null;
+      }
+      saveNewsList(newsList);
+      renderNewsTable();
+      renderNewsCards(); // ✅ refresh customer cards
+      Swal.fire("Done!", isDraft ? "Draft deleted." : "News unpublished.", "success");
+    }
+  });
+}
 
       // --- PUBLISH ---
       else if (btn.classList.contains('publish-btn')) {
@@ -2284,17 +2383,36 @@ if (!docId) {
       });
     }
 
-    // ✅ Build the notification
-    await addDoc(collection(db, "Notifications"), {
-      appointmentId: docId,
-      userId,
-      type: "reminder",
-      service: appointmentData.service || appointmentData.vaccineType || "Unknown service",
-      status: "unread",
-      message: `Your appointment for ${appointmentData.petName || "your pet"} is scheduled for ${appointmentData.service || appointmentData.vaccineType || "a service"}.`,
-      createdAt: serverTimestamp()
-    });
+ // ✅ Get vaccineType from VaccinationLabel
+async function getVaccineType(appointmentId) {
+  const q = query(
+    collection(db, "VaccinationLabel"),
+    where("appointmentId", "==", appointmentId) // match the field
+  );
+  const querySnap = await getDocs(q);
 
+  if (!querySnap.empty) {
+    const docData = querySnap.docs[0].data();
+    return docData.vaccineType || "Unknown vaccine";
+  }
+  return "Unknown vaccine";
+}
+
+// ✅ Build and save notification
+async function createReminderNotification(docId, appointmentData, userId) {
+  const vaccineType = await getVaccineType(docId);
+
+  await addDoc(collection(db, "Notifications"), {
+    appointmentId: docId,
+    userId,
+    type: "reminder",
+    service: vaccineType, // ✅ always the vaccineType
+    status: "unread",
+    message: `Your appointment for ${appointmentData.petName || "your pet"} is scheduled for the ${vaccineType}.`,
+    createdAt: serverTimestamp()
+  });
+}
+   await createReminderNotification(docId, appointmentData, userId);
     Swal.fire("✅ Reminder Sent!", `A notification has been sent to ${appointmentData.ownerName || "the owner"}.`, "success");
 
 
@@ -2516,14 +2634,14 @@ generateBtn.addEventListener("click", async () => {
   try {
     const reportType = reportTypeEl.value;
     const category = serviceCategoryEl.value;
-    const fromDate = reportDateFrom.value ? new Date(reportDateFrom.value) : null;
-    const toDate = reportDateTo.value ? new Date(reportDateTo.value) : null;
+    const fromDateInput = reportDateFrom.value ? new Date(reportDateFrom.value) : null;
+    const toDateInput = reportDateTo.value ? new Date(reportDateTo.value) : null;
 
     let totalRevenue = 0;
     let totalServices = 0;
     const rows = [];
 
-    // --- Build base queries (Completed only) ---
+    // --- Base queries ---
     let appointmentQuery = query(
       collection(db, "Appointment"),
       where("status", "==", "Completed")
@@ -2533,56 +2651,81 @@ generateBtn.addEventListener("click", async () => {
       where("status", "==", "Completed")
     );
 
-    // --- Optional category filter ---
     if (category.toLowerCase() !== "all") {
       appointmentQuery = query(appointmentQuery, where("service", "==", category));
       walkInQuery = query(walkInQuery, where("service", "==", category));
     }
 
-    // --- Get data from both collections ---
     const [apptSnapshot, walkInSnapshot] = await Promise.all([
       getDocs(appointmentQuery),
       getDocs(walkInQuery),
     ]);
 
-    // --- Helper function to process docs with JS date filtering ---
+    // --- Date ranges based on report type ---
+    const today = new Date();
+    let startDate = null;
+    let endDate = new Date(today.setHours(23, 59, 59, 999));
+
+    switch (reportType) {
+      case "daily":
+        startDate = new Date();
+        startDate.setHours(0, 0, 0, 0);
+        break;
+
+      case "weekly":
+        startDate = new Date();
+        startDate.setDate(today.getDate() - today.getDay()); // start of week (Sunday)
+        startDate.setHours(0, 0, 0, 0);
+        break;case "weekly":
+  startDate = new Date();
+  startDate.setDate(today.getDate() - 6); // ⬅️ last 7 days including today
+  startDate.setHours(0, 0, 0, 0);
+  break;
+
+
+      case "monthly":
+        startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+        break;
+
+      case "yearly":
+        startDate = new Date(today.getFullYear(), 0, 1);
+        break;
+
+      case "custom":
+        startDate = fromDateInput ? new Date(fromDateInput.setHours(0, 0, 0, 0)) : null;
+        endDate = toDateInput ? new Date(toDateInput.setHours(23, 59, 59, 999)) : null;
+        break;
+    }
+
     const processDoc = (docSnap, type) => {
-      const data = docSnap.data();
+  const data = docSnap.data();
 
-      // Get sale amount
-      let amount = data.totalAmount || 0;
-      if (typeof amount === "string") {
-        amount = amount.replace(/[^\d.-]/g, ""); // remove ₱, commas
-      }
-      amount = Number(amount) || 0;
+  let amount = Number((data.totalAmount || "0").toString().replace(/[^\d.-]/g, "")) || 0;
+  const saleDate = data.createdAt?.toDate
+    ? data.createdAt.toDate()
+    : (data.date ? new Date(data.date) : null);
 
-      // Determine the date
-      const saleDate = data.createdAt?.toDate
-        ? data.createdAt.toDate()
-        : (data.date ? new Date(data.date) : null);
+  // ⏳ Skip invalid or missing dates
+  if (!saleDate) return;
 
-      // Skip if outside date range
-      if (saleDate) {
-        if (fromDate && saleDate < new Date(fromDate.setHours(0,0,0,0))) return;
-        if (toDate && saleDate > new Date(toDate.setHours(23,59,59,999))) return;
-      }
+  if (startDate && saleDate < startDate) return;
+  if (endDate && saleDate > endDate) return;
 
-      const serviceType =
-        type === "walkin"
-          ? data.serviceType || "Walk-In"
-          : data.service || "Appointment";
+  const serviceType =
+    type === "walkin" ? data.serviceType || "Walk-In" : data.service || "Appointment";
 
-      totalRevenue += amount;
-      totalServices += 1;
+  totalRevenue += amount;
+  totalServices += 1;
 
-      rows.push({
-        date: saleDate ? saleDate.toLocaleDateString() : "N/A",
-        type: serviceType,
-        revenue: amount,
-        avg: amount,
-        growth: "N/A",
-      });
-    };
+  rows.push({
+    date: saleDate.toLocaleDateString(),
+    type: serviceType,
+    revenue: amount,
+    avg: amount,
+    growth: "N/A",
+  });
+};
+
 
     apptSnapshot.forEach(doc => processDoc(doc, "appointment"));
     walkInSnapshot.forEach(doc => processDoc(doc, "walkin"));
@@ -2591,8 +2734,8 @@ generateBtn.addEventListener("click", async () => {
     await addDoc(collection(db, "SalesReport"), {
       reportType,
       category,
-      fromDate: fromDate || null,
-      toDate: toDate || null,
+      fromDate: startDate || null,
+      toDate: endDate || null,
       totalRevenue,
       totalServices,
       createdAt: serverTimestamp(),
@@ -2609,7 +2752,7 @@ generateBtn.addEventListener("click", async () => {
           <td>${r.type}</td>
           <td>₱${r.revenue.toLocaleString()}</td>
           <td>₱${r.avg.toLocaleString()}</td>
-          <td>${r.growth}</td>
+          
         `;
         reportTableBody.appendChild(tr);
       });
@@ -2617,11 +2760,10 @@ generateBtn.addEventListener("click", async () => {
       reportTableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;">No data available</td></tr>`;
     }
 
-    // ✅ Update services completed & revenues locally
+    // ✅ Update stats
     document.getElementById("servicesCompleted").textContent = totalServices.toLocaleString();
     document.getElementById("todayRevenue").textContent = "₱" + totalRevenue.toLocaleString();
 
-    // --- Refresh revenue cards from SalesReport ---
     await updateRevenueCards(category);
 
   } catch (err) {
@@ -2629,7 +2771,6 @@ generateBtn.addEventListener("click", async () => {
   }
 });
 });
-
 
 
   // 🕓 Load recent activities

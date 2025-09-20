@@ -165,28 +165,6 @@ if (window.location.pathname.endsWith('index.html') && sessionStorage.getItem("u
   }
 }
 
-// your existing DOMContentLoaded, navbar, smooth scroll, modal code...
-document.addEventListener('DOMContentLoaded', () => {
-  // your existing code...
-});
-
-const role = sessionStorage.getItem("role");
-const currentPath = window.location.pathname;
-
-if (role === "customer" && currentPath.includes('customer.html')) {
-  history.pushState(null, null, currentPath);
-  window.addEventListener('popstate', () => {
-    location.replace(currentPath);
-  });
-}
-
-if (role === "admin" && currentPath.includes('admin.html')) {
-  history.pushState(null, null, currentPath);
-  window.addEventListener('popstate', () => {
-    location.replace(currentPath);
-  });
-}
-
 document.addEventListener("DOMContentLoaded", function () {
   const cardsContainer = document.querySelector('.cards');
   const boxesContainer = document.querySelector('#news .box-container');
@@ -203,8 +181,9 @@ document.addEventListener("DOMContentLoaded", function () {
     publishDate: ""
   };
 
+  // ✅ Modified: filter only published + sort latest first
   function getTop3Published(newsList) {
-    let published = (newsList || []).filter(n => n.status === 'published');
+    let published = (newsList || []).filter(n => n.status === 'published'); // only published
     published.sort((a, b) => {
       const da = a.publishDate ? new Date(a.publishDate).getTime() : 0;
       const db = b.publishDate ? new Date(b.publishDate).getTime() : 0;
@@ -217,7 +196,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const stored = JSON.parse(localStorage.getItem('newsList')) || [];
     let list = getTop3Published(stored);
 
-    // Always fill up to 3 slots
+    // ✅ Modified: always keep 3 slots filled
     while (list.length < 3) {
       list.push(defaultNews);
     }
@@ -272,3 +251,4 @@ document.addEventListener("DOMContentLoaded", function () {
     if (event.key === 'newsList') renderNews();
   });
 });
+

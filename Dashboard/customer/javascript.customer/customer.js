@@ -1373,55 +1373,96 @@ document.addEventListener('DOMContentLoaded', async () => {
   initCalendar();
 });
 
+
+
 document.addEventListener("DOMContentLoaded", function () {
-    const newsContainer = document.querySelector('.cards');
-    if (!newsContainer) return;
+  const cardsContainer = document.querySelector('.cards');
+  const boxesContainer = document.querySelector('#news .box-container');
+  const newsContainer = cardsContainer || boxesContainer;
+  if (!newsContainer) return;
 
-    const defaultNews = [
-        {
-            title: "NO NEWS AVAILABLE",
-            content: "Stay tuned for updates!",
-           
-        }
-    ];
+  const MODE = cardsContainer ? 'cards' : 'boxes'; // render style
 
-    function renderNews() {
-        let newsList = JSON.parse(localStorage.getItem('newsList')) || [];
+  const PLACEHOLDER_IMAGE = "/images/news2.webp"; 
+  const defaultNews = {
+    title: "NO NEWS AVAILABLE",
+    content: "Stay tuned for updates!",
+    image: PLACEHOLDER_IMAGE,
+    publishDate: ""
+  };
 
-        // If no news stored, use defaults
-        if (newsList.length === 0) {
-            newsList = defaultNews;
-        }
+  // ✅ Modified: filter only published + sort latest first
+  function getTop3Published(newsList) {
+    let published = (newsList || []).filter(n => n.status === 'published'); // only published
+    published.sort((a, b) => {
+      const da = a.publishDate ? new Date(a.publishDate).getTime() : 0;
+      const db = b.publishDate ? new Date(b.publishDate).getTime() : 0;
+      return db - da;
+    });
+    return published.slice(0, 3);
+  }
 
-        newsContainer.innerHTML = '';
+  function renderNews() {
+    const stored = JSON.parse(localStorage.getItem('newsList')) || [];
+    let list = getTop3Published(stored);
 
-        newsList.forEach(news => {
-            const card = document.createElement('div');
-            card.classList.add('card');
-            card.innerHTML = `
-                <div class="image-section">
-                    <img src="${news.image}" alt="${news.title}">
-                </div>
-                <div class="content">
-                    <h4>${news.title}</h4>
-                    <p>${news.content}</p>
-                </div>
-                <div class="posted-date">
-                    <p>${news.publishDate ? new Date(news.publishDate).toLocaleDateString() : ''}</p>
-                </div>
-            `;
-            newsContainer.appendChild(card);
-        });
+    // ✅ Modified: always keep 3 slots filled
+    while (list.length < 3) {
+      list.push(defaultNews);
     }
 
-    renderNews();
+    newsContainer.innerHTML = '';
 
-    window.addEventListener('storage', (event) => {
-        if (event.key === 'newsList') {
-            renderNews();
-        }
+    list.forEach(news => {
+      const imgSrc = news.image || PLACEHOLDER_IMAGE;
+      const dateText = news.publishDate ? new Date(news.publishDate).toLocaleDateString() : '';
+
+      if (MODE === 'cards') {
+        const card = document.createElement('div');
+        card.classList.add('card');
+        card.innerHTML = `
+          <div class="image-section">
+            <img src="${imgSrc}" alt="${news.title}">
+          </div>
+          <div class="content">
+            <h4>${news.title}</h4>
+            <p>${news.content}</p>
+          </div>
+          <div class="posted-date">
+            <p>${dateText}</p>
+          </div>
+        `;
+        newsContainer.appendChild(card);
+      } else {
+        const box = document.createElement('div');
+        box.classList.add('box');
+        box.innerHTML = `
+          <div class="image">
+            <img src="${imgSrc}" alt="${news.title}">
+          </div>
+          <div class="content">
+            <div class="icons">
+              <a href="#"><i class="fa-solid fa-calendar"></i> ${dateText}</a>
+              <a href="#"><i class="fas fa-user"></i> By admin</a>
+            </div>
+            <h3>${news.title}</h3>
+            <p>${news.content}</p>
+            <a href="news.html" class="btn">Learn More <span class="fas fa-chevron-right"></span></a>
+          </div>
+        `;
+        newsContainer.appendChild(box);
+      }
     });
+  }
+
+  renderNews();
+
+  window.addEventListener('storage', (event) => {
+    if (event.key === 'newsList') renderNews();
+  });
 });
+
+
 
 // Convert Firestore "HH:MM" (24-hour) -> minutes
 function toMinutes24(timeStr) {
@@ -1519,5 +1560,3 @@ document.addEventListener("DOMContentLoaded", applyClinicSchedule);
   window.closeAppointmentModal = () => PetManager.closeAppointmentModal();
   window.closeConfirmModal = () => PetManager.closeConfirmModal();
 
-
-  

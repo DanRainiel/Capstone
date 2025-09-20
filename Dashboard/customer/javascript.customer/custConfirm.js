@@ -286,26 +286,27 @@ if (feeTypeDropdown) {
 } catch (error) {
     console.error("Error processing appointment data:", error);
 }
-
 function updateTotalAmount() {
     const type = document.getElementById("Reservation-fee-type")?.value;
     let reservationFee = 0;
+    let grandTotal = baseServiceFee; // start with full service fee
 
-    if (type === "only") {
+    if (type === "reservation-only") {
         reservationFee = 40;
+        grandTotal -= reservationFee; // deduct reservation fee
     } else if (type === "with-downpayment") {
-        reservationFee = 350;
+        reservationFee = baseServiceFee / 2; // always half of total
+        grandTotal -= reservationFee; // deduct half (pay now only 50%)
     } else if (type === "with-full-payment") {
-        reservationFee = 0; // full payment → no reservation fee
+        reservationFee = 0; 
+        // full payment → keep total as is
     }
-
-    // Do NOT include reservationFee in total
-    const grandTotal = baseServiceFee;
 
     // Show reservation/downpayment separately
     document.getElementById("reservation-fee").textContent = `₱${reservationFee.toFixed(2)}`;
     document.getElementById("total-amount").textContent = `₱${grandTotal.toFixed(2)}`;
 }
+
 
 
 });

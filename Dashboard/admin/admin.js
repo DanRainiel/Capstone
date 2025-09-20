@@ -198,52 +198,8 @@ document.addEventListener("DOMContentLoaded", () => {
         case 'Book Appointment':
           alert('Redirecting to appointment booking...');
           break;
-        case 'Publish':
-          if (confirm('Publish this news article?')) {
-            alert('News article published successfully!');
-            const statusCell = e.target.closest('tr').querySelector('.status');
-            if (statusCell) {
-              statusCell.className = 'status completed';
-              statusCell.textContent = 'Published';
-            }
-          }
-          break;
-        case 'Unpublish':
-          if (confirm('Unpublish this news article?')) {
-            alert('News article unpublished.');
-            const statusCell = e.target.closest('tr').querySelector('.status');
-            if (statusCell) {
-              statusCell.className = 'status pending';
-              statusCell.textContent = 'Draft';
-            }
-          }
-          break;
-        case 'Delete':
-          if (confirm('Are you sure you want to delete this item? This action cannot be undone.')) {
-            alert('Item deleted successfully.');
-            e.target.closest('tr').remove();
-          }
-          break;
-        case 'Start':
-          alert('Starting appointment...');
-          const statusCell = e.target.closest('tr').querySelector('.status');
-          if (statusCell) {
-            statusCell.className = 'status pending';
-            statusCell.textContent = 'In Progress';
-          }
-          break;
-        case 'Reschedule':
-          alert('Opening reschedule form...');
-          break;
-        case 'Block':
-          alert('Time slot blocked successfully!');
-          break;
-        case 'Remove Block':
-          if (confirm('Remove this time block?')) {
-            alert('Time block removed.');
-            e.target.closest('tr').remove();
-          }
-          break;
+      
+     
       }
     }
   });
