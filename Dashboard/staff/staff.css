@@ -1152,6 +1152,13 @@
     justify-content: space-between;
     }
 
+   .calendar-day.past-date {
+  color: #aaa;
+  background: #f5f5f5;
+  pointer-events: none; /* prevent clicks */
+}
+
+
         @media (max-width: 991px) {
             .navigation {
                 left: -300px;

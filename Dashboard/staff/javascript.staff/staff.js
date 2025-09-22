@@ -318,36 +318,67 @@ function formatDateLocal(date) {
     return `${year}-${month}-${day}`;
 }
 
+function parsePeso(val) {
+  if (!val) return 0;
+  if (typeof val === "number") return val;
+  return parseFloat(val.toString().replace(/[₱,]/g, "")) || 0;
+}
+
+
 // ✅ Global state
 let currentDate = new Date();
 let selectedDate = null;
 let appointmentsData = {}; // will be populated from Firestore
 
-// ✅ Fetch appointments from Firestore
 async function fetchAppointments() {
-    const appointmentsCol = collection(db, "Appointment");
-    const snapshot = await getDocs(appointmentsCol);
-
     appointmentsData = {}; // reset
 
-   snapshot.forEach(doc => {
-    const appt = doc.data();
-    const dateKey = appt.date; // already in 'YYYY-MM-DD' format
+    // Load both collections
+    const [apptSnap, walkInSnap] = await Promise.all([
+        getDocs(collection(db, "Appointment")),
+        getDocs(collection(db, "WalkInAppointment"))
+    ]);
 
-    if (!appointmentsData[dateKey]) appointmentsData[dateKey] = [];
+    // Merge Appointment docs
+    apptSnap.forEach(doc => {
+        const appt = doc.data();
+        const dateKey = appt.date;
 
-    appointmentsData[dateKey].push({
-        time: appt.time,
-        owner: appt.name,      // <-- was 'owner'
-        pet: appt.petName,     // <-- was 'pet'
-        service: appt.service,
-        status: appt.status || "pending"
-    });
+        if (!appointmentsData[dateKey]) appointmentsData[dateKey] = [];
+
+       appointmentsData[dateKey].push({
+    time: appt.time,
+    owner: appt.name,
+    pet: appt.petName,
+    service: appt.service,
+    status: appt.status || "pending",
+    totalAmount: parsePeso(appt.totalAmount),       // the actual full price
+    amountPaid: parsePeso(appt.reservationFee)      // only the reservation fee paid
 });
 
+    });
+
+    // Merge WalkInAppointment docs
+    walkInSnap.forEach(doc => {
+        const appt = doc.data();
+        const dateKey = appt.date;
+
+        if (!appointmentsData[dateKey]) appointmentsData[dateKey] = [];
+
+        appointmentsData[dateKey].push({
+            time: appt.time,
+            owner: appt.name,
+            pet: appt.petName,
+            service: appt.service,
+            status: appt.status || "pending",
+            totalAmount: appt.totalAmount || 0,
+            amountPaid: appt.amountPaid || 0
+        });
+    });
 
     renderCalendar();
 }
+
 
 // ✅ Calendar initialization
 function initializeCalendar() {
@@ -355,7 +386,6 @@ function initializeCalendar() {
     fetchAppointments(); // load Firestore appointments first
 }
 
-// ✅ Render calendar with appointment indicators
 function renderCalendar() {
     const calendarGrid = document.getElementById('calendarGrid');
     const monthYear = document.getElementById('monthYear');
@@ -380,25 +410,27 @@ function renderCalendar() {
     });
 
     const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
     const startDate = new Date(firstDay);
     startDate.setDate(startDate.getDate() - firstDay.getDay());
 
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // normalize
+
     for (let i = 0; i < 42; i++) {
-        const currentDay = new Date(startDate);
-        currentDay.setDate(startDate.getDate() + i);
+        const currentDay = new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000);
 
         const cell = document.createElement('div');
         cell.className = 'calendar-day';
         cell.textContent = currentDay.getDate();
 
- const dateKey = formatDateLocal(currentDay);
-
+        const dateKey = formatDateLocal(currentDay);
 
         if (currentDay.getMonth() !== month) {
             cell.classList.add('other-month');
+        } else if (currentDay < today) {
+            cell.classList.add('past-date'); // grey out
         } else {
-            if (currentDay.toDateString() === new Date().toDateString()) {
+            if (currentDay.toDateString() === today.toDateString()) {
                 cell.classList.add('today');
             }
 
@@ -413,6 +445,7 @@ function renderCalendar() {
     }
 }
 
+
 // ✅ Date selection
 function selectDate(dateKey, dateObj, e) {
     document.querySelectorAll('.calendar-day.selected').forEach(day => day.classList.remove('selected'));
@@ -422,13 +455,14 @@ function selectDate(dateKey, dateObj, e) {
     displayAppointments(dateKey, dateObj);
 }
 
-// ✅ Show appointment list
 function displayAppointments(dateKey, dateObj) {
     const title = document.getElementById('selectedDateTitle');
     const list = document.getElementById('appointmentsList');
     if (!title || !list) return;
 
-    const formattedDate = dateObj.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    const formattedDate = dateObj.toLocaleDateString('en-US', { 
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+    });
     title.textContent = `Appointments for ${formattedDate}`;
 
     const appts = appointmentsData[dateKey] || [];
@@ -442,18 +476,28 @@ function displayAppointments(dateKey, dateObj) {
         return;
     }
 
-    list.innerHTML = appts.map(appt => `
-        <div class="appointment-item">
-            <div class="appointment-time">${appt.time}</div>
-            <div class="appointment-details">
-                <div class="appointment-pet">${appt.pet} (${appt.owner})</div>
-                <div style="margin-top: 5px;">
-                    <span style="color:#666;">Service:</span> ${appt.service}
-                    <span class="status ${appt.status}" style="margin-left:10px;">${appt.status}</span>
+    list.innerHTML = appts.map(appt => {
+        const balance = (appt.totalAmount || 0) - (appt.amountPaid || 0);
+
+        return `
+            <div class="appointment-item">
+                <div class="appointment-time">${appt.time}</div>
+                <div class="appointment-details">
+                    <div class="appointment-pet">${appt.pet} (${appt.owner})</div>
+                    <div style="margin-top: 5px;">
+                        <span style="color:#666;">Service:</span> ${appt.service}
+                        <span class="status ${appt.status}" style="margin-left:10px;">${appt.status}</span>
+                    </div>
+                    <div style="margin-top: 5px;">
+                        <span style="color:#666;">Amount Paid:</span> ₱${appt.amountPaid.toLocaleString()}
+                    </div>
+                    <div style="margin-top: 5px;">
+                        <span style="color:#666;">Remaining Balance:</span> ₱${balance.toLocaleString()}
+                    </div>
                 </div>
             </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 // ✅ Navigation controls
