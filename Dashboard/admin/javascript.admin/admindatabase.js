@@ -972,26 +972,27 @@ document.addEventListener("click", async (e) => {
             appointmentTable.appendChild(fullRow);
           }
 
-        // History table
-  if (historyTable) {
-    const totalAmount = data.totalAmount || 0;
-    const normalizedStatus = (status || "Pending").toLowerCase();
+  // History table
+if (historyTable && (status || "").toLowerCase() === "completed") {
+  const totalAmount = data.totalAmount || 0;
+  const normalizedStatus = (status || "Pending").toLowerCase();
 
-    // Combine service + serviceType (if it exists)
-    const serviceDisplay = [displayData.service, data.serviceType].filter(Boolean).join(" - ");
+  // Combine service + serviceType (if it exists)
+  const serviceDisplay = [displayData.service, data.serviceType].filter(Boolean).join(" - ");
 
-    const historyRow = document.createElement("tr");
-    historyRow.innerHTML = `
-      <td>${displayData.date}</td>
-      <td>${displayData.time}</td>
-      <td>${displayData.name}</td>
-      <td>${displayData.petName}</td>
-      <td>${serviceDisplay}</td>
-      <td>${totalAmount}</td>
-      <td class="status ${normalizedStatus}">${status || "Pending"}</td>
-    `;
-    historyTable.appendChild(historyRow);
-  }
+  const historyRow = document.createElement("tr");
+  historyRow.innerHTML = `
+    <td>${displayData.date}</td>
+    <td>${displayData.time}</td>
+    <td>${displayData.name}</td>
+    <td>${displayData.petName}</td>
+    <td>${serviceDisplay}</td>
+    <td>${totalAmount}</td>
+    <td class="status ${normalizedStatus}">${status || "Pending"}</td>
+  `;
+  historyTable.appendChild(historyRow);
+}
+
       }
 
   // Collect all appointments first
@@ -1005,34 +1006,63 @@ document.addEventListener("click", async (e) => {
     allAppointments.push({ ...doc.data(), id: doc.id, type: "walkin" });
   });
 
-  // ✅ Custom sort: latest date/time first, but completed always at bottom
-  allAppointments.sort((a, b) => {
-    const statusOrder = { pending: 1, "in progress": 2, completed: 3 };
-    const aStatus = statusOrder[a.status?.toLowerCase()] || 99;
-    const bStatus = statusOrder[b.status?.toLowerCase()] || 99;
+ // ✅ Helper function (put this above your sort)
+function normalizeDate(dateStr) {
+  if (!dateStr) return null;
 
-    // Completed always comes last
-    if (aStatus === 3 && bStatus !== 3) return 1;
-    if (bStatus === 3 && aStatus !== 3) return -1;
+  // If already ISO (YYYY-MM-DD)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    return new Date(dateStr);
+  }
 
-    // Compare date (latest first)
-    if (a.date && b.date && a.date !== b.date) {
-      return new Date(b.date) - new Date(a.date);
-    }
+  // If DD/MM/YYYY
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
+    const [day, month, year] = dateStr.split("/");
+    return new Date(`${year}-${month}-${day}`);
+  }
 
-    // Compare time (latest first) - safe handling
-    const aTime = a.time || "";
-    const bTime = b.time || "";
-    return bTime.localeCompare(aTime);
-  });
+  // If MM/DD/YYYY
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr)) {
+    const [month, day, year] = dateStr.split("/");
+    return new Date(`${year}-${month}-${day}`);
+  }
 
-  // ✅ Render into the correct table
-  allAppointments.forEach((apt) => {
-    const rowHTML = renderRow(apt, apt.type, apt.id);
+  return new Date(dateStr); // fallback
+}
 
+// ✅ Custom sort: latest date/time first, but completed always at bottom
+allAppointments.sort((a, b) => {
+  const statusOrder = { 
+    pending: 1,
+    "in progress": 2,
+    cancelled: 98,
+    completed: 99
+  };
 
-  });
+  const aStatus = statusOrder[a.status?.toLowerCase()] || 50;
+  const bStatus = statusOrder[b.status?.toLowerCase()] || 50;
 
+  if (aStatus !== bStatus) {
+    return aStatus - bStatus;
+  }
+
+  // ⬇️ use normalizeDate here
+  const aDate = normalizeDate(a.date);
+  const bDate = normalizeDate(b.date);
+
+  if (aDate && bDate && aDate.getTime() !== bDate.getTime()) {
+    return bDate - aDate; // latest first
+  }
+
+  // If same date, sort by time (latest first)
+  return (b.time || "").localeCompare(a.time || "");
+});
+
+// ✅ Render into the correct table
+allAppointments.forEach((apt) => {
+  const rowHTML = renderRow(apt, apt.type, apt.id);
+});
+ 
 
 
       // ✅ Update dashboard card numbers
@@ -1752,38 +1782,47 @@ if (btn.classList.contains('delete-btn')) {
         });
       } 
 
-      // --- EDIT ---
-      else if (btn.classList.contains('edit-btn')) {
-        Swal.fire({
-          title: "Edit News",
-          html: `
-            <input id="swal-title" class="swal2-input" value="${newsItem.title}" placeholder="Title">
-            <input id="swal-category" class="swal2-input" value="${newsItem.category}" placeholder="Category">
-            <textarea id="swal-content" class="swal2-textarea" placeholder="Content">${newsItem.content || ''}</textarea>
-          `,
-          showCancelButton: true,
-          confirmButtonText: "Save",
-          preConfirm: () => {
-            const newTitle = document.getElementById("swal-title").value.trim();
-            const newCategory = document.getElementById("swal-category").value.trim();
-            const newContent = document.getElementById("swal-content").value.trim();
-            if (!newTitle || !newCategory) {
-              Swal.showValidationMessage("Title and Category are required!");
-              return false;
-            }
-            return { newTitle, newCategory, newContent };
-          }
-        }).then((result) => {
-          if (result.isConfirmed) {
-            newsList[index].title = result.value.newTitle;
-            newsList[index].category = result.value.newCategory;
-            newsList[index].content = result.value.newContent;
-            saveNewsList(newsList);
-            renderNewsTable();
-            Swal.fire("Saved!", "News updated successfully.", "success");
-          }
-        });
-      } 
+    // --- EDIT ---
+else if (btn.classList.contains('edit-btn')) {
+  Swal.fire({
+    title: "Edit News",
+    html: `
+      <input id="swal-title" class="swal2-input" value="${newsItem.title}" placeholder="Title">
+      <input id="swal-category" class="swal2-input" value="${newsItem.category}" placeholder="Category">
+      
+      <select id="swal-priority" class="swal2-input" style="margin-top:10px;">
+        <option value="urgent" ${newsItem.priority === "urgent" ? "selected" : ""}>Urgent</option>
+        <option value="important" ${newsItem.priority === "important" ? "selected" : ""}>Important</option>
+        <option value="normal" ${newsItem.priority === "normal" ? "selected" : ""}>Normal</option>
+      </select>
+      
+      <textarea id="swal-content" class="swal2-textarea" placeholder="Content">${newsItem.content || ''}</textarea>
+    `,
+    showCancelButton: true,
+    confirmButtonText: "Save",
+    preConfirm: () => {
+      const newTitle = document.getElementById("swal-title").value.trim();
+      const newCategory = document.getElementById("swal-category").value.trim();
+      const newPriority = document.getElementById("swal-priority").value;
+      const newContent = document.getElementById("swal-content").value.trim();
+      if (!newTitle || !newCategory) {
+        Swal.showValidationMessage("Title and Category are required!");
+        return false;
+      }
+      return { newTitle, newCategory, newPriority, newContent };
+    }
+  }).then((result) => {
+    if (result.isConfirmed) {
+      newsList[index].title = result.value.newTitle;
+      newsList[index].category = result.value.newCategory;
+      newsList[index].priority = result.value.newPriority;
+      newsList[index].content = result.value.newContent;
+      saveNewsList(newsList);
+      renderNewsTable();
+      Swal.fire("Saved!", "News updated successfully.", "success");
+    }
+  });
+}
 
      else if (btn.classList.contains('view-btn')) {
   Swal.fire({
@@ -2750,6 +2789,27 @@ async function updateRevenueCards(category = "all", reportType = "all") {
   }
 }
 
+
+
+
+
+// --- Disable From/To on page load ---
+reportDateFrom.disabled = true;
+reportDateTo.disabled = true;
+
+// --- Toggle based on reportType selection ---
+reportTypeEl.addEventListener("change", () => {
+  if (reportTypeEl.value === "custom") {
+    reportDateFrom.disabled = false;
+    reportDateTo.disabled = false;
+  } else {
+    reportDateFrom.disabled = true;
+    reportDateTo.disabled = true;
+    reportDateFrom.value = "";
+    reportDateTo.value = "";
+  }
+});
+
 // --- Generate Report Button ---
 generateBtn.addEventListener("click", async () => {
   try {
@@ -2763,7 +2823,7 @@ generateBtn.addEventListener("click", async () => {
     const rows = [];
 
     const today = new Date();
-    today.setHours(0, 0, 0, 0); // normalize for comparisons
+    today.setHours(0, 0, 0, 0); 
     let startDate = null;
     let endDate = new Date();
     endDate.setHours(23, 59, 59, 999);
@@ -2776,7 +2836,7 @@ generateBtn.addEventListener("click", async () => {
 
       case "weekly":
         startDate = new Date();
-        startDate.setDate(today.getDate() - 6); // last 7 days
+        startDate.setDate(today.getDate() - 6);
         startDate.setHours(0, 0, 0, 0);
         break;
 
@@ -2789,11 +2849,19 @@ generateBtn.addEventListener("click", async () => {
         break;
 
       case "custom":
-        startDate = fromDateInput ? new Date(fromDateInput.setHours(0, 0, 0, 0)) : null;
-        endDate = toDateInput ? new Date(toDateInput.setHours(23, 59, 59, 999)) : null;
+        if (!fromDateInput || !toDateInput) {
+          Swal.fire("Missing Dates", "Please select both From and To dates.", "warning");
+          return;
+        }
+        startDate = new Date(fromDateInput.setHours(0, 0, 0, 0));
+        endDate = new Date(toDateInput.setHours(23, 59, 59, 999));
+
+        if (startDate > endDate) {
+          Swal.fire("Invalid Range", "From Date cannot be later than To Date.", "error");
+          return;
+        }
         break;
     }
-
     // --- Queries ---
 let appointmentQuery = query(
   collection(db, "Appointment"),
@@ -2851,7 +2919,7 @@ if (category.toLowerCase() !== "all") {
   totalServices += 1;
 
   rows.push({
-    date: saleDate.toLocaleDateString(),
+    date: saleDate.toLocaleDateString(), 
     type: serviceType,
     revenue: amount,
     avg: amount,
@@ -3033,17 +3101,25 @@ if (category.toLowerCase() !== "all") {
     const ownersMap = await getWalkInOwners();
 
     
-   // Get Pets
-const petsSnap = await getDocs(collection(db, "Pets"));
-petsSnap.forEach((docSnap) => {
-  const data = docSnap.data();
+    // Get Pets
+  const petsSnap = await getDocs(collection(db, "Pets"));
+  petsSnap.forEach((docSnap) => {
+    const data = docSnap.data();
   allPets.push({
     id: docSnap.id,
     collection: "Pets",
-    ownerName: data.ownerId || "N/A", // <- use ownerId directly
-    ...data
+    petName: data.petName || "N/A",       // include petName
+    sex: data.sex || "",
+    breed: data.breed || "",
+    size: data.size || "",
+    species: data.species || "",
+    weight: data.weight || "",
+    status: data.status || "Active",
+    createdAt: data.createdAt || new Date().toISOString(),
+    ownerName: data.ownerId || data.userId || "Unknown"
   });
-});
+
+  });
 
 
     // Get WalkInPets (they already have ownerName)
@@ -3066,59 +3142,48 @@ petsSnap.forEach((docSnap) => {
 }
 
 
-    // Render pets table
-    function renderPetsTable() {
-      petsTableBody.innerHTML = '';
+ function renderPetsTable() {
+  petsTableBody.innerHTML = '';
 
-      if (filteredPets.length === 0) {
-        petsTableBody.innerHTML = `
-          <tr>
-            <td colspan="9" style="text-align: center; padding: 40px; color: #666;">
-              No pets found matching your criteria
-            </td>
-          </tr>
-        `;
-        return;
-      }
+  if (filteredPets.length === 0) {
+    petsTableBody.innerHTML = `
+      <tr>
+        <td colspan="9" style="text-align: center; padding: 40px; color: #666;">
+          No pets found matching your criteria
+        </td>
+      </tr>
+    `;
+    return;
+  }
 
-      filteredPets.forEach(pet => {
-        const row = document.createElement('tr');
-        const lastVisit = pet.lastVisit || 'Never';
-        const status = pet.status || 'Active';
-        
-        row.innerHTML = `
-          <td>
-            <strong>${pet.petName || 'N/A'}</strong>
-          </td>
-          <td>
-            <span class="pet-species">${pet.species || 'N/A'}</span>
-          </td>
-          <td>${pet.breed || '-'}</td>
-          <td>${pet.age || '-'}</td>
-          <td>${pet.ownerName || 'N/A'}</td>
-          <td>${pet.ownerContact || '-'}</td>
-          <td>${lastVisit}</td>
-          <td>
-            <span class="status ${status.toLowerCase()}">${status}</span>
-          </td>
-          <td>
-            <button class="btn-primary view-pet" data-pet-id="${pet.id}">
-              <i class="fa-solid fa-eye"></i> View
-            </button>
-            <button class="btn-primary edit-pet" data-pet-id="${pet.id}">
-              <i class="fa-solid fa-edit"></i> Edit
-            </button>
-            <button class="btn-danger delete-pet" data-pet-id="${pet.id}">
-              <i class="fa-solid fa-trash"></i> Delete
-            </button>
-          </td>
-        `;
-        
-        petsTableBody.appendChild(row);
-      });
+  filteredPets.forEach(pet => {
+    const row = document.createElement('tr');
+    const status = pet.status || 'Active';
+    const owner = pet.ownerName || pet.userId || "Unknown"; // fallback
 
-      attachTableEventListeners();
-    }
+    row.innerHTML = `
+      <td><strong>${pet.petName || 'N/A'}</strong></td>
+      <td>${owner}</td>
+      <td><span class="status ${status.toLowerCase()}">${status}</span></td>
+      <td>
+        <button class="btn-primary view-pet" data-pet-id="${pet.id}">
+          <i class="fa-solid fa-eye"></i> View
+        </button>
+        <button class="btn-primary edit-pet" data-pet-id="${pet.id}">
+          <i class="fa-solid fa-edit"></i> Edit
+        </button>
+        <button class="btn-danger delete-pet" data-pet-id="${pet.id}">
+          <i class="fa-solid fa-trash"></i> Delete
+        </button>
+      </td>
+    `;
+
+    petsTableBody.appendChild(row);
+  });
+
+  attachTableEventListeners();
+}
+
 
   async function updateStatistics() {
   try {
@@ -3442,77 +3507,59 @@ petsSnap.forEach((docSnap) => {
       });
     }
 
-    // Search and filter functionality
-    function filterPets() {
-      const petNameSearch = searchPetName.value.toLowerCase().trim();
-      const ownerNameSearch = searchOwnerName.value.toLowerCase().trim();
-      const speciesFilter = filterSpecies.value;
+  // --- Filter/Search Pets ---
+function filterPets() {
+  const petNameSearch = searchPetName.value.toLowerCase().trim();
+  const ownerNameSearch = searchOwnerName.value.toLowerCase().trim();
+  const speciesFilter = filterSpecies.value;
 
-      filteredPets = allPets.filter(pet => {
-        const matchesPetName = !petNameSearch || 
-          (pet.petName && pet.petName.toLowerCase().includes(petNameSearch));
-        
-        const matchesOwnerName = !ownerNameSearch || 
-          (pet.ownerName && pet.ownerName.toLowerCase().includes(ownerNameSearch));
-        
-        const matchesSpecies = !speciesFilter || pet.species === speciesFilter;
+  filteredPets = allPets.filter(pet => {
+    const matchesPetName = !petNameSearch || (pet.petName && pet.petName.toLowerCase().includes(petNameSearch));
+    const matchesOwnerName = !ownerNameSearch || (pet.ownerName && pet.ownerName.toLowerCase().includes(ownerNameSearch));
+    const matchesSpecies = !speciesFilter || (pet.species && pet.species === speciesFilter);
 
-        return matchesPetName && matchesOwnerName && matchesSpecies;
-      });
+    return matchesPetName && matchesOwnerName && matchesSpecies;
+  });
 
-      renderPetsTable();
-    }
+  renderPetsTable();
+}
 
-    
-    // Search button event
-    document.getElementById('searchBtn').addEventListener('click', filterPets);
+// --- Search and Clear buttons ---
+document.getElementById('searchBtn').addEventListener('click', filterPets);
 
-    // Clear search button event
-    document.getElementById('clearSearchBtn').addEventListener('click', () => {
-      searchPetName.value = '';
-      searchOwnerName.value = '';
-      filterSpecies.value = '';
-      filteredPets = [...allPets];
-      renderPetsTable();
-    });
-
-    // Real-time search as user types
-    searchPetName.addEventListener('input', filterPets);
-    searchOwnerName.addEventListener('input', filterPets);
-    filterSpecies.addEventListener('change', filterPets);
-
-    // Modal close functionality
-    document.querySelectorAll('.close, #cancelEditPet, #closePetDetails').forEach(element => {
-      element.addEventListener('click', () => {
-        editPetModal.classList.remove('show');
-        viewPetModal.classList.remove('show');
-      });
-    });
-
-    
-    // Close modal when clicking outside
-    window.addEventListener('click', (e) => {
-      if (e.target === editPetModal) {
-        editPetModal.classList.remove('show');
-      }
-      if (e.target === viewPetModal) {
-        viewPetModal.classList.remove('show');
-      }
-    });
-
-
-    onSnapshot(collection(db, "Pets"), () => {
-  loadAllPets();
+document.getElementById('clearSearchBtn').addEventListener('click', () => {
+  searchPetName.value = '';
+  searchOwnerName.value = '';
+  filterSpecies.value = '';
+  filteredPets = [...allPets];
+  renderPetsTable();
 });
 
-onSnapshot(collection(db, "WalkInPets"), () => {
-  loadAllPets();
+// --- Real-time search as user types ---
+searchPetName.addEventListener('input', filterPets);
+searchOwnerName.addEventListener('input', filterPets);
+filterSpecies.addEventListener('change', filterPets);
+
+// --- Modal close functionality ---
+document.querySelectorAll('.close, #cancelEditPet, #closePetDetails').forEach(element => {
+  element.addEventListener('click', () => {
+    editPetModal.classList.remove('show');
+    viewPetModal.classList.remove('show');
+  });
 });
 
-    // Initialize on page load
-    document.addEventListener('DOMContentLoaded', () => {
-      loadAllPets();
-    });
+// --- Close modal when clicking outside ---
+window.addEventListener('click', (e) => {
+  if (e.target === editPetModal) editPetModal.classList.remove('show');
+  if (e.target === viewPetModal) viewPetModal.classList.remove('show');
+});
+
+// --- Real-time Firestore updates ---
+onSnapshot(collection(db, "Pets"), () => {
+  loadAllPets();  // reload both Pets and WalkInPets
+});
+
+
 
     // Export functions for external use (if needed)
     window.petManagement = {
@@ -3524,5 +3571,5 @@ onSnapshot(collection(db, "WalkInPets"), () => {
     };
 
     
-  // modal.js
+
 

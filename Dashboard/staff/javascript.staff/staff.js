@@ -1276,20 +1276,23 @@ async function loadAllAppointments() {
         appointmentTable.appendChild(fullRow);
       }
 
-      if (historyTable) {
-        const totalAmount = data.totalAmount || 0;
-        const serviceDisplay = [displayData.service, data.serviceType].filter(Boolean).join(" - ");
-        const historyRow = document.createElement("tr");
-        historyRow.innerHTML = `
-          <td>${displayData.date}</td>
-          <td>${displayData.time}</td>
-          <td>${displayData.name}</td>
-          <td>${displayData.petName}</td>
-          <td>${serviceDisplay}</td>
-          <td>${totalAmount}</td>
-          <td class="status ${displayData.statusNormalized}">${displayData.status}</td>`;
-        historyTable.appendChild(historyRow);
-      }
+      if (historyTable && (displayData.status || "").toLowerCase() === "completed") {
+  const totalAmount = data.totalAmount || 0;
+  const serviceDisplay = [displayData.service, data.serviceType].filter(Boolean).join(" - ");
+
+  const historyRow = document.createElement("tr");
+  historyRow.innerHTML = `
+    <td>${displayData.date}</td>
+    <td>${displayData.time}</td>
+    <td>${displayData.name}</td>
+    <td>${displayData.petName}</td>
+    <td>${serviceDisplay}</td>
+    <td>${totalAmount}</td>
+    <td class="status ${displayData.statusNormalized}">${displayData.status}</td>
+  `;
+  historyTable.appendChild(historyRow);
+}
+
     }
 
     // Collect + sort + render
