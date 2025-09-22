@@ -653,10 +653,7 @@ loadClinicHours();
       const data = docSnap.data();
       console.log("Checking doc:", data);
 
-      if (data.userId !== currentUserUid) {
-        console.log("Skipping non-matching appointment:", data.userId);
-        return;
-      }
+   
 
     const dateStr = formatDate(new Date(data.date));
 
@@ -877,7 +874,9 @@ loadClinicHours();
                           timeSlotsDiv.appendChild(timeSlot);
                       });
                       
+                      
                      appointmentsListDiv.innerHTML = '';
+
 
 if (dayAppointments.length > 0) {
   const filteredAppointments = selectedTimeSlot

@@ -837,186 +837,277 @@ document.addEventListener("click", async (e) => {
         }
       }
     });
-// 📅 Load appointments into tables
-async function loadAllAppointments() {
-  const dashboardTable = document.getElementById("table-dashboard");
-  const appointmentTable = document.getElementById("appointmentTable");
-  const historyTable = document.getElementById("historytable");
 
-  if (dashboardTable) dashboardTable.innerHTML = "";
-  if (appointmentTable) appointmentTable.innerHTML = "";
-  if (historyTable) historyTable.innerHTML = "";
-
-  // ✅ Counters
-  let finishedAppointmentsCount = 0;
-  let walkInCount = 0;
-  let totalAppointmentsToday = 0;
-  let pendingAppointmentsToday = 0;
-  let cancelledAppointmentsToday = 0;
-  let todaysEarnings = 0;
-
-  const today = new Date().toISOString().split("T")[0];
-
-  try {
-    const [snapshot, walkInSnapshot] = await Promise.all([
-      getDocs(collection(db, "Appointment")),
-      getDocs(collection(db, "WalkInAppointment")),
-    ]);
-
-    if (snapshot.empty && walkInSnapshot.empty) {
-      const emptyRow = "<tr><td colspan='8'>No appointments found.</td></tr>";
-      if (dashboardTable) dashboardTable.innerHTML = emptyRow;
-      if (appointmentTable) appointmentTable.innerHTML = emptyRow;
-
-      // 🔹 Log activity & refresh UI
-      await logActivity("staff", "Load Appointments", "No appointments found.");
-      if (typeof loadRecentActivity === "function") await loadRecentActivity();
-      return;
-    }
-
-    // ✅ Row renderer
-    const renderRow = (data, type, docId) => {
-      const status = (data.status || "Pending").toLowerCase();
-      const appliedDiscounts = data.appliedDiscounts || [];
-
-      const displayData = {
-        name: type === "walkin"
-          ? `${data.firstName || ""} ${data.lastName || ""}`.trim()
-          : data.name || "",
-        petName: data.petName || data.pet?.petName || "",
-        service: type === "walkin" ? data.serviceType || "" : data.service || "",
-        time: data.time || "",
-        date: data.date || "",
-        contact: data.contact || "",
-        status,
-        mode: type === "walkin" ? "Walk-In" : "Appointment",
-        totalAmount: Number(data.totalAmount) || 0,
-      };
-
-      // ✅ Counters
-      if (displayData.date === today) totalAppointmentsToday++;
-      if (status === "completed") {
-        finishedAppointmentsCount++;
-        if (displayData.date === today) {
-          todaysEarnings += displayData.totalAmount;
-        }
-      }
-      if (type === "walkin") walkInCount++;
-      if (status === "pending") pendingAppointmentsToday++;
-      if (status === "cancelled") cancelledAppointmentsToday++;
-
-      // ✅ Dashboard row
-      if (dashboardTable) {
-        dashboardTable.insertAdjacentHTML(
-          "beforeend",
-          `<tr>
-          
-            <td>${displayData.name}</td>
-            <td>${displayData.petName}</td>
-            <td>${displayData.service}</td>
-            <td>${displayData.time}</td>
-            <td>${displayData.mode}</td>
-            <td class="status ${status}">${status}</td>
-          </tr>`
-        );
-      }
-
-      
-      // ✅ Appointment table
-      if (appointmentTable) {
-        const normalizedStatus = status;
-        let actionButtons = "";
-
-        if (normalizedStatus === "pending") {
-          actionButtons = `
-            <button class="btn accept" data-id="${docId}" data-type="${type}">Accept</button>
-            <button class="btn decline" data-id="${docId}" data-type="${type}">Decline</button>
-            <button class="btn reschedule" data-id="${docId}" data-type="${type}">Reschedule</button>
-          `;
-        } else if (normalizedStatus === "in progress") {
-          actionButtons = `
-            <button class="btn complete" data-id="${docId}" data-type="${type}">Complete</button>
-            <button class="btn add-discount" data-id="${docId}" data-type="${type}" data-service="${displayData.service}">Apply Discount</button>
-          `;
-        } else if (normalizedStatus === "completed") {
-          actionButtons = `
-            <button class="btn view" data-id="${docId}" data-type="${type}">View</button>
-            <button class="btn edit" data-id="${docId}" data-type="${type}">Edit</button>
-          `;
-           } else if (normalizedStatus === "cancelled") {
-    actionButtons = `
-      <button class="btn viewreason" data-id="${docId}" data-type="${type}">View Reason</button>
-    `;
-        }
-
-        const fullRow = document.createElement("tr");
-        fullRow.innerHTML = `
-          <td>${displayData.date}</td>
-          <td>${displayData.time}</td>
-          <td>${displayData.name}</td>
-          <td>${displayData.petName}</td>
-          <td>${displayData.service}</td>
-          <td class="status ${normalizedStatus}">${status || "Pending"}</td>
-          <td>${actionButtons}</td>
-        `;
-        appointmentTable.appendChild(fullRow);
-      }
-
-      // ✅ History table
-      if (historyTable) {
-        const totalAmount = data.totalAmount || 0;
-        const historyRow = document.createElement("tr");
-        historyRow.innerHTML = `
-          <td>${displayData.date}</td>
-          <td>${displayData.time}</td>
-          <td>${displayData.name}</td>
-          <td>${displayData.petName}</td>
-          <td>${displayData.service}</td>
-          <td>${totalAmount}</td>
-          <td class="status ${status}">${status || "Pending"}</td>
-        `;
-        historyTable.appendChild(historyRow);
-      }
-    };
-
-   // Collect all appointments first
-const allAppointments = [];
-
-snapshot.forEach((doc) => {
-  allAppointments.push({ ...doc.data(), id: doc.id, type: "appointment" });
-});
-
-walkInSnapshot.forEach((doc) => {
-  allAppointments.push({ ...doc.data(), id: doc.id, type: "walkin" });
-});
-
-// ✅ Custom sort: latest date/time first, but completed always at bottom
-allAppointments.sort((a, b) => {
-  const statusOrder = { pending: 1, "in progress": 2, completed: 3 };
-  const aStatus = statusOrder[a.status?.toLowerCase()] || 99;
-  const bStatus = statusOrder[b.status?.toLowerCase()] || 99;
-
-  // Completed always comes last
-  if (aStatus === 3 && bStatus !== 3) return 1;
-  if (bStatus === 3 && aStatus !== 3) return -1;
-
-  // Compare date (latest first)
-  if (a.date && b.date && a.date !== b.date) {
-    return new Date(b.date) - new Date(a.date);
-  }
-
-  // Compare time (latest first) - safe handling
-  const aTime = a.time || "";
-  const bTime = b.time || "";
-  return bTime.localeCompare(aTime);
-});
-
-// ✅ Render into the correct table
-allAppointments.forEach((apt) => {
-  const rowHTML = renderRow(apt, apt.type, apt.id);
-
-  
-});
+ 
+ // 📅 Load appointments into two tables
+ async function loadAllAppointments() {
+   const dashboardTable = document.getElementById("table-dashboard");
+   const appointmentTable = document.getElementById("appointmentTable");
+   const historyTable = document.getElementById("historytable");
+   const walkInTable = document.getElementById("walkinTableBody");
+ 
+   if (dashboardTable) dashboardTable.innerHTML = "";
+   if (appointmentTable) appointmentTable.innerHTML = "";
+   if (historyTable) historyTable.innerHTML = "";
+   if (walkInTable) walkInTable.innerHTML = "";
+     
+   // ✅ Counts
+   let todayScheduleCount = 0;
+   let finishedAppointmentsCount = 0;
+   let walkInCount = 0;
+ 
+   let totalAppointmentsToday = 0;
+   let pendingAppointmentsToday = 0;
+   let cancelledAppointmentsToday = 0;
+   let todaysEarnings = 0;
+ 
+   let totalUsers = 0;
+ 
+   const today = new Date().toISOString().split("T")[0]; // "YYYY-MM-DD"
+ 
+   try {
+     const [snapshot, walkInSnapshot] = await Promise.all([
+       getDocs(collection(db, "Appointment")),
+       getDocs(collection(db, "WalkInAppointment")),
+     ]);
+ 
+     if (snapshot.empty && walkInSnapshot.empty) {
+       const emptyRow = "<tr><td colspan='8'>No appointments found.</td></tr>";
+       if (dashboardTable) dashboardTable.innerHTML = emptyRow;
+       if (appointmentTable) appointmentTable.innerHTML = emptyRow;
+       await logActivity("admin", "Load Appointments", "No appointments found.");
+       return;
+     }
+ 
+     // Function to render each row
+     const renderRow = (data, type, docId) => {
+       const status = data.status || "Pending";
+ 
+       const safe = (val) => (val === undefined || val === null ? "" : val);
+ 
+ const displayData = {
+   name:
+     type === "walkin"
+       ? `${safe(data.firstName)} ${safe(data.lastName)}`.trim()
+       : safe(data.name),
+   petName: safe(data.petName) || safe(data.pet?.petName),
+     service: safe(data.service),              // for regular appointments
+   walkinService: safe(data.serviceType), 
+   date: type === "walkin" && data.timestamp ? 
+         new Date(data.timestamp).toLocaleDateString() : safe(data.date),
+   time: type === "walkin" && data.timestamp ? 
+         new Date(data.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : safe(data.time),
+   contact: safe(data.contact),
+   status: safe(status),
+   mode: type === "walkin" ? "Walk-In" : "Appointment",
+     reservationType: safe(data.reservationType),
+   reservationFee: safe(data.reservationFee),
+   userId: safe(data.userId),      // 🔹 include userId
+   appointmentId: docId,           // 🔹 include docId 
+   sourceType: type
+ };
+ 
+ 
+       // ✅ Count today's scheduled appointments
+       if (displayData.date === today) {
+         totalAppointmentsToday++;
+       }
+ 
+       // ✅ Count finished appointments
+       if (status.toLowerCase() === "completed") {
+         finishedAppointmentsCount++;
+        
+         // 🟢 Add to today's earnings only if completed today
+ if (displayData.date === today) {
+   let amount = data.totalAmount || 0;
+   if (typeof amount === "string") {
+     amount = amount.replace(/[^\d.-]/g, ""); // remove ₱ and commas
+   }
+   todaysEarnings += Number(amount) || 0;
+ }
+ 
+       }
+ 
+       // ✅ Count walk-ins
+       if (type === "walkin") {
+         walkInCount++;
+       }
+ 
+       // ✅ Count pending and cancelled (all time)
+       if (status.toLowerCase() === "pending") {
+         pendingAppointmentsToday++;
+       }
+       if (status.toLowerCase() === "cancelled") {
+         cancelledAppointmentsToday++;
+       }
+ 
+        if (dashboardTable && type !== "walkin") {
+   const dashRow = document.createElement("tr");
+   dashRow.innerHTML = `
+     <td>${displayData.name}</td>
+     <td>${displayData.petName}</td>
+     <td>${displayData.service}</td>
+     <td>${displayData.time}</td>
+     <td>${displayData.mode}</td>
+     <td class="status ${status.toLowerCase()}">${status}</td>
+   `;
+   dashboardTable.appendChild(dashRow);
+ }
+ 
+ if (walkInTable && type === "walkin") {
+   // 🔒 If status is missing, default to "pending"
+   const normalizedStatus = (status && typeof status === "string")
+     ? status.toLowerCase()
+     : "pending";
+ 
+   let actionButtons = "";
+ 
+   if (normalizedStatus === "pending") {
+     actionButtons = `
+       <button class="btn accept" data-id="${docId}" data-type="${type}">Accept</button>
+       <button class="btn decline" data-id="${docId}" data-type="${type}">Decline</button>
+     `;
+   } else if (normalizedStatus === "in progress") {
+     actionButtons = `
+       <button class="btn complete" data-id="${docId}" data-type="${type}">Complete</button>
+       <button class="btn add-discount" data-id="${docId}" data-type="${type}" 
+         data-service="${displayData.walkinService || displayData.serviceType}">
+         Apply Discount
+       </button>
+     `;
+   } else if (normalizedStatus === "completed") {
+     actionButtons = `
+       <button class="btn view" data-id="${docId}" data-type="${type}">View</button>
+       <button class="btn edit" data-id="${docId}" data-type="${type}">Edit</button>
+     `;
+   }
+ 
+   // Render row
+   const dashRow = document.createElement("tr");
+   dashRow.innerHTML = `
+     <td>${displayData.date || ""}</td>
+     <td>${displayData.time || ""}</td>
+     <td>${displayData.name || displayData.firstName + " " + displayData.lastName}</td>
+     <td>${displayData.petName || displayData.pet?.petName || ""}</td>
+     <td>${displayData.walkinService || displayData.serviceType || ""}</td>
+     <td class="status ${normalizedStatus}">${status || "Pending"}</td>
+     <td>${actionButtons}</td>
+   `;
+   walkInTable.appendChild(dashRow);
+ }
+ 
+           // Appointment table
+         if (appointmentTable && type !== "walkin") {
+             const normalizedStatus = (status || "Pending").toLowerCase();
+             let actionButtons = "";
+ 
+             if (normalizedStatus === "pending") {
+               actionButtons = `
+                 <button class="btn accept" data-id="${docId}" data-type="${type}">Accept</button>
+                 <button class="btn decline" data-id="${docId}" data-type="${type}">Decline</button>
+                 <button class="btn reschedule" data-id="${docId}" data-type="${type}">Reschedule</button>
+               <button class="btn screenshot" data-id="${docId}" data-type="Appointment">View Screenshot</button>
+               `;
+     } else if (normalizedStatus === "in progress") {
+       actionButtons = `
+         <button class="btn complete" data-id="${docId}" data-type="${type}">Complete</button>
+       
+         <button class="btn add-discount" data-id="${docId}" data-type="${type}" data-service="${displayData.service}">Apply Discount</button>
+       `;
+ 
+             } else if (normalizedStatus === "completed") {
+               actionButtons = `
+                 <button class="btn view" data-id="${docId}" data-type="${type}">View</button>
+                 <button class="btn edit" data-id="${docId}" data-type="${type}">Edit</button>
+               `;
+             
+               } else if (normalizedStatus === "for-rescheduling") {
+         actionButtons = `
+           <button class="btn accept" data-id="${docId}" data-type="${type}">Accept</button>
+           <button class="btn decline" data-id="${docId}" data-type="${type}">Decline</button>
+         `;
+         } else if (normalizedStatus === "cancelled") {
+         actionButtons = `
+           <button class="btn viewreason" data-id="${docId}" data-type="${type}">View Reason</button>
+         `;
+       }
+ 
+           const fullRow = document.createElement("tr");
+           fullRow.innerHTML = `
+             <td>${displayData.date}</td>
+             <td>${displayData.time}</td>
+             <td>${displayData.name}</td>
+             
+             <td>${displayData.petName}</td>
+             <td>${displayData.service}</td>
+             <td class="status ${normalizedStatus}">${status || "Pending"}</td>
+               <td>${displayData.reservationType}</td>
+             <td>${actionButtons}</td>
+           `;
+           appointmentTable.appendChild(fullRow);
+         }
+ 
+       // History table
+ if (historyTable) {
+   const totalAmount = data.totalAmount || 0;
+   const normalizedStatus = (status || "Pending").toLowerCase();
+ 
+   // Combine service + serviceType (if it exists)
+   const serviceDisplay = [displayData.service, data.serviceType].filter(Boolean).join(" - ");
+ 
+   const historyRow = document.createElement("tr");
+   historyRow.innerHTML = `
+     <td>${displayData.date}</td>
+     <td>${displayData.time}</td>
+     <td>${displayData.name}</td>
+     <td>${displayData.petName}</td>
+     <td>${serviceDisplay}</td>
+     <td>${totalAmount}</td>
+     <td class="status ${normalizedStatus}">${status || "Pending"}</td>
+   `;
+   historyTable.appendChild(historyRow);
+ }
+     }
+ 
+ // Collect all appointments first
+ const allAppointments = [];
+ 
+ snapshot.forEach((doc) => {
+   allAppointments.push({ ...doc.data(), id: doc.id, type: "appointment" });
+ });
+ 
+ walkInSnapshot.forEach((doc) => {
+   allAppointments.push({ ...doc.data(), id: doc.id, type: "walkin" });
+ });
+ 
+ // ✅ Custom sort: latest date/time first, but completed always at bottom
+ allAppointments.sort((a, b) => {
+   const statusOrder = { pending: 1, "in progress": 2, completed: 3 };
+   const aStatus = statusOrder[a.status?.toLowerCase()] || 99;
+   const bStatus = statusOrder[b.status?.toLowerCase()] || 99;
+ 
+   // Completed always comes last
+   if (aStatus === 3 && bStatus !== 3) return 1;
+   if (bStatus === 3 && aStatus !== 3) return -1;
+ 
+   // Compare date (latest first)
+   if (a.date && b.date && a.date !== b.date) {
+     return new Date(b.date) - new Date(a.date);
+   }
+ 
+   // Compare time (latest first) - safe handling
+   const aTime = a.time || "";
+   const bTime = b.time || "";
+   return bTime.localeCompare(aTime);
+ });
+ 
+ // ✅ Render into the correct table
+ allAppointments.forEach((apt) => {
+   const rowHTML = renderRow(apt, apt.type, apt.id);
+ 
+ 
+ });
+ 
 
     // ✅ Update dashboard stats
     document.querySelector(".card:nth-child(1) .numbers").textContent = totalAppointmentsToday;
