@@ -764,542 +764,542 @@ document.addEventListener("click", async (e) => {
 
 
 
-// 📅 Load appointments into two tables
-async function loadAllAppointments() {
-  const dashboardTable = document.getElementById("table-dashboard");
-  const appointmentTable = document.getElementById("appointmentTable");
-  const historyTable = document.getElementById("historytable");
-  const walkInTable = document.getElementById("walkinTableBody");
+  // 📅 Load appointments into two tables
+  async function loadAllAppointments() {
+    const dashboardTable = document.getElementById("table-dashboard");
+    const appointmentTable = document.getElementById("appointmentTable");
+    const historyTable = document.getElementById("historytable");
+    const walkInTable = document.getElementById("walkinTableBody");
 
-  if (dashboardTable) dashboardTable.innerHTML = "";
-  if (appointmentTable) appointmentTable.innerHTML = "";
-  if (historyTable) historyTable.innerHTML = "";
-  if (walkInTable) walkInTable.innerHTML = "";
-    
-  // ✅ Counts
-  let todayScheduleCount = 0;
-  let finishedAppointmentsCount = 0;
-  let walkInCount = 0;
+    if (dashboardTable) dashboardTable.innerHTML = "";
+    if (appointmentTable) appointmentTable.innerHTML = "";
+    if (historyTable) historyTable.innerHTML = "";
+    if (walkInTable) walkInTable.innerHTML = "";
+      
+    // ✅ Counts
+    let todayScheduleCount = 0;
+    let finishedAppointmentsCount = 0;
+    let walkInCount = 0;
 
-  let totalAppointmentsToday = 0;
-  let pendingAppointmentsToday = 0;
-  let cancelledAppointmentsToday = 0;
-  let todaysEarnings = 0;
+    let totalAppointmentsToday = 0;
+    let pendingAppointmentsToday = 0;
+    let cancelledAppointmentsToday = 0;
+    let todaysEarnings = 0;
 
-  let totalUsers = 0;
+    let totalUsers = 0;
 
-  const today = new Date().toISOString().split("T")[0]; // "YYYY-MM-DD"
+    const today = new Date().toISOString().split("T")[0]; // "YYYY-MM-DD"
 
-  try {
-    const [snapshot, walkInSnapshot] = await Promise.all([
-      getDocs(collection(db, "Appointment")),
-      getDocs(collection(db, "WalkInAppointment")),
-    ]);
+    try {
+      const [snapshot, walkInSnapshot] = await Promise.all([
+        getDocs(collection(db, "Appointment")),
+        getDocs(collection(db, "WalkInAppointment")),
+      ]);
 
-    if (snapshot.empty && walkInSnapshot.empty) {
-      const emptyRow = "<tr><td colspan='8'>No appointments found.</td></tr>";
-      if (dashboardTable) dashboardTable.innerHTML = emptyRow;
-      if (appointmentTable) appointmentTable.innerHTML = emptyRow;
-      await logActivity("admin", "Load Appointments", "No appointments found.");
-      return;
+      if (snapshot.empty && walkInSnapshot.empty) {
+        const emptyRow = "<tr><td colspan='8'>No appointments found.</td></tr>";
+        if (dashboardTable) dashboardTable.innerHTML = emptyRow;
+        if (appointmentTable) appointmentTable.innerHTML = emptyRow;
+        await logActivity("admin", "Load Appointments", "No appointments found.");
+        return;
+      }
+
+      // Function to render each row
+      const renderRow = (data, type, docId) => {
+        const status = data.status || "Pending";
+
+        const safe = (val) => (val === undefined || val === null ? "" : val);
+
+  const displayData = {
+    name:
+      type === "walkin"
+        ? `${safe(data.firstName)} ${safe(data.lastName)}`.trim()
+        : safe(data.name),
+    petName: safe(data.petName) || safe(data.pet?.petName),
+      service: safe(data.service),              // for regular appointments
+    walkinService: safe(data.serviceType), 
+    date: type === "walkin" && data.timestamp ? 
+          new Date(data.timestamp).toLocaleDateString() : safe(data.date),
+    time: type === "walkin" && data.timestamp ? 
+          new Date(data.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : safe(data.time),
+    contact: safe(data.contact),
+    status: safe(status),
+    mode: type === "walkin" ? "Walk-In" : "Appointment",
+      reservationType: safe(data.reservationType),
+    reservationFee: safe(data.reservationFee),
+    userId: safe(data.userId),      // 🔹 include userId
+    appointmentId: docId,           // 🔹 include docId 
+    sourceType: type
+  };
+
+
+        // ✅ Count today's scheduled appointments
+        if (displayData.date === today) {
+          totalAppointmentsToday++;
+        }
+
+        // ✅ Count finished appointments
+        if (status.toLowerCase() === "completed") {
+          finishedAppointmentsCount++;
+        
+          // 🟢 Add to today's earnings only if completed today
+  if (displayData.date === today) {
+    let amount = data.totalAmount || 0;
+    if (typeof amount === "string") {
+      amount = amount.replace(/[^\d.-]/g, ""); // remove ₱ and commas
     }
-
-    // Function to render each row
-    const renderRow = (data, type, docId) => {
-      const status = data.status || "Pending";
-
-      const safe = (val) => (val === undefined || val === null ? "" : val);
-
-const displayData = {
-  name:
-    type === "walkin"
-      ? `${safe(data.firstName)} ${safe(data.lastName)}`.trim()
-      : safe(data.name),
-  petName: safe(data.petName) || safe(data.pet?.petName),
-    service: safe(data.service),              // for regular appointments
-  walkinService: safe(data.serviceType), 
-  date: type === "walkin" && data.timestamp ? 
-        new Date(data.timestamp).toLocaleDateString() : safe(data.date),
-  time: type === "walkin" && data.timestamp ? 
-        new Date(data.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : safe(data.time),
-  contact: safe(data.contact),
-  status: safe(status),
-  mode: type === "walkin" ? "Walk-In" : "Appointment",
-    reservationType: safe(data.reservationType),
-  reservationFee: safe(data.reservationFee),
-  userId: safe(data.userId),      // 🔹 include userId
-  appointmentId: docId,           // 🔹 include docId 
-  sourceType: type
-};
-
-
-      // ✅ Count today's scheduled appointments
-      if (displayData.date === today) {
-        totalAppointmentsToday++;
-      }
-
-      // ✅ Count finished appointments
-      if (status.toLowerCase() === "completed") {
-        finishedAppointmentsCount++;
-       
-        // 🟢 Add to today's earnings only if completed today
-if (displayData.date === today) {
-  let amount = data.totalAmount || 0;
-  if (typeof amount === "string") {
-    amount = amount.replace(/[^\d.-]/g, ""); // remove ₱ and commas
-  }
-  todaysEarnings += Number(amount) || 0;
-}
-
-      }
-
-      // ✅ Count walk-ins
-      if (type === "walkin") {
-        walkInCount++;
-      }
-
-      // ✅ Count pending and cancelled (all time)
-      if (status.toLowerCase() === "pending") {
-        pendingAppointmentsToday++;
-      }
-      if (status.toLowerCase() === "cancelled") {
-        cancelledAppointmentsToday++;
-      }
-
-       if (dashboardTable && type !== "walkin") {
-  const dashRow = document.createElement("tr");
-  dashRow.innerHTML = `
-    <td>${displayData.name}</td>
-    <td>${displayData.petName}</td>
-    <td>${displayData.service}</td>
-    <td>${displayData.time}</td>
-    <td>${displayData.mode}</td>
-    <td class="status ${status.toLowerCase()}">${status}</td>
-  `;
-  dashboardTable.appendChild(dashRow);
-}
-
-if (walkInTable && type === "walkin") {
-  // 🔒 If status is missing, default to "pending"
-  const normalizedStatus = (status && typeof status === "string")
-    ? status.toLowerCase()
-    : "pending";
-
-  let actionButtons = "";
-
-  if (normalizedStatus === "pending") {
-    actionButtons = `
-      <button class="btn accept" data-id="${docId}" data-type="${type}">Accept</button>
-      <button class="btn decline" data-id="${docId}" data-type="${type}">Decline</button>
-    `;
-  } else if (normalizedStatus === "in progress") {
-    actionButtons = `
-      <button class="btn complete" data-id="${docId}" data-type="${type}">Complete</button>
-      <button class="btn add-discount" data-id="${docId}" data-type="${type}" 
-        data-service="${displayData.walkinService || displayData.serviceType}">
-        Apply Discount
-      </button>
-    `;
-  } else if (normalizedStatus === "completed") {
-    actionButtons = `
-      <button class="btn view" data-id="${docId}" data-type="${type}">View</button>
-      <button class="btn edit" data-id="${docId}" data-type="${type}">Edit</button>
-    `;
+    todaysEarnings += Number(amount) || 0;
   }
 
-  // Render row
-  const dashRow = document.createElement("tr");
-  dashRow.innerHTML = `
-    <td>${displayData.date || ""}</td>
-    <td>${displayData.time || ""}</td>
-    <td>${displayData.name || displayData.firstName + " " + displayData.lastName}</td>
-    <td>${displayData.petName || displayData.pet?.petName || ""}</td>
-    <td>${displayData.walkinService || displayData.serviceType || ""}</td>
-    <td class="status ${normalizedStatus}">${status || "Pending"}</td>
-    <td>${actionButtons}</td>
-  `;
-  walkInTable.appendChild(dashRow);
-}
+        }
 
-          // Appointment table
-        if (appointmentTable && type !== "walkin") {
-            const normalizedStatus = (status || "Pending").toLowerCase();
-            let actionButtons = "";
+        // ✅ Count walk-ins
+        if (type === "walkin") {
+          walkInCount++;
+        }
 
-            if (normalizedStatus === "pending") {
-              actionButtons = `
-                <button class="btn accept" data-id="${docId}" data-type="${type}">Accept</button>
-                <button class="btn decline" data-id="${docId}" data-type="${type}">Decline</button>
-                <button class="btn reschedule" data-id="${docId}" data-type="${type}">Reschedule</button>
-              <button class="btn screenshot" data-id="${docId}" data-type="Appointment">View Screenshot</button>
-              `;
+        // ✅ Count pending and cancelled (all time)
+        if (status.toLowerCase() === "pending") {
+          pendingAppointmentsToday++;
+        }
+        if (status.toLowerCase() === "cancelled") {
+          cancelledAppointmentsToday++;
+        }
+
+        if (dashboardTable && type !== "walkin") {
+    const dashRow = document.createElement("tr");
+    dashRow.innerHTML = `
+      <td>${displayData.name}</td>
+      <td>${displayData.petName}</td>
+      <td>${displayData.service}</td>
+      <td>${displayData.time}</td>
+      <td>${displayData.mode}</td>
+      <td class="status ${status.toLowerCase()}">${status}</td>
+    `;
+    dashboardTable.appendChild(dashRow);
+  }
+
+  if (walkInTable && type === "walkin") {
+    // 🔒 If status is missing, default to "pending"
+    const normalizedStatus = (status && typeof status === "string")
+      ? status.toLowerCase()
+      : "pending";
+
+    let actionButtons = "";
+
+    if (normalizedStatus === "pending") {
+      actionButtons = `
+        <button class="btn accept" data-id="${docId}" data-type="${type}">Accept</button>
+        <button class="btn decline" data-id="${docId}" data-type="${type}">Decline</button>
+      `;
     } else if (normalizedStatus === "in progress") {
       actionButtons = `
         <button class="btn complete" data-id="${docId}" data-type="${type}">Complete</button>
-      
-        <button class="btn add-discount" data-id="${docId}" data-type="${type}" data-service="${displayData.service}">Apply Discount</button>
+        <button class="btn add-discount" data-id="${docId}" data-type="${type}" 
+          data-service="${displayData.walkinService || displayData.serviceType}">
+          Apply Discount
+        </button>
       `;
+    } else if (normalizedStatus === "completed") {
+      actionButtons = `
+        <button class="btn view" data-id="${docId}" data-type="${type}">View</button>
+        <button class="btn edit" data-id="${docId}" data-type="${type}">Edit</button>
+      `;
+    }
 
-            } else if (normalizedStatus === "completed") {
-              actionButtons = `
-                <button class="btn view" data-id="${docId}" data-type="${type}">View</button>
-                <button class="btn edit" data-id="${docId}" data-type="${type}">Edit</button>
-              `;
-            
-              } else if (normalizedStatus === "for-rescheduling") {
-        actionButtons = `
-          <button class="btn accept" data-id="${docId}" data-type="${type}">Accept</button>
-          <button class="btn decline" data-id="${docId}" data-type="${type}">Decline</button>
-        `;
-        } else if (normalizedStatus === "cancelled") {
-        actionButtons = `
-          <button class="btn viewreason" data-id="${docId}" data-type="${type}">View Reason</button>
-        `;
-      }
+    // Render row
+    const dashRow = document.createElement("tr");
+    dashRow.innerHTML = `
+      <td>${displayData.date || ""}</td>
+      <td>${displayData.time || ""}</td>
+      <td>${displayData.name || displayData.firstName + " " + displayData.lastName}</td>
+      <td>${displayData.petName || displayData.pet?.petName || ""}</td>
+      <td>${displayData.walkinService || displayData.serviceType || ""}</td>
+      <td class="status ${normalizedStatus}">${status || "Pending"}</td>
+      <td>${actionButtons}</td>
+    `;
+    walkInTable.appendChild(dashRow);
+  }
 
-          const fullRow = document.createElement("tr");
-          fullRow.innerHTML = `
-            <td>${displayData.date}</td>
-            <td>${displayData.time}</td>
-            <td>${displayData.name}</td>
-            
-            <td>${displayData.petName}</td>
-            <td>${displayData.service}</td>
-            <td class="status ${normalizedStatus}">${status || "Pending"}</td>
-              <td>${displayData.reservationType}</td>
-            <td>${actionButtons}</td>
+            // Appointment table
+          if (appointmentTable && type !== "walkin") {
+              const normalizedStatus = (status || "Pending").toLowerCase();
+              let actionButtons = "";
+
+              if (normalizedStatus === "pending") {
+                actionButtons = `
+                  <button class="btn accept" data-id="${docId}" data-type="${type}">Accept</button>
+                  <button class="btn decline" data-id="${docId}" data-type="${type}">Decline</button>
+                  <button class="btn reschedule" data-id="${docId}" data-type="${type}">Reschedule</button>
+                <button class="btn screenshot" data-id="${docId}" data-type="Appointment">View Screenshot</button>
+                `;
+      } else if (normalizedStatus === "in progress") {
+        actionButtons = `
+          <button class="btn complete" data-id="${docId}" data-type="${type}">Complete</button>
+        
+          <button class="btn add-discount" data-id="${docId}" data-type="${type}" data-service="${displayData.service}">Apply Discount</button>
+        `;
+
+              } else if (normalizedStatus === "completed") {
+                actionButtons = `
+                  <button class="btn view" data-id="${docId}" data-type="${type}">View</button>
+                  <button class="btn edit" data-id="${docId}" data-type="${type}">Edit</button>
+                `;
+              
+                } else if (normalizedStatus === "for-rescheduling") {
+          actionButtons = `
+            <button class="btn accept" data-id="${docId}" data-type="${type}">Accept</button>
+            <button class="btn decline" data-id="${docId}" data-type="${type}">Decline</button>
           `;
-          appointmentTable.appendChild(fullRow);
+          } else if (normalizedStatus === "cancelled") {
+          actionButtons = `
+            <button class="btn viewreason" data-id="${docId}" data-type="${type}">View Reason</button>
+          `;
         }
 
-      // History table
-if (historyTable) {
-  const totalAmount = data.totalAmount || 0;
-  const normalizedStatus = (status || "Pending").toLowerCase();
+            const fullRow = document.createElement("tr");
+            fullRow.innerHTML = `
+              <td>${displayData.date}</td>
+              <td>${displayData.time}</td>
+              <td>${displayData.name}</td>
+              
+              <td>${displayData.petName}</td>
+              <td>${displayData.service}</td>
+              <td class="status ${normalizedStatus}">${status || "Pending"}</td>
+                <td>${displayData.reservationType}</td>
+              <td>${actionButtons}</td>
+            `;
+            appointmentTable.appendChild(fullRow);
+          }
 
-  // Combine service + serviceType (if it exists)
-  const serviceDisplay = [displayData.service, data.serviceType].filter(Boolean).join(" - ");
+        // History table
+  if (historyTable) {
+    const totalAmount = data.totalAmount || 0;
+    const normalizedStatus = (status || "Pending").toLowerCase();
 
-  const historyRow = document.createElement("tr");
-  historyRow.innerHTML = `
-    <td>${displayData.date}</td>
-    <td>${displayData.time}</td>
-    <td>${displayData.name}</td>
-    <td>${displayData.petName}</td>
-    <td>${serviceDisplay}</td>
-    <td>${totalAmount}</td>
-    <td class="status ${normalizedStatus}">${status || "Pending"}</td>
-  `;
-  historyTable.appendChild(historyRow);
-}
-    }
+    // Combine service + serviceType (if it exists)
+    const serviceDisplay = [displayData.service, data.serviceType].filter(Boolean).join(" - ");
 
-// Collect all appointments first
-const allAppointments = [];
-
-snapshot.forEach((doc) => {
-  allAppointments.push({ ...doc.data(), id: doc.id, type: "appointment" });
-});
-
-walkInSnapshot.forEach((doc) => {
-  allAppointments.push({ ...doc.data(), id: doc.id, type: "walkin" });
-});
-
-// ✅ Custom sort: latest date/time first, but completed always at bottom
-allAppointments.sort((a, b) => {
-  const statusOrder = { pending: 1, "in progress": 2, completed: 3 };
-  const aStatus = statusOrder[a.status?.toLowerCase()] || 99;
-  const bStatus = statusOrder[b.status?.toLowerCase()] || 99;
-
-  // Completed always comes last
-  if (aStatus === 3 && bStatus !== 3) return 1;
-  if (bStatus === 3 && aStatus !== 3) return -1;
-
-  // Compare date (latest first)
-  if (a.date && b.date && a.date !== b.date) {
-    return new Date(b.date) - new Date(a.date);
+    const historyRow = document.createElement("tr");
+    historyRow.innerHTML = `
+      <td>${displayData.date}</td>
+      <td>${displayData.time}</td>
+      <td>${displayData.name}</td>
+      <td>${displayData.petName}</td>
+      <td>${serviceDisplay}</td>
+      <td>${totalAmount}</td>
+      <td class="status ${normalizedStatus}">${status || "Pending"}</td>
+    `;
+    historyTable.appendChild(historyRow);
   }
-
-  // Compare time (latest first) - safe handling
-  const aTime = a.time || "";
-  const bTime = b.time || "";
-  return bTime.localeCompare(aTime);
-});
-
-// ✅ Render into the correct table
-allAppointments.forEach((apt) => {
-  const rowHTML = renderRow(apt, apt.type, apt.id);
-
-
-});
-
-
-
-    // ✅ Update dashboard card numbers
-    document.querySelector(".card:nth-child(1) .numbers").textContent =
-      totalAppointmentsToday;
-    document.querySelector(".card:nth-child(2) .numbers").textContent =
-      finishedAppointmentsCount;
-    document.querySelector(".card:nth-child(3) .numbers").textContent =
-      walkInCount;
-
-    document.querySelector(
-      "#appointments .stat-card:nth-child(1) .stat-number"
-    ).textContent = totalAppointmentsToday; // today's schedule
-    document.querySelector(
-      "#appointments .stat-card:nth-child(2) .stat-number"
-    ).textContent = pendingAppointmentsToday; // pending
-    document.querySelector(
-      "#appointments .stat-card:nth-child(3) .stat-number"
-    ).textContent = cancelledAppointmentsToday; // cancelled
-
-    
-// ✅ Update Today's Earnings card correctly
-const earningsCard = Array.from(document.querySelectorAll(".card"))
-  .find(card => card.querySelector(".cardName")?.textContent.includes("Today's Earnings"));
-
-if (earningsCard) {
-  earningsCard.querySelector(".numbers").textContent =
-    "₱" + todaysEarnings.toLocaleString("en-PH");
-}
-
-
-
-  // ✅ Helper function for safe price conversion
-  function parsePrice(price) {
-    if (!price) return 0;
-    if (typeof price === "number") return price;
-    return Number(price.toString().replace(/[^\d.-]/g, "")) || 0;
-  }
-
-
-
-document.addEventListener("click", async (e) => {
-  const btn = e.target.closest(".btn.accept, .btn.decline, .btn.complete,  .btn.reschedule");
-  if (!btn) return;
-
-  const docId = btn.getAttribute("data-id");
-  const type = btn.getAttribute("data-type");
-  const collectionName = type === "walkin" ? "WalkInAppointment" : "Appointment";
-  const docRef = doc(db, collectionName, docId);
-
-   if (btn.classList.contains("reschedule")) {
-    await rescheduleAppointment(docId); // <-- call function with id
-    return;
-  }
-  
-
-  // ✅ Handle Reschedule button separately (if needed)
-  if (btn.classList.contains("reschedule")) {
-    await updateDoc(docRef, { status: "for-rescheduling" });
-    loadAllAppointments();
-    return;
-  }
-
-  // ✅ Fetch data for Accept / Decline / Complete
-  const docSnap = await getDoc(docRef);
-  if (!docSnap.exists()) return;
-  const data = docSnap.data();
-
-  let updateData = {};
-
-  if (btn.classList.contains("accept")) {
-    if (data.status.toLowerCase() === "for-rescheduling") {
-      updateData = {
-        date: data.proposedDate || data.date,
-        status: "Pending",
-        proposedDate: deleteField()
-      };
-    } else {
-      updateData = { status: "In Progress" };
-    }
-  } else if (btn.classList.contains("decline")) {
-    if (data.status.toLowerCase() === "for-rescheduling") {
-      updateData = {
-        status: "Pending",
-        proposedDate: deleteField()
-      };
-    } else {
-      updateData = { status: "Cancelled" };
-    }
-  } else if (btn.classList.contains("complete")) {
-    updateData = { status: "Completed", completedAt: serverTimestamp() };
-  }
-
-  await updateDoc(docRef, updateData);
-  loadAllAppointments();
-});
-
-document.addEventListener("click", async (e) => {
-  const btn = e.target.closest(".add-discount");
-  if (!btn) return;
-
-  const id = btn.getAttribute("data-id");
-  let type = btn.getAttribute("data-type") || "Appointment";
-
-  // normalize
-  if (type.toLowerCase() === "appointment") type = "Appointment";
-  if (type.toLowerCase() === "walkin" || type.toLowerCase() === "walkinappointment") {
-    type = "WalkInAppointment";
-  }
-
-  const docRef = doc(db, type, id);
-  await openDiscountModal(docRef, type);
-});
-
-
-
-
-
-// 🔹 Globals
-let currentDiscountDocRef = null; // Firestore doc reference
-let currentDiscountType = null;   // "Appointment" or "WalkInAppointment"
-
-
-
-// ✅ Function to open Swal discount modal
-async function openDiscountModal(docRef, type) {
-  currentDiscountDocRef = docRef;
-  currentDiscountType = type;
-
-  try {
-    const snap = await getDoc(docRef);
-    if (!snap.exists()) return Swal.fire("Error", "Appointment not found.", "error");
-
-    const data = snap.data();
-    const serviceName = data.service || data.serviceType;
-
-    // Fetch services from Firestore
-    const q = query(collection(db, "services"));
-    const querySnapshot = await getDocs(q);
-
-    let service = null;
-    querySnapshot.forEach(docSnap => {
-      const s = docSnap.data();
-      const docId = docSnap.id;
-
-      if (
-        docId.toLowerCase() === serviceName.toLowerCase() ||
-        (s.name && s.name.toLowerCase() === serviceName.toLowerCase())
-      ) {
-        service = { ...s, id: docId };
       }
-    });
 
-    if (!service) {
-      return Swal.fire("Error", `Service '${serviceName}' not found.`, "error");
+  // Collect all appointments first
+  const allAppointments = [];
+
+  snapshot.forEach((doc) => {
+    allAppointments.push({ ...doc.data(), id: doc.id, type: "appointment" });
+  });
+
+  walkInSnapshot.forEach((doc) => {
+    allAppointments.push({ ...doc.data(), id: doc.id, type: "walkin" });
+  });
+
+  // ✅ Custom sort: latest date/time first, but completed always at bottom
+  allAppointments.sort((a, b) => {
+    const statusOrder = { pending: 1, "in progress": 2, completed: 3 };
+    const aStatus = statusOrder[a.status?.toLowerCase()] || 99;
+    const bStatus = statusOrder[b.status?.toLowerCase()] || 99;
+
+    // Completed always comes last
+    if (aStatus === 3 && bStatus !== 3) return 1;
+    if (bStatus === 3 && aStatus !== 3) return -1;
+
+    // Compare date (latest first)
+    if (a.date && b.date && a.date !== b.date) {
+      return new Date(b.date) - new Date(a.date);
     }
 
-    // 🔹 Built-in discounts
-    const discountObj = {
-      pwdDiscount: service.pwdDiscount ?? 0,
-      seniorDiscount: service.seniorDiscount ?? 0,
-      loyaltyDiscount: service.loyaltyDiscount ?? 0
-    };
+    // Compare time (latest first) - safe handling
+    const aTime = a.time || "";
+    const bTime = b.time || "";
+    return bTime.localeCompare(aTime);
+  });
 
-    // 🔹 Special discounts array (from Firestore)
-    const specialDiscounts = service.discounts ?? [];
+  // ✅ Render into the correct table
+  allAppointments.forEach((apt) => {
+    const rowHTML = renderRow(apt, apt.type, apt.id);
 
-    // 🔹 Build discount options
-    let discountHTML = "";
 
-    // Built-in
-    for (const [key, value] of Object.entries(discountObj)) {
-      if (value > 0) {
+  });
+
+
+
+      // ✅ Update dashboard card numbers
+      document.querySelector(".card:nth-child(1) .numbers").textContent =
+        totalAppointmentsToday;
+      document.querySelector(".card:nth-child(2) .numbers").textContent =
+        finishedAppointmentsCount;
+      document.querySelector(".card:nth-child(3) .numbers").textContent =
+        walkInCount;
+
+      document.querySelector(
+        "#appointments .stat-card:nth-child(1) .stat-number"
+      ).textContent = totalAppointmentsToday; // today's schedule
+      document.querySelector(
+        "#appointments .stat-card:nth-child(2) .stat-number"
+      ).textContent = pendingAppointmentsToday; // pending
+      document.querySelector(
+        "#appointments .stat-card:nth-child(3) .stat-number"
+      ).textContent = cancelledAppointmentsToday; // cancelled
+
+      
+  // ✅ Update Today's Earnings card correctly
+  const earningsCard = Array.from(document.querySelectorAll(".card"))
+    .find(card => card.querySelector(".cardName")?.textContent.includes("Today's Earnings"));
+
+  if (earningsCard) {
+    earningsCard.querySelector(".numbers").textContent =
+      "₱" + todaysEarnings.toLocaleString("en-PH");
+  }
+
+
+
+    // ✅ Helper function for safe price conversion
+    function parsePrice(price) {
+      if (!price) return 0;
+      if (typeof price === "number") return price;
+      return Number(price.toString().replace(/[^\d.-]/g, "")) || 0;
+    }
+
+
+
+  document.addEventListener("click", async (e) => {
+    const btn = e.target.closest(".btn.accept, .btn.decline, .btn.complete,  .btn.reschedule");
+    if (!btn) return;
+
+    const docId = btn.getAttribute("data-id");
+    const type = btn.getAttribute("data-type");
+    const collectionName = type === "walkin" ? "WalkInAppointment" : "Appointment";
+    const docRef = doc(db, collectionName, docId);
+
+    if (btn.classList.contains("reschedule")) {
+      await rescheduleAppointment(docId); // <-- call function with id
+      return;
+    }
+    
+
+    // ✅ Handle Reschedule button separately (if needed)
+    if (btn.classList.contains("reschedule")) {
+      await updateDoc(docRef, { status: "for-rescheduling" });
+      loadAllAppointments();
+      return;
+    }
+
+    // ✅ Fetch data for Accept / Decline / Complete
+    const docSnap = await getDoc(docRef);
+    if (!docSnap.exists()) return;
+    const data = docSnap.data();
+
+    let updateData = {};
+
+    if (btn.classList.contains("accept")) {
+      if (data.status.toLowerCase() === "for-rescheduling") {
+        updateData = {
+          date: data.proposedDate || data.date,
+          status: "Pending",
+          proposedDate: deleteField()
+        };
+      } else {
+        updateData = { status: "In Progress" };
+      }
+    } else if (btn.classList.contains("decline")) {
+      if (data.status.toLowerCase() === "for-rescheduling") {
+        updateData = {
+          status: "Pending",
+          proposedDate: deleteField()
+        };
+      } else {
+        updateData = { status: "Cancelled" };
+      }
+    } else if (btn.classList.contains("complete")) {
+      updateData = { status: "Completed", completedAt: serverTimestamp() };
+    }
+
+    await updateDoc(docRef, updateData);
+    loadAllAppointments();
+  });
+
+  document.addEventListener("click", async (e) => {
+    const btn = e.target.closest(".add-discount");
+    if (!btn) return;
+
+    const id = btn.getAttribute("data-id");
+    let type = btn.getAttribute("data-type") || "Appointment";
+
+    // normalize
+    if (type.toLowerCase() === "appointment") type = "Appointment";
+    if (type.toLowerCase() === "walkin" || type.toLowerCase() === "walkinappointment") {
+      type = "WalkInAppointment";
+    }
+
+    const docRef = doc(db, type, id);
+    await openDiscountModal(docRef, type);
+  });
+
+
+
+
+
+  // 🔹 Globals
+  let currentDiscountDocRef = null; // Firestore doc reference
+  let currentDiscountType = null;   // "Appointment" or "WalkInAppointment"
+
+
+
+  // ✅ Function to open Swal discount modal
+  async function openDiscountModal(docRef, type) {
+    currentDiscountDocRef = docRef;
+    currentDiscountType = type;
+
+    try {
+      const snap = await getDoc(docRef);
+      if (!snap.exists()) return Swal.fire("Error", "Appointment not found.", "error");
+
+      const data = snap.data();
+      const serviceName = data.service || data.serviceType;
+
+      // Fetch services from Firestore
+      const q = query(collection(db, "services"));
+      const querySnapshot = await getDocs(q);
+
+      let service = null;
+      querySnapshot.forEach(docSnap => {
+        const s = docSnap.data();
+        const docId = docSnap.id;
+
+        if (
+          docId.toLowerCase() === serviceName.toLowerCase() ||
+          (s.name && s.name.toLowerCase() === serviceName.toLowerCase())
+        ) {
+          service = { ...s, id: docId };
+        }
+      });
+
+      if (!service) {
+        return Swal.fire("Error", `Service '${serviceName}' not found.`, "error");
+      }
+
+      // 🔹 Built-in discounts
+      const discountObj = {
+        pwdDiscount: service.pwdDiscount ?? 0,
+        seniorDiscount: service.seniorDiscount ?? 0,
+        loyaltyDiscount: service.loyaltyDiscount ?? 0
+      };
+
+      // 🔹 Special discounts array (from Firestore)
+      const specialDiscounts = service.discounts ?? [];
+
+      // 🔹 Build discount options
+      let discountHTML = "";
+
+      // Built-in
+      for (const [key, value] of Object.entries(discountObj)) {
+        if (value > 0) {
+          discountHTML += `
+            <div style="text-align:left;margin-bottom:5px">
+              <input type="checkbox" id="${key}" value="${key}" class="swal2-checkbox">
+              <label for="${key}">${key.replace("Discount", "")} (${value}%)</label>
+            </div>`;
+        }
+      }
+
+      // Special discounts
+      specialDiscounts.forEach((d, idx) => {
+        if (!d || !d.name) return;
         discountHTML += `
           <div style="text-align:left;margin-bottom:5px">
-            <input type="checkbox" id="${key}" value="${key}" class="swal2-checkbox">
-            <label for="${key}">${key.replace("Discount", "")} (${value}%)</label>
+            <input type="checkbox" id="special-${idx}" 
+                  value="special-${idx}" 
+                  class="swal2-checkbox" 
+                  data-type="${d.type}" 
+                  data-value="${d.value}">
+            <label for="special-${idx}">${d.name} (${d.type === "percentage" ? d.value + "%" : "₱" + d.value})</label>
           </div>`;
+      });
+
+      if (!discountHTML) {
+        return Swal.fire("No Discounts", "This service has no available discounts.", "info");
       }
-    }
 
-    // Special discounts
-    specialDiscounts.forEach((d, idx) => {
-      if (!d || !d.name) return;
-      discountHTML += `
-        <div style="text-align:left;margin-bottom:5px">
-          <input type="checkbox" id="special-${idx}" 
-                 value="special-${idx}" 
-                 class="swal2-checkbox" 
-                 data-type="${d.type}" 
-                 data-value="${d.value}">
-          <label for="special-${idx}">${d.name} (${d.type === "percentage" ? d.value + "%" : "₱" + d.value})</label>
-        </div>`;
-    });
+      // 🔹 Show SweetAlert2 modal
+      const { value: selectedDiscounts, dismiss } = await Swal.fire({
+        title: `Apply Discount for ${serviceName}`,
+        html: discountHTML,
+        focusConfirm: false,
+        preConfirm: () => {
+          const checkboxes = Swal.getPopup().querySelectorAll(".swal2-checkbox:checked");
+          return Array.from(checkboxes).map(cb => cb.value);
+        },
+        showCancelButton: true,
+        confirmButtonText: "Apply",
+        cancelButtonText: "Cancel"
+      });
 
-    if (!discountHTML) {
-      return Swal.fire("No Discounts", "This service has no available discounts.", "info");
-    }
+      if (dismiss === Swal.DismissReason.cancel) return;
+      if (!selectedDiscounts || selectedDiscounts.length === 0) {
+        return Swal.fire("No Selection", "Please select at least one discount.", "warning");
+      }
 
-    // 🔹 Show SweetAlert2 modal
-    const { value: selectedDiscounts, dismiss } = await Swal.fire({
-      title: `Apply Discount for ${serviceName}`,
-      html: discountHTML,
-      focusConfirm: false,
-      preConfirm: () => {
-        const checkboxes = Swal.getPopup().querySelectorAll(".swal2-checkbox:checked");
-        return Array.from(checkboxes).map(cb => cb.value);
-      },
-      showCancelButton: true,
-      confirmButtonText: "Apply",
-      cancelButtonText: "Cancel"
-    });
+      // 🔹 Calculate new total
+      let totalAmount = parsePrice(service.basePrice ?? 0);
+      let appliedDiscounts = [];
 
-    if (dismiss === Swal.DismissReason.cancel) return;
-    if (!selectedDiscounts || selectedDiscounts.length === 0) {
-      return Swal.fire("No Selection", "Please select at least one discount.", "warning");
-    }
-
-    // 🔹 Calculate new total
-    let totalAmount = parsePrice(service.basePrice ?? 0);
-    let appliedDiscounts = [];
-
-    selectedDiscounts.forEach(selected => {
-      if (discountObj[selected]) {
-        // Built-in discount
-        const discountValue = parseFloat(discountObj[selected]) || 0;
-        const discountPercent = discountValue / 100;
-        totalAmount -= service.basePrice * discountPercent;
-        appliedDiscounts.push(`${selected.replace("Discount", "")}: ${discountValue}%`);
-      } else if (selected.startsWith("special-")) {
-        // Special discount
-        const idx = parseInt(selected.split("-")[1], 10);
-        const d = specialDiscounts[idx];
-        if (d) {
-          if (d.type === "percentage") {
-            totalAmount -= service.basePrice * (d.value / 100);
-            appliedDiscounts.push(`${d.name}: ${d.value}%`);
-          } else {
-            totalAmount -= d.value;
-            appliedDiscounts.push(`${d.name}: ₱${d.value}`);
+      selectedDiscounts.forEach(selected => {
+        if (discountObj[selected]) {
+          // Built-in discount
+          const discountValue = parseFloat(discountObj[selected]) || 0;
+          const discountPercent = discountValue / 100;
+          totalAmount -= service.basePrice * discountPercent;
+          appliedDiscounts.push(`${selected.replace("Discount", "")}: ${discountValue}%`);
+        } else if (selected.startsWith("special-")) {
+          // Special discount
+          const idx = parseInt(selected.split("-")[1], 10);
+          const d = specialDiscounts[idx];
+          if (d) {
+            if (d.type === "percentage") {
+              totalAmount -= service.basePrice * (d.value / 100);
+              appliedDiscounts.push(`${d.name}: ${d.value}%`);
+            } else {
+              totalAmount -= d.value;
+              appliedDiscounts.push(`${d.name}: ₱${d.value}`);
+            }
           }
         }
-      }
-    });
+      });
 
-    totalAmount = Math.max(0, Math.round(totalAmount * 100) / 100);
+      totalAmount = Math.max(0, Math.round(totalAmount * 100) / 100);
 
-    // ✅ Save to Firestore
-    await updateDoc(currentDiscountDocRef, {
-      totalAmount,
-      appliedDiscounts
-    });
+      // ✅ Save to Firestore
+      await updateDoc(currentDiscountDocRef, {
+        totalAmount,
+        appliedDiscounts
+      });
 
-    Swal.fire(
-      "Discounts Applied ✅",
-      `Applied:\n${appliedDiscounts.join("\n")}\n\nNew Total: ₱${totalAmount}`,
-      "success"
-    );
+      Swal.fire(
+        "Discounts Applied ✅",
+        `Applied:\n${appliedDiscounts.join("\n")}\n\nNew Total: ₱${totalAmount}`,
+        "success"
+      );
 
-    currentDiscountDocRef = null;
-    currentDiscountType = null;
+      currentDiscountDocRef = null;
+      currentDiscountType = null;
 
-  } catch (err) {
-    console.error("Discount error:", err);
-    Swal.fire("Error", "Something went wrong applying the discount.", "error");
+    } catch (err) {
+      console.error("Discount error:", err);
+      Swal.fire("Error", "Something went wrong applying the discount.", "error");
+    }
   }
-}
 
 
 
