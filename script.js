@@ -242,7 +242,8 @@ document.addEventListener("DOMContentLoaded", function () {
             </div>
             <h3>${news.title}</h3>
             <p>${news.content}</p>
-            <a href="news.html" class="btn">Learn More <span class="fas fa-chevron-right"></span></a>
+          <a href="auth/login.html" class="btn">Learn More <span class="fas fa-chevron-right"></span></a>
+
           </div>
         `;
         newsContainer.appendChild(box);

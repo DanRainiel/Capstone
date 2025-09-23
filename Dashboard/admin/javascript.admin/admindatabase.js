@@ -1061,6 +1061,7 @@ allAppointments.sort((a, b) => {
 // ✅ Render into the correct table
 allAppointments.forEach((apt) => {
   const rowHTML = renderRow(apt, apt.type, apt.id);
+  
 });
  
 
