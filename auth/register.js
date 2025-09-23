@@ -5,7 +5,10 @@
     setDoc,  
     addDoc,
     doc,
-    serverTimestamp
+    serverTimestamp,
+     query, 
+     where,
+      updateDoc
   } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
 
@@ -259,3 +262,48 @@ setTimeout(() => {
   });
 
 
+document.getElementById('forgotPasswordLink').addEventListener('click', async function(e) {
+    e.preventDefault();
+
+    const { value: formValues } = await Swal.fire({
+        title: 'Reset Password',
+        html: `
+            <input id="swal-email" class="swal2-input" placeholder="Enter your email">
+            <input id="swal-password" type="password" class="swal2-input" placeholder="Enter new password">
+        `,
+        focusConfirm: false,
+        preConfirm: () => {
+            const email = document.getElementById('swal-email').value;
+            const newPassword = document.getElementById('swal-password').value;
+            if (!email || !newPassword) {
+                Swal.showValidationMessage('Please enter both email and new password');
+            }
+            return { email, newPassword };
+        },
+        showCancelButton: true,
+        confirmButtonText: 'Reset Password'
+    });
+
+    if (formValues) {
+        try {
+            const usersRef = collection(db, "users");
+            const q = query(usersRef, where("email", "==", formValues.email));
+            const querySnapshot = await getDocs(q);
+
+            if (querySnapshot.empty) {
+                Swal.fire('Error', 'No user found with this email.', 'error');
+            } else {
+                for (const userDoc of querySnapshot.docs) {
+                    await updateDoc(userDoc.ref, {
+                        password: formValues.newPassword,
+                        updatedAt: serverTimestamp()
+                    });
+                }
+                Swal.fire('Success', 'Your password has been updated.', 'success');
+            }
+        } catch (err) {
+            console.error(err);
+            Swal.fire('Error', 'Something went wrong while updating password.', 'error');
+        }
+    }
+});

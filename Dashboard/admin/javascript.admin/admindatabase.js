@@ -1267,10 +1267,13 @@ allAppointments.forEach((apt) => {
         title: `Apply Discount for ${serviceName}`,
         html: discountHTML,
         focusConfirm: false,
-        preConfirm: () => {
-          const checkboxes = Swal.getPopup().querySelectorAll(".swal2-checkbox:checked");
-          return Array.from(checkboxes).map(cb => cb.value);
-        },
+       preConfirm: () => {
+  const container = Swal.getHtmlContainer();
+  if (!container) return [];
+  const checkedBoxes = container.querySelectorAll(".swal2-checkbox:checked");
+  return Array.from(checkedBoxes).map(cb => cb.value);
+}
+,
         showCancelButton: true,
         confirmButtonText: "Apply",
         cancelButtonText: "Cancel"

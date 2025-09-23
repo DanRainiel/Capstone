@@ -46,23 +46,36 @@ async function loadAppointments() {
       tableBody.innerHTML = "<tr><td colspan='6'>No History found.</td></tr>";
     } else {
       querySnapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        const row = document.createElement("tr");
+  const data = docSnap.data();
+  const row = document.createElement("tr");
 
-        row.innerHTML = `
-          <td>${data.name || ""}</td>
-          <td>${data.petName || ""}</td>
-          <td>${data.service || ""}</td>
-          <td>${data.date || ""}</td>
-        `;
+  row.innerHTML = `
+    <td>${data.name || ""}</td>
+    <td>${data.petName || ""}</td>
+    <td>${data.service || ""}</td>
+    <td>${data.date || ""}</td>
+  `;
 
-        // ✅ Make row clickable
-        row.addEventListener("click", () => {
-          openDetailsModal(docSnap.id, data);
-        });
+  // ✅ Make row clickable
+  row.addEventListener("click", () => {
+    // Check if status is completed
+   if (data.status.toLowerCase() === "completed") {
+  Swal.fire({
+    icon: 'info',
+    title: 'Cannot Reschedule',
+    text: 'This appointment is already completed and cannot be rescheduled.'
+  });
+  return;
+}
 
-        tableBody.appendChild(row);
-      });
+
+    // If not completed, open modal
+    openDetailsModal(docSnap.id, data);
+  });
+
+  tableBody.appendChild(row);
+});
+
     }
   } catch (error) {
     console.error("Error fetching appointments:", error);
@@ -97,31 +110,31 @@ window.addEventListener("click", (e) => {
   }
 });
 
-// ================== RESCHEDULE ==================
-// ================== RESCHEDULE ==================
-async function rescheduleAppointment() {
-  const modal = document.getElementById("detailsModal");
-  const docId = modal.getAttribute("data-docid");
 
-  if (!docId) {
-    alert("No appointment selected.");
-    return;
+  // ================== RESCHEDULE ==================
+  async function rescheduleAppointment() {
+    const modal = document.getElementById("detailsModal");
+    const docId = modal.getAttribute("data-docid");
+
+    if (!docId) {
+      alert("No appointment selected.");
+      return;
+    }
+
+    try {
+      const docRef = doc(db, "Appointment", docId);
+
+      // ✅ Update status instead of rescheduling directly
+      await updateDoc(docRef, { status: "for-rescheduling" });
+
+      alert("Appointment marked for rescheduling!");
+      closeDetailsModal();
+      loadAppointments(); // refresh table
+    } catch (error) {
+      console.error("Error updating appointment:", error);
+      alert("Failed to update status.");
+    }
   }
-
-  try {
-    const docRef = doc(db, "Appointment", docId);
-
-    // ✅ Update status instead of rescheduling directly
-    await updateDoc(docRef, { status: "for-rescheduling" });
-
-    alert("Appointment marked for rescheduling!");
-    closeDetailsModal();
-    loadAppointments(); // refresh table
-  } catch (error) {
-    console.error("Error updating appointment:", error);
-    alert("Failed to update status.");
-  }
-}
 
 // ================== EVENT LISTENERS ==================
 window.addEventListener("DOMContentLoaded", () => {

@@ -48,39 +48,62 @@ document.addEventListener("DOMContentLoaded", () => {
 async function addPet() {
   const userId = sessionStorage.getItem("userId"); 
   if (!userId) {
-    alert("User not logged in!");
+    Swal.fire({
+      icon: 'error',
+      title: 'Not Logged In',
+      text: 'User not logged in!',
+    });
     return;
   }
 
-  const petName = document.querySelector('input[placeholder="Pet Name"]').value;
-  const breed = document.querySelector('input[placeholder="Dog, Cat, etc."]').value;
-  const sex = document.querySelector('input[placeholder="Sex"]').value;
-  const color = document.querySelector('input[placeholder="Color"]').value;
-  const weight = document.querySelector('input[placeholder="Weight"]').value;
-  const size = document.querySelector('input[placeholder="Size"]').value;
-  const dob = document.querySelector('input[placeholder="Date of Birth"]').value;
+  // Get values
+  const petName = document.querySelector('input[placeholder="Pet Name"]').value.trim();
+  const breed = document.querySelector('input[placeholder="Dog, Cat, etc."]').value.trim();
+  const sex = document.querySelector('input[placeholder="Sex"]').value.trim();
+  const color = document.querySelector('input[placeholder="Color"]').value.trim();
+  const weight = document.querySelector('input[placeholder="Weight"]').value.trim();
+  const size = document.querySelector('input[placeholder="Size"]').value.trim();
+  const dob = document.querySelector('input[placeholder="Date of Birth"]').value.trim();
+
+  // Check if any required field is empty
+  if (!petName || !breed || !sex || !color || !weight || !size || !dob) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Incomplete Information',
+      text: 'Please fill in all required fields before adding a pet.',
+    });
+    return; // Stop execution if fields are missing
+  }
 
   try {
-    
     const timestamp = Date.now();
     const customDocId = `${userId}_${petName}_${timestamp}`;
 
- await setDoc(doc(db, "Pets", customDocId), {
-  userId,
-  petName,
-  breed,
-  sex,
-  color,
-  weight,
-  size,
-  dob
-}, { merge: true });
+    await setDoc(doc(db, "Pets", customDocId), {
+      userId,
+      petName,
+      breed,
+      sex,
+      color,
+      weight,
+      size,
+      dob
+    }, { merge: true });
 
-    alert("Pet successfully added!");
-    loadPets(); 
+    Swal.fire({
+      icon: 'success',
+      title: 'Pet Added',
+      text: `${petName} has been successfully added!`,
+    });
+
+    loadPets(); // Reload the pets list
   } catch (error) {
     console.error("Error adding pet:", error);
-    alert("Failed to add pet!");
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'Failed to add pet!',
+    });
   }
 }
 

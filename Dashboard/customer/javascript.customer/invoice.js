@@ -51,106 +51,93 @@ async function loadInvoice() {
     const data = docSnap.data();
     console.log("📌 Appointment data:", data);
 
-    // ✅ Invoice Date (from completedAt in Firestore)
-    if (data.completedAt?.toDate) {
-      document.getElementById("invoiceDate").textContent =
-        data.completedAt.toDate().toLocaleDateString();
-    } else {
-      document.getElementById("invoiceDate").textContent = "-";
+    // --- Invoice Number ---
+    let invoiceNumber = data.invoiceNo || generateInvoiceNumber();
+    if (!data.invoiceNo) await updateDoc(docRef, { invoiceNo: invoiceNumber });
+    const invoiceNoEl = document.getElementById("invoiceNo");
+    if (invoiceNoEl) invoiceNoEl.textContent = invoiceNumber;
+
+    // --- Invoice Date ---
+    const invoiceDateEl = document.getElementById("invoiceDate");
+    if (invoiceDateEl) {
+      invoiceDateEl.textContent = data.completedAt?.toDate
+        ? data.completedAt.toDate().toLocaleDateString()
+        : new Date().toLocaleDateString();
     }
 
-    // ✅ Permanent Invoice Number
-    let invoiceNumber;
-    if (data.invoiceNo) {
-      invoiceNumber = data.invoiceNo;
-    } else {
-      invoiceNumber = generateInvoiceNumber();
-      await updateDoc(docRef, { invoiceNo: invoiceNumber });
-    }
-    document.getElementById("invoiceNo").textContent = invoiceNumber;
+    // --- Owner & Pet Info ---
+    const ownerNameEl = document.getElementById("ownerName");
+    if (ownerNameEl) ownerNameEl.textContent = data.name || "-";
 
-    // ✅ Owner & pet info
-    document.getElementById("ownerName").textContent = data.name || "-";
-    document.getElementById("ownerNumber").textContent = data.number || data.ownerNumber || "-";
-    document.getElementById("petName").textContent = data.petName || "-";
-    document.getElementById("petSize").textContent = data.petSize || "-";
+    const ownerNumberEl = document.getElementById("ownerNumber");
+    if (ownerNumberEl) ownerNumberEl.textContent = data.number || data.ownerNumber || "-";
 
-    // ✅ Appointment date & time
-    document.getElementById("appointmentDate").textContent = data.date || data.appointmentDate || "-";
-    document.getElementById("appointmentTime").textContent =
-      data.appointmentTime || data.timeSlot || data.time || "-";
+    const petNameEl = document.getElementById("petName");
+    if (petNameEl) petNameEl.textContent = data.petName || "-";
 
-    // ✅ Service type and fee
+    const petSizeEl = document.getElementById("petSize");
+    if (petSizeEl) petSizeEl.textContent = data.petSize || "-";
+
+    // --- Appointment Date & Time ---
+    const appointmentDateEl = document.getElementById("appointmentDate");
+    if (appointmentDateEl) appointmentDateEl.textContent = data.date || data.appointmentDate || "-";
+
+    const appointmentTimeEl = document.getElementById("appointmentTime");
+    if (appointmentTimeEl) appointmentTimeEl.textContent = data.appointmentTime || data.timeSlot || data.time || "-";
+
+    // --- Service Fee ---
     const serviceType = data.service || "-";
     const serviceFee = parseFloat((data.serviceFee || "0").toString().replace("₱", "").trim()) || 0;
 
-    document.getElementById("service").textContent = serviceType;
-    document.getElementById("serviceFee").textContent = `₱${serviceFee.toFixed(2)}`;
+    const serviceEl = document.getElementById("service");
+    if (serviceEl) serviceEl.textContent = serviceType;
 
-    // ✅ Reservation fee
-    const reservationFee = parseFloat((data.reservationFee || "0").toString().replace("₱", "").trim());
-    document.getElementById("reservationFee").textContent = `₱${reservationFee.toFixed(2)}`;
+    const serviceFeeEl = document.getElementById("serviceFee");
+    if (serviceFeeEl) serviceFeeEl.textContent = `₱${serviceFee.toFixed(2)}`;
 
-  
-
-    // ✅ Invoice Date → from completedAt in Firestore
-// ✅ Invoice Date → from Firestore completedAt
-const invoiceDateEl = document.getElementById("invoiceDate");
-if (invoiceDateEl) {
-  if (data.completedAt && data.completedAt.toDate) {
-    invoiceDateEl.textContent = data.completedAt.toDate().toLocaleDateString();
-  } else {
-    invoiceDateEl.textContent = new Date().toLocaleDateString();
-  }
-}
-
-
-// ✅ Handle Discounts
+// --- Discounts (display only, no calculation) ---
 const discountContainer = document.getElementById("discountContainer");
-const discountEl = document.getElementById("discount"); // still keep for total %
-
-let totalDiscount = 0;
+const discountEl = document.getElementById("discount");
+let totalDiscount = 0; // still define to match previous logic, but we won't use it
 
 if (Array.isArray(data.appliedDiscounts) && data.appliedDiscounts.length > 0) {
-  discountContainer.innerHTML = ""; // clear first
+  if (discountContainer) discountContainer.innerHTML = ""; // clear container
+  data.appliedDiscounts.forEach(d => {
+    // Extract percentage for display (optional)
+    const match = d.match(/(\d+)%/);
+    if (match) totalDiscount += parseFloat(match[1]); // just for display, won't apply
 
-  data.appliedDiscounts.forEach(discount => {
-    const match = discount.match(/(\d+)%/);
-    if (match) totalDiscount += parseFloat(match[1]);
-
-    const p = document.createElement("p");
-    p.textContent = discount; // e.g. "PWD: 15%"
-    discountContainer.appendChild(p);
+    if (discountContainer) {
+      const p = document.createElement("p");
+      p.textContent = d; // show the discount text
+      discountContainer.appendChild(p);
+    }
   });
-
-  if (discountEl) discountEl.textContent = `${totalDiscount}%`;
+  if (discountEl) discountEl.textContent = `${totalDiscount}%`; // display sum of percentages
 } else {
-  if (discountEl) discountEl.textContent = "0%";
   if (discountContainer) discountContainer.innerHTML = "<p>No discounts</p>";
+  if (discountEl) discountEl.textContent = "-";
 }
 
+// --- Total Amount (from Firestore, no discount applied) ---
+let totalAmount = parseFloat(
+  (data.totalAmount || "0").toString().replace("₱", "").trim()
+) || 0;
 
-// ✅ Total
-let total = 0;
-if (data.totalAmount !== undefined) {
-  total = parseFloat((data.totalAmount || "0").toString().replace("₱", "").trim()) || 0;
-} else {
-  total = (serviceFee + reservationFee) - ((serviceFee + reservationFee) * (discount / 100));
-}
-document.getElementById("totalFee").textContent = `₱${total.toFixed(2)}`;
+const totalFeeEl = document.getElementById("totalFee");
+if (totalFeeEl) totalFeeEl.textContent = `₱${totalAmount.toFixed(2)}`;
 
-// ✅ Downpayment
-let downpayment = 0;
-if (data.paymentType && data.paymentType.toLowerCase() === "downpayment") {
-  downpayment = data.downpaymentAmount
-    ? parseFloat((data.downpaymentAmount).toString().replace("₱", "").trim())
-    : total * 0.30;
-}
+// --- Reservation Fee / Downpayment (display only) ---
+const reservationFee = parseFloat(
+  (data.reservationFee || "0").toString().replace("₱", "").trim()
+) || 0;
+const reservationFeeEl = document.getElementById("reservationFee");
+if (reservationFeeEl) reservationFeeEl.textContent = `₱${reservationFee.toFixed(2)}`;
 
 const downEl = document.getElementById("downpayment");
-if (downEl) {
-  downEl.textContent = `₱${downpayment.toFixed(2)}`;
-}
+if (downEl) downEl.textContent = `₱0.00`; // no calculation
+
+
 
 
   } catch (error) {
@@ -160,3 +147,4 @@ if (downEl) {
 }
 
 loadInvoice();
+

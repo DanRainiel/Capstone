@@ -25,46 +25,50 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app); // make sure this exists here!
 
+async function loadAppointments() {
+  const userId = sessionStorage.getItem("userId");
+  console.log("Loaded userId from sessionStorage:", userId);
+  const tableBody = document.getElementById("history");
+  tableBody.innerHTML = "";
 
-  async function loadAppointments() {
-    const userId = sessionStorage.getItem("userId");
-    console.log("Loaded userId from sessionStorage:", userId);
-    const tableBody = document.getElementById("history");
-    tableBody.innerHTML = "";
-
-    if (!userId) {
-      tableBody.innerHTML = "<tr><td colspan='6'>User not logged in.</td></tr>";
-      return;
-    }
-
-    try {
-      // ✅ Query all appointments where userId == current userId
-      const q = query(collection(db, "Appointment"), where("userId", "==", userId));
-      const querySnapshot = await getDocs(q);
-
-      if (querySnapshot.empty) {
-        tableBody.innerHTML = "<tr><td colspan='6'>No History found.</td></tr>";
-      } else {
-        querySnapshot.forEach((doc) => {
-          const data = doc.data();
-          const row = document.createElement("tr");
-          row.innerHTML = `
-            <td>${data.name || ""}</td>
-            <td>${data.petName || ""}</td>
-            <td>${data.service || ""}</td>
-            <td>${data.date || ""}</td>
-            <td>${data.number || ""}</td>
-            
-          `;
-          tableBody.appendChild(row);
-        });
-      }
-    } catch (error) {
-      console.error("Error fetching appointments:", error);
-      tableBody.innerHTML = "<tr><td colspan='6'>Error loading appointments.</td></tr>";
-    }
+  if (!userId) {
+    tableBody.innerHTML = "<tr><td colspan='6'>User not logged in.</td></tr>";
+    return;
   }
 
-  window.addEventListener("DOMContentLoaded", () => {
-    loadAppointments();
-  });
+  try {
+    // ✅ Query all appointments for this user
+    const q = query(
+      collection(db, "Appointment"),
+      where("userId", "==", userId),
+      where("status", "==", "Completed") // <-- only completed
+      // OR, if using boolean: where("completed", "==", true)
+    );
+
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+      tableBody.innerHTML = "<tr><td colspan='6'>No Completed Appointments found.</td></tr>";
+    } else {
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${data.name || ""}</td>
+          <td>${data.petName || ""}</td>
+          <td>${data.service || ""}</td>
+          <td>${data.date || ""}</td>
+          <td>${data.number || ""}</td>
+        `;
+        tableBody.appendChild(row);
+      });
+    }
+  } catch (error) {
+    console.error("Error fetching appointments:", error);
+    tableBody.innerHTML = "<tr><td colspan='6'>Error loading appointments.</td></tr>";
+  }
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  loadAppointments();
+});

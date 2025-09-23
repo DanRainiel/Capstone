@@ -65,37 +65,28 @@ export async function loadNotifications() {
       where("userId", "==", currentUserId)
     );
 
-    const snapshot = await getDocs(notifQuery);
+const snapshot = await getDocs(notifQuery);
 
-    let notifs = [];
-    if (snapshot.empty) {
-      const allSnapshot = await getDocs(collection(db, "Notifications"));
-      notifs = allSnapshot.docs.map(doc => {
-        const data = doc.data() || {};
-        return {
-          id: doc.id,
-          message: data.message || "",
-          service: data.service || "",
-          type: data.type || "",
-          status: data.status || "unread",
-          userId: data.userId || "",
-          ts: data.createdAt?.toDate ? data.createdAt.toDate() : new Date()
-        };
-      });
-    } else {
-      notifs = snapshot.docs.map(doc => {
-        const data = doc.data() || {};
-        return {
-          id: doc.id,
-          message: data.message || "",
-          service: data.service || "",
-          type: data.type || "",
-          status: data.status || "unread",
-          userId: data.userId || "",
-          ts: data.createdAt?.toDate ? data.createdAt.toDate() : new Date()
-        };
-      });
-    }
+let notifs = [];
+if (snapshot.empty) {
+  // No notifications for this user
+  notifTable.innerHTML = `<tr><td colspan="6">No notifications found.</td></tr>`;
+  return;
+} else {
+  notifs = snapshot.docs.map(doc => {
+    const data = doc.data() || {};
+    return {
+      id: doc.id,
+      message: data.message || "",
+      service: data.service || "",
+      type: data.type || "",
+      status: data.status || "unread",
+      userId: data.userId || "",
+      ts: data.createdAt?.toDate ? data.createdAt.toDate() : new Date()
+    };
+  });
+}
+
 
     // Sort newest first
     notifs.sort((a, b) => b.ts - a.ts);

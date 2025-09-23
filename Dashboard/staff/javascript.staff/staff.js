@@ -1295,21 +1295,68 @@ async function loadAllAppointments() {
 
     }
 
-    // Collect + sort + render
-    const allAppointments = [];
-    snapshot.forEach((doc) => allAppointments.push({ ...doc.data(), id: doc.id, type: "appointment" }));
-    walkInSnapshot.forEach((doc) => allAppointments.push({ ...doc.data(), id: doc.id, type: "walkin" }));
+   // Collect appointments
+const allAppointments = [];
+snapshot.forEach((doc) => allAppointments.push({ ...doc.data(), id: doc.id, type: "appointment" }));
+walkInSnapshot.forEach((doc) => allAppointments.push({ ...doc.data(), id: doc.id, type: "walkin" }));
 
-    allAppointments.sort((a, b) => {
-      const order = { pending: 1, "in progress": 2, completed: 3 };
-      const aStatus = order[String(a.status || "").toLowerCase()] || 99;
-      const bStatus = order[String(b.status || "").toLowerCase()] || 99;
-      if (aStatus !== bStatus) return aStatus - bStatus;
-      if (a.date && b.date && a.date !== b.date) return new Date(a.date) - new Date(b.date);
-      return (a.time || "").localeCompare(b.time || "");
-    });
+ // ✅ Helper function (put this above your sort)
+function normalizeDate(dateStr) {
+  if (!dateStr) return null;
 
-    allAppointments.forEach((apt) => renderRow(apt, apt.type, apt.id));
+  // If already ISO (YYYY-MM-DD)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    return new Date(dateStr);
+  }
+
+  // If DD/MM/YYYY
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
+    const [day, month, year] = dateStr.split("/");
+    return new Date(`${year}-${month}-${day}`);
+  }
+
+  // If MM/DD/YYYY
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr)) {
+    const [month, day, year] = dateStr.split("/");
+    return new Date(`${year}-${month}-${day}`);
+  }
+
+  return new Date(dateStr); // fallback
+}
+
+// ✅ Custom sort: latest date/time first, but completed always at bottom
+allAppointments.sort((a, b) => {
+  const statusOrder = { 
+    pending: 1,
+    "in progress": 2,
+    cancelled: 98,
+    completed: 99
+  };
+
+  const aStatus = statusOrder[a.status?.toLowerCase()] || 50;
+  const bStatus = statusOrder[b.status?.toLowerCase()] || 50;
+
+  if (aStatus !== bStatus) {
+    return aStatus - bStatus;
+  }
+
+  // ⬇️ use normalizeDate here
+  const aDate = normalizeDate(a.date);
+  const bDate = normalizeDate(b.date);
+
+  if (aDate && bDate && aDate.getTime() !== bDate.getTime()) {
+    return bDate - aDate; // latest first
+  }
+
+  // If same date, sort by time (latest first)
+  return (b.time || "").localeCompare(a.time || "");
+});
+
+// ✅ Render into the correct table
+allAppointments.forEach((apt) => {
+  const rowHTML = renderRow(apt, apt.type, apt.id);
+});
+
 
     // ✅ Update dashboard stats
     document.querySelector(".card:nth-child(1) .numbers").textContent = totalAppointmentsToday;
