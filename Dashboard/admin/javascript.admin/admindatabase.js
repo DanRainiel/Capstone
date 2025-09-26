@@ -2075,12 +2075,13 @@ window.addEventListener('storage', () => {
     dayDiv.style.pointerEvents = "none";   // disable clicking
   }
 
-  // 🔹 Highlight blocked dates
-  if (blockedSlots.some(b => b.date === dateStr)) {
-    dayDiv.style.background = "#ffcccc";
-    dayDiv.style.borderRadius = "5px";
-    dayDiv.style.pointerEvents = "none";
-  }
+// 🔹 Highlight dates that have blocked slots
+if (blockedSlots.some(b => b.date === dateStr)) {
+  dayDiv.style.background = "#ffe0e0"; // light red
+  dayDiv.style.borderRadius = "5px";
+  // Still clickable!
+}
+
 
   calendarGrid.appendChild(dayDiv);
 }

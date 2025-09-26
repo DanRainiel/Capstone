@@ -262,6 +262,96 @@ setTimeout(() => {
   });
 
 
+  document.addEventListener("DOMContentLoaded", () => {
+  const agreeCheckbox = document.getElementById("agree");
+
+  agreeCheckbox.addEventListener("change", async function () {
+    if (this.checked) {
+      const { isConfirmed } = await Swal.fire({
+        title: "Terms and Conditions & Privacy Policy",
+        html: `
+          <div style="text-align:left; max-height:300px; overflow-y:auto; padding:10px; border:1px solid #ddd;">
+            <p><b>PetStop Veterinary Clinic</b><br>
+            Effective Date: [Insert Date]</p>
+
+            <p><b>1. Account Registration</b><br>
+            To register, you must provide a username, valid email address, and password.<br>
+            You agree to provide accurate, current, and complete information.<br>
+            Accounts are personal and may not be transferred to others.</p>
+
+            <p><b>2. Account Security</b><br>
+            You are responsible for maintaining the confidentiality of your login details.<br>
+            You must notify us immediately of any unauthorized use of your account.<br>
+            We are not liable for losses resulting from unauthorized access due to your negligence.</p>
+
+            <p><b>3. Use of Services</b><br>
+            Your account is intended for booking appointments, accessing veterinary records, and communicating with us.<br>
+            You may not use our services for unlawful, fraudulent, or harmful purposes.<br>
+            We reserve the right to suspend or terminate accounts that violate these Terms.</p>
+
+            <p><b>4. Service Availability</b><br>
+            We aim to keep our services available but do not guarantee uninterrupted or error-free access.<br>
+            We may update, modify, or discontinue certain features without prior notice.</p>
+
+            <p><b>5. Limitation of Liability</b><br>
+            PetStop Veterinary Clinic shall not be liable for indirect, incidental, or consequential damages from the use of our services.<br>
+            Nothing in these Terms excludes liability where prohibited by Philippine law.</p>
+
+            <p><b>6. Changes to Terms</b><br>
+            We may update these Terms as needed.<br>
+            Continued use of our services after changes constitutes acceptance of the revised Terms.</p>
+
+            <p><b>7. Contact Us</b><br>
+            📧 [Insert Clinic Email]<br>
+            📞 [Insert Clinic Phone Number]</p>
+
+            <hr>
+
+            <h3>Privacy Policy</h3>
+            <p><b>PetStop Veterinary Clinic</b><br>
+            (Compliant with RA 10173 – Data Privacy Act of 2012)</p>
+
+            <p><b>1. Personal Information We Collect</b><br>
+            Username, Email, Password (encrypted), Appointment details, Pet medical records, Communication history.</p>
+
+            <p><b>2. Purpose of Collection</b><br>
+            To create/manage accounts, provide veterinary services, send updates/reminders, and comply with PH law.</p>
+
+            <p><b>3. Data Sharing</b><br>
+            No selling/trading of data. Shared only when necessary (e.g., IT, payments). Disclosure only if required by law.</p>
+
+            <p><b>4. Data Security</b><br>
+            Encrypted passwords, organizational/technical safeguards as required by law. No system is 100% secure.</p>
+
+            <p><b>5. Data Retention</b><br>
+            Retained while account is active or required by law.</p>
+
+            <p><b>6. Your Rights</b><br>
+            Right to be informed, access, correction, deletion, withdraw consent, and file complaints with NPC.<br>
+            Contact our Data Protection Officer:<br>
+            📧 [Insert DPO Email]<br>
+            📞 [Insert DPO Phone Number]</p>
+
+            <p><b>7. Updates</b><br>
+            Policy may change to comply with law or service improvements.</p>
+          </div>
+        `,
+        icon: "info",
+        width: 700,
+        showCancelButton: true,
+        confirmButtonText: "I Accept",
+        cancelButtonText: "Decline",
+        allowOutsideClick: false
+      });
+
+      if (!isConfirmed) {
+        this.checked = false; // Uncheck if declined
+      }
+    }
+  });
+});
+
+
 document.getElementById('forgotPasswordLink').addEventListener('click', async function(e) {
     e.preventDefault();
 
