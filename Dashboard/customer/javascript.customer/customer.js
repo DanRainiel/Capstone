@@ -289,212 +289,248 @@ function toMinutes(timeStr) {
   return hours * 60 + minutes;
 }
 
+document.addEventListener("DOMContentLoaded", () => {
+    const appointmentForm = document.getElementById("appointment-form");
+    const apptDateInput = document.getElementById("appt-date");
+    const apptTimeInput = document.getElementById("appt-time");
 
-  document.addEventListener("DOMContentLoaded", () => {
-      // ================================
-      // 📌 Logic for Main Appointment Form
-      // ================================
-      const appointmentForm = document.getElementById("appointment-form");
-      if (appointmentForm) {
-          // ✅ Always set today's date
-          const today = new Date().toISOString().split("T")[0]; 
-          document.getElementById("appt-date").value = today;
+    if (!appointmentForm) {
+        console.error("❌ appointment-form not found in DOM");
+        return;
+    }
 
-          // ✅ Pre-fill timeslot from sessionStorage (if booking was used)
-          const savedSlot = sessionStorage.getItem("selectedSlot");
-          if (savedSlot) {
-              document.getElementById("appt-time").value = savedSlot;
-              sessionStorage.removeItem("selectedSlot");
-          }
+  // 🔹 Update available times when date changes
+if (apptDateInput && apptTimeInput) {
+    apptDateInput.addEventListener("change", async () => {
+        const selectedDate = apptDateInput.value;
+        if (!selectedDate) return;
 
-          appointmentForm.addEventListener("submit", async (e) => {
-              e.preventDefault();
+        const day = new Date(selectedDate).getDay(); // 0=Sun, 6=Sat
 
-              const selectedDate = document.getElementById("appt-date").value;
-              const selectedTime = document.getElementById("appt-time").value; // keep as HH:MM for comparison
-              const formattedTime = formatTo12Hour(selectedTime); // for storing/display
-              const selectedService = document.getElementById("appt-service").value;
-              const currentUser = document.getElementById("appt-number").value.trim();
+        // 🚫 Block Sundays immediately
+        if (day === 0) {
+            await Swal.fire({
+                icon: "warning",
+                title: "Closed on Sundays",
+                text: "Appointments cannot be scheduled on Sundays. Please choose another day.",
+                confirmButtonColor: "#f8732b"
+            });
+            apptDateInput.value = ""; // reset date
+            apptTimeInput.innerHTML = `<option value="">Select Time</option>`;
+            apptTimeInput.disabled = true;
+            return;
+        }
 
-              // 🚫 Prevent same-day booking
-              const todayDate = new Date().toISOString().split("T")[0]; 
-              if (selectedDate === todayDate) {
-                  await Swal.fire({
-                      icon: "warning",
-                      title: "Same-Day Booking Not Allowed",
-                      text: "You cannot create an appointment for today. Please choose another date.",
-                      confirmButtonColor: "#f8732b"
-                  });
-                  return;
-              }
+        try {
+            // Fetch clinic hours
+            const clinicSettingsRef = collection(db, "ClinicSettings");
+            const clinicSnap = await getDocs(clinicSettingsRef);
+            if (clinicSnap.empty) return;
 
-              // 🔹 Check clinic hours from Firestore
-              try {
-                  const clinicSettingsRef = collection(db, "ClinicSettings");
-                  const clinicSnap = await getDocs(clinicSettingsRef);
+            const clinicData = clinicSnap.docs[0].data();
+            const weekdayHours = clinicData.weekdayHours; // { start: "08:00", end: "18:00" }
+            const saturdayHours = clinicData.saturdayHours; // { start: "08:00", end: "16:00" }
 
-                  if (clinicSnap.empty) throw new Error("Clinic hours not found");
+            let clinicStart, clinicEnd;
+            if (day === 6) {
+                clinicStart = saturdayHours.start;
+                clinicEnd = saturdayHours.end;
+            } else {
+                clinicStart = weekdayHours.start;
+                clinicEnd = weekdayHours.end;
+            }
 
-                  const clinicData = clinicSnap.docs[0].data();
-                  const weekdayHours = clinicData.weekdayHours; // { start: "08:00", end: "18:00" }
-                  const saturdayHours = clinicData.saturdayHours; // { start: "08:00", end: "16:00" }
+            console.log(`📅 Selected date clinic hours: ${clinicStart} - ${clinicEnd}`);
 
-                  const appointmentDay = new Date(selectedDate).getDay(); // 0=Sun, 6=Sat
-                  let clinicStart, clinicEnd;
+            // Build <select> options as time ranges
+            if (apptTimeInput.tagName.toLowerCase() === "select") {
+                apptTimeInput.innerHTML = `<option value="">Select Time</option>`; // reset
+                const startMinutes = toMinutes(clinicStart);
+                const endMinutes = toMinutes(clinicEnd);
 
-                  if (appointmentDay === 6) { // Saturday
-                      clinicStart = saturdayHours.start;
-                      clinicEnd = saturdayHours.end;
-                  } else { // Weekday (Mon-Fri)
-                      clinicStart = weekdayHours.start;
-                      clinicEnd = weekdayHours.end;
-                  }
+                for (let m = startMinutes; m < endMinutes; m += 30) {
+                    const slotStart = `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+                    const slotEndMinutes = m + 30;
+                    const slotEnd = `${String(Math.floor(slotEndMinutes / 60)).padStart(2, "0")}:${String(slotEndMinutes % 60).padStart(2, "0")}`;
 
-                  const selectedMinutes = toMinutes(selectedTime);
-                  const startMinutes = toMinutes(clinicStart);
-                  const endMinutes = toMinutes(clinicEnd);
+                    const option = document.createElement("option");
+                    option.value = slotStart; // use start time as value
+                    option.textContent = `${formatTo12Hour(slotStart)} - ${formatTo12Hour(slotEnd)}`;
 
-                  if (selectedMinutes < startMinutes || selectedMinutes >= endMinutes) {
-                      await Swal.fire({
-                          icon: "error",
-                          title: "Outside Clinic Hours",
-                          text: `Appointments can only be booked between ${clinicStart} and ${clinicEnd}. Please select a valid time.`,
-                          confirmButtonColor: "#f8732b"
-                      });
-                      return; // stop submission
-                  }
-              } catch (err) {
-                  console.error("Error fetching clinic hours:", err);
-                  await Swal.fire({
-                      icon: "error",
-                      title: "Error",
-                      text: "Could not verify clinic hours. Please try again later.",
-                      confirmButtonColor: "#f8732b"
-                  });
-                  return;
-              }
+                    apptTimeInput.appendChild(option);
+                }
 
-              // 🚫 Prevent booking on the same day for the same user
-              try {
-                  const qUser = query(
-                      collection(db, "Appointment"),
-                      where("number", "==", currentUser),
-                      where("date", "==", selectedDate)
-                  );
-                  const userSnap = await getDocs(qUser);
+                apptTimeInput.disabled = false;
+            } else {
+                // Fallback for <input type="time">
+                apptTimeInput.min = clinicStart;
+                apptTimeInput.max = clinicEnd;
+                apptTimeInput.disabled = false;
+            }
+        } catch (err) {
+            console.error("⚠️ Error updating clinic hours:", err);
+        }
+    });
+}
 
-                  if (!userSnap.empty) {
-                      await Swal.fire({
-                          icon: "info",
-                          title: "You Already Have an Appointment Today",
-                          text: "You cannot create another appointment for today. Please choose another day.",
-                          confirmButtonColor: "#f8732b"
-                      });
-                      return;
-                  }
-              } catch (err) {
-                  console.error("Error checking same-day appointment:", err);
-                  await Swal.fire({
-                      icon: "error",
-                      title: "Error",
-                      text: "Could not verify your existing appointments. Try again later.",
-                      confirmButtonColor: "#f8732b"
-                  });
-                  return;
-              }
 
-              // 🚫 Check if same service/time/date already booked
-              try {
-                  const q2 = query(collection(db, "Appointment"), where("date", "==", selectedDate));
-                  const querySnapshot = await getDocs(q2);
+    // ================================
+    // 📌 Appointment Submit Handler
+    // ================================
+    appointmentForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
 
-                  const newTime = toMinutes(selectedTime);
-                  let conflict = false;
+        const selectedDate = document.getElementById("appt-date").value;
+        const selectedTime = document.getElementById("appt-time").value;
+        const formattedTime = formatTo12Hour(selectedTime);
+        const selectedService = document.getElementById("appt-service").value;
+        const currentUser = document.getElementById("appt-number").value.trim();
 
-                  querySnapshot.forEach(docSnap => {
-                      const existing = docSnap.data();
-                      const existingTime = toMinutes(existing.time);
+        // 🚫 Prevent same-day booking
+        const todayDate = new Date().toISOString().split("T")[0];
+        if (selectedDate === todayDate) {
+            await Swal.fire({
+                icon: "warning",
+                title: "Same-Day Booking Not Allowed",
+                text: "You cannot create an appointment for today. Please choose another date.",
+                confirmButtonColor: "#f8732b"
+            });
+            return;
+        }
 
-                      if (existingTime !== null && newTime !== null) {
-                          if (existingTime === newTime && existing.service === selectedService) {
-                              conflict = true;
-                          }
-                          if (existingTime === newTime && existing.service === selectedService && existing.number === currentUser) {
-                              conflict = true;
-                          }
-                      }
-                  });
+        // 🔹 Check clinic hours + blocked slots
+        try {
+            const clinicSettingsRef = collection(db, "ClinicSettings");
+            const clinicSnap = await getDocs(clinicSettingsRef);
+            if (clinicSnap.empty) throw new Error("Clinic hours not found");
 
-                  if (conflict) {
-                      await Swal.fire({
-                          icon: "error",
-                          title: "Slot Unavailable",
-                          text: "This time slot with the same service is already booked. Please choose another.",
-                          confirmButtonColor: "#f8732b"
-                      });
-                      return;
-                  }
-              } catch (err) {
-                  console.error("Error checking appointment conflicts:", err);
-                  await Swal.fire({
-                      icon: "error",
-                      title: "Error",
-                      text: "Could not verify appointment conflicts. Try again later.",
-                      confirmButtonColor: "#f8732b"
-                  });
-                  return;
-              }
+            const clinicData = clinicSnap.docs[0].data();
+            const weekdayHours = clinicData.weekdayHours;
+            const saturdayHours = clinicData.saturdayHours;
 
-              // ✅ Continue as normal if not blocked/conflicted
-              const appointmentData = {
-                  name: document.getElementById("appt-name").value.trim(),
-                  number: currentUser,
-                  petName: document.getElementById("appt-petname").value.trim(),
-                  breed: document.getElementById("appt-breed").value.trim(),
-                  petSize: document.getElementById("appt-size").value,
-                  sex: document.getElementById("appt-sex").value,
-                  service: selectedService,
-                  time: formattedTime,
-                  date: selectedDate,
-                  serviceFee: 0,
-                  selectedServices: [],
-                  vaccines: [],
-              };
+            const appointmentDay = new Date(selectedDate).getDay(); // 0=Sun, 6=Sat
 
-              // 💰 Apply fee
-              switch (appointmentData.service) {
-                  case "grooming": appointmentData.serviceFee = 500; break;
-                  case "vaccinations": appointmentData.serviceFee = 700; break;
-                  case "dental-care": appointmentData.serviceFee = 600; break;
-                  case "consultation": appointmentData.serviceFee = 400; break;
-                  case "laboratory": appointmentData.serviceFee = 800; break;
-                  case "treatment": appointmentData.serviceFee = 1000; break;
-              }
+            // 🚫 Block Sundays completely
+            if (appointmentDay === 0) {
+                await Swal.fire({
+                    icon: "warning",
+                    title: "Closed on Sundays",
+                    text: "Appointments cannot be scheduled on Sundays. Please choose another day.",
+                    confirmButtonColor: "#f8732b"
+                });
+                return;
+            }
 
-              Swal.fire({
-                  title: 'Processing...',
-                  text: 'Please wait while we submit your appointment.',
-                  allowOutsideClick: false,
-                  allowEscapeKey: false,
-                  didOpen: () => Swal.showLoading()
-              });
+            let clinicStart, clinicEnd;
+            if (appointmentDay === 6) {
+                clinicStart = saturdayHours.start;
+                clinicEnd = saturdayHours.end;
+            } else {
+                clinicStart = weekdayHours.start;
+                clinicEnd = weekdayHours.end;
+            }
 
-              setTimeout(() => {
-                  sessionStorage.setItem("appointment", JSON.stringify(appointmentData));
+            const selectedMinutes = toMinutes(selectedTime);
+            const startMinutes = toMinutes(clinicStart);
+            const endMinutes = toMinutes(clinicEnd);
 
-                  Swal.fire({
-                      title: 'Appointment Submitted!',
-                      text: 'Your appointment has been saved. Redirecting to confirmation page...',
-                      icon: 'success',
-                      confirmButtonText: 'Continue',
-                      confirmButtonColor: '#f8732b'
-                  }).then(() => {
-                      window.location.href = "custConfirm.html";
-                  });
-              }, 1500);
-          });
-      }
-  });
+            if (selectedMinutes < startMinutes || selectedMinutes >= endMinutes) {
+                await Swal.fire({
+                    icon: "error",
+                    title: "Outside Clinic Hours",
+                    text: `Appointments can only be booked between ${clinicStart} and ${clinicEnd}. Please select a valid time.`,
+                    confirmButtonColor: "#f8732b"
+                });
+                return;
+            }
+
+            // 2. Check against blocked slots
+            const blockedRef = collection(db, "BlockedSlots");
+            const qBlocked = query(blockedRef, where("date", "==", selectedDate));
+            const blockedSnap = await getDocs(qBlocked);
+
+            let isBlocked = false;
+            let reason = "";
+
+            blockedSnap.forEach(docSnap => {
+                const block = docSnap.data();
+                const blockStart = toMinutes(block.startTime);
+                const blockEnd = toMinutes(block.endTime);
+
+                if (selectedMinutes >= blockStart && selectedMinutes < blockEnd) {
+                    isBlocked = true;
+                    reason = block.reason || "Unavailable";
+                }
+            });
+
+            if (isBlocked) {
+                await Swal.fire({
+                    icon: "error",
+                    title: "Time Slot Blocked",
+                    text: `This time is unavailable (${reason}). Please pick another slot.`,
+                    confirmButtonColor: "#f8732b"
+                });
+                return;
+            }
+        } catch (err) {
+            console.error("Error validating clinic hours/blocked slots:", err);
+            await Swal.fire({
+                icon: "error",
+                title: "Error",
+                text: "Could not verify clinic schedule. Please try again later.",
+                confirmButtonColor: "#f8732b"
+            });
+            return;
+        }
+
+        // ✅ Save appointment if no conflicts
+        const appointmentData = {
+            name: document.getElementById("appt-name").value.trim(),
+            number: currentUser,
+            petName: document.getElementById("appt-petname").value.trim(),
+            breed: document.getElementById("appt-breed").value.trim(),
+            petSize: document.getElementById("appt-size").value,
+            sex: document.getElementById("appt-sex").value,
+            service: selectedService,
+            time: formattedTime,
+            date: selectedDate,
+            serviceFee: 0,
+            selectedServices: [],
+            vaccines: [],
+        };
+
+        // 💰 Apply fee
+        switch (appointmentData.service) {
+            case "grooming": appointmentData.serviceFee = 500; break;
+            case "vaccinations": appointmentData.serviceFee = 700; break;
+            case "dental-care": appointmentData.serviceFee = 600; break;
+            case "consultation": appointmentData.serviceFee = 400; break;
+            case "laboratory": appointmentData.serviceFee = 800; break;
+            case "treatment": appointmentData.serviceFee = 1000; break;
+        }
+
+        Swal.fire({
+            title: 'Processing...',
+            text: 'Please wait while we submit your appointment.',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            didOpen: () => Swal.showLoading()
+        });
+
+        setTimeout(() => {
+            sessionStorage.setItem("appointment", JSON.stringify(appointmentData));
+            Swal.fire({
+                title: 'Appointment Submitted!',
+                text: 'Your appointment has been saved. Redirecting to confirmation page...',
+                icon: 'success',
+                confirmButtonText: 'Continue',
+                confirmButtonColor: '#f8732b'
+            }).then(() => {
+                window.location.href = "custConfirm.html";
+            });
+        }, 1500);
+    });
+});
 
 
 document.addEventListener("DOMContentLoaded", () => {

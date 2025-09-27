@@ -1090,11 +1090,12 @@ hr{
         }
 
    .calendar-time-slot.blocked {
-    background-color: #ff4d4f; /* red */
-    color: white;
-    cursor: not-allowed;
-    pointer-events: none;
+  background-color: #ff4d4f; /* red */
+  color: white;
+  cursor: not-allowed;
+  pointer-events: none;
 }
+
 .blocked-day {
     background-color: #ff4d4f; /* red */
     color: white;
