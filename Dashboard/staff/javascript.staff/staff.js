@@ -1390,6 +1390,25 @@ allAppointments.forEach((apt) => {
 }
 
 
+// 🔎 Filter table rows by status
+document.getElementById("statusFilter").addEventListener("change", function () {
+  const filterValue = this.value.toLowerCase();
+  const rows = document.querySelectorAll("#appointmentTable tr");
+
+  rows.forEach((row) => {
+    const statusCell = row.querySelector("td.status");
+    if (!statusCell) return;
+
+    const rowStatus = statusCell.textContent.trim().toLowerCase();
+
+    if (filterValue === "all" || rowStatus === filterValue) {
+      row.style.display = "";
+    } else {
+      row.style.display = "none";
+    }
+  });
+});
+
 document.addEventListener("click", async (e) => {
   const btn = e.target.closest(".btn.accept, .btn.decline, .btn.complete, .btn.add-discount, .btn.reschedule");
   if (!btn) return;
@@ -1451,6 +1470,7 @@ document.addEventListener("click", async (e) => {
   
   loadAllAppointments();
 });
+
 
 
 
