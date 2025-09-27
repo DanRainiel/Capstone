@@ -850,14 +850,17 @@ for(let day=1; day<=daysInMonth; day++){
     // Today highlight
     if(cellDay.getTime() === todayDay.getTime()) dayCell.classList.add('today');
 
-    // Appointment count badge
-    if(dayAppointments.length > 0){
-        const countBadge = document.createElement('div');
-        countBadge.className='calendar-appointment-count';
-        countBadge.textContent = dayAppointments.length;
-        dayCell.appendChild(countBadge);
-        dayCell.classList.add('has-appointments');
-    }
+  // Appointment count badge (deduplicated)
+const uniqueAppointments = Array.from(new Map(dayAppointments.map(a => [a.id, a])).values());
+
+if(uniqueAppointments.length > 0){
+    const countBadge = document.createElement('div');
+    countBadge.className='calendar-appointment-count';
+    countBadge.textContent = uniqueAppointments.length;
+    dayCell.appendChild(countBadge);
+    dayCell.classList.add('has-appointments');
+}
+
 
     // Available indicator only for future dates (exclude today & past)
     if(cellDay.getTime() > todayDay.getTime() && !dayCell.classList.contains('blocked-day')){
@@ -880,6 +883,7 @@ for(let day=1; day<=daysInMonth; day++){
 
 
 }
+
 
 function getTypeDisplayName(type){
   const types = {
