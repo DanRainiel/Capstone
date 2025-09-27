@@ -351,49 +351,100 @@ setTimeout(() => {
   });
 });
 
-
-document.getElementById('forgotPasswordLink').addEventListener('click', async function(e) {
+ document.getElementById('forgotPasswordLink').addEventListener('click', async (e) => {
     e.preventDefault();
 
-    const { value: formValues } = await Swal.fire({
-        title: 'Reset Password',
-        html: `
-            <input id="swal-email" class="swal2-input" placeholder="Enter your email">
-            <input id="swal-password" type="password" class="swal2-input" placeholder="Enter new password">
-        `,
-        focusConfirm: false,
-        preConfirm: () => {
-            const email = document.getElementById('swal-email').value;
-            const newPassword = document.getElementById('swal-password').value;
-            if (!email || !newPassword) {
-                Swal.showValidationMessage('Please enter both email and new password');
-            }
-            return { email, newPassword };
-        },
-        showCancelButton: true,
-        confirmButtonText: 'Reset Password'
-    });
-
-    if (formValues) {
-        try {
-            const usersRef = collection(db, "users");
-            const q = query(usersRef, where("email", "==", formValues.email));
-            const querySnapshot = await getDocs(q);
-
-            if (querySnapshot.empty) {
-                Swal.fire('Error', 'No user found with this email.', 'error');
-            } else {
-                for (const userDoc of querySnapshot.docs) {
-                    await updateDoc(userDoc.ref, {
-                        password: formValues.newPassword,
-                        updatedAt: serverTimestamp()
-                    });
+    try {
+        // --- Step 1: Ask for email and new password ---
+        const { value: formValues } = await Swal.fire({
+            title: 'Reset Password',
+            html: `
+                <input id="swal-email" class="swal2-input" placeholder="Enter your email">
+                <input id="swal-password" type="password" class="swal2-input" placeholder="Enter new password">
+            `,
+            focusConfirm: false,
+            preConfirm: () => {
+                const email = document.getElementById('swal-email').value.trim();
+                const newPassword = document.getElementById('swal-password').value.trim();
+                if (!email || !newPassword) {
+                    Swal.showValidationMessage('Please enter both email and new password');
                 }
-                Swal.fire('Success', 'Your password has been updated.', 'success');
+                return { email, newPassword };
+            },
+            showCancelButton: true,
+            confirmButtonText: 'Next'
+        });
+
+        if (!formValues) return;
+
+        // --- Step 2: Ask for phone number ---
+        const { value: phoneNumber } = await Swal.fire({
+            title: 'Verify Your Account',
+            input: 'text',
+            inputLabel: 'Enter your phone number to receive OTP',
+            inputPlaceholder: 'e.g., +639123456789',
+            showCancelButton: true,
+            confirmButtonText: 'Send OTP',
+            preConfirm: (phone) => {
+                if (!phone) Swal.showValidationMessage('Phone number is required');
+                return phone;
             }
-        } catch (err) {
-            console.error(err);
-            Swal.fire('Error', 'Something went wrong while updating password.', 'error');
+        });
+
+        if (!phoneNumber) return;
+
+        // --- Step 3: Send OTP ---
+        const sendRes = await fetch('http://localhost:3000/send-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phoneNumber })
+        });
+
+        const sendData = await sendRes.json();
+        if (!sendData.success) throw new Error(sendData.message || 'Failed to send OTP');
+
+        // --- Step 4: Ask user to enter OTP ---
+        const { value: otp } = await Swal.fire({
+            title: 'Enter Verification Code',
+            input: 'text',
+            inputLabel: 'We sent an SMS with a code',
+            inputPlaceholder: 'Enter code here',
+            showCancelButton: true,
+            confirmButtonText: 'Verify OTP',
+            preConfirm: (code) => {
+                if (!code) Swal.showValidationMessage('OTP is required');
+                return code;
+            }
+        });
+
+        if (!otp) return;
+
+        // --- Step 5: Verify OTP ---
+        const verifyRes = await fetch('http://localhost:3000/verify-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phoneNumber, otp })
+        });
+
+        const verifyData = await verifyRes.json();
+        if (!verifyData.success) throw new Error(verifyData.message || 'OTP verification failed');
+
+        // --- Step 6: Update password ---
+        const updateRes = await fetch('http://localhost:3000/update-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: formValues.email, newPassword: formValues.newPassword })
+        });
+
+        const updateData = await updateRes.json();
+        if (updateData.success) {
+            Swal.fire('Success', 'Your password has been updated.', 'success');
+        } else {
+            Swal.fire('Error', updateData.message || 'Failed to update password', 'error');
         }
+
+    } catch (err) {
+        console.error(err);
+        Swal.fire('Error', err.message, 'error');
     }
 });

@@ -6,9 +6,20 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="/Dashboard/admin/admin.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+ <!-- jsPDF Core -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<!-- SheetJS (XLSX) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<!-- Your external JS -->
+<script src="admindatabase.js"></script>
+
+
+<!-- jsPDF AutoTable plugin -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     <title>Admin</title>
   </head>
-  <body>
+  <body>  
     <body>
 
     <div class="container">
@@ -209,6 +220,18 @@
               <div class="stat-label">Cancelled Today</div>
             </div>
           </div>
+          
+  <div class="table-controls">
+    <label for="statusFilter">Filter by Status:</label>
+    <select id="statusFilter">
+      <option value="all">All</option>
+      <option value="pending">Pending</option>
+      <option value="in progress">In Progress</option>
+      <option value="completed">Completed</option>
+      <option value="for-rescheduling">For Rescheduling</option>
+      <option value="cancelled">Cancelled</option>
+    </select>
+  </div>
 
           <div class="data-table">
             <table>
@@ -456,7 +479,7 @@
                   <th>Service</th>
                   
                   <th>Cost</th>
-                  <th>Actions</th>
+                  <th>Status</th>
                 </tr>
               </thead>
               <tbody id="historytable">
@@ -525,10 +548,10 @@
                 <input type="date" id="reportDateTo">
               </div>
             </div>
-          <button id="generateReportBtn" type="button" class="btn-primary">Generate Report</button>
-
-            <button class="btn-primary">Export to PDF</button>
-            <button class="btn-primary">Export to Excel</button>
+        <button id="generateReportBtn" type="button" class="btn-primary">Generate Report</button>
+<button id="exportPdfBtn" type="button" class="btn-primary">Export to PDF</button>
+<button id="exportExcelBtn" type="button" class="btn-primary">Export to Excel</button>
+<button id="print-btn" type="button" class="btn-primary">Print Report</button>
           </div>
 
           <div class="data-table">

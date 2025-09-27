@@ -1178,6 +1178,24 @@ allAppointments.forEach((apt) => {
     await openDiscountModal(docRef, type);
   });
 
+// 🔎 Filter table rows by status
+document.getElementById("statusFilter").addEventListener("change", function () {
+  const filterValue = this.value.toLowerCase();
+  const rows = document.querySelectorAll("#appointmentTable tr");
+
+  rows.forEach((row) => {
+    const statusCell = row.querySelector("td.status");
+    if (!statusCell) return;
+
+    const rowStatus = statusCell.textContent.trim().toLowerCase();
+
+    if (filterValue === "all" || rowStatus === filterValue) {
+      row.style.display = "";
+    } else {
+      row.style.display = "none";
+    }
+  });
+});
 
 
 
@@ -2815,9 +2833,21 @@ reportTypeEl.addEventListener("change", () => {
   }
 });
 
+// ===== Initially disable export/print buttons =====
+exportPdfBtn.disabled = true;
+exportExcelBtn.disabled = true;
+printBtn.disabled = true;
+
+
 // --- Generate Report Button ---
 generateBtn.addEventListener("click", async () => {
   try {
+    // Disable buttons while generating
+    exportPdfBtn.disabled = true;
+    exportExcelBtn.disabled = true;
+    printBtn.disabled = true;
+
+    
     const reportType = reportTypeEl.value;
     const category = serviceCategoryEl.value;
     const fromDateInput = reportDateFrom.value ? new Date(reportDateFrom.value) : null;
@@ -2827,161 +2857,231 @@ generateBtn.addEventListener("click", async () => {
     let totalServices = 0;
     const rows = [];
 
+    // --- calculate start/end dates based on reportType ---
     const today = new Date();
-    today.setHours(0, 0, 0, 0); 
+    today.setHours(0,0,0,0); 
     let startDate = null;
     let endDate = new Date();
-    endDate.setHours(23, 59, 59, 999);
+    endDate.setHours(23,59,59,999);
 
-    switch (reportType) {
-      case "daily":
-        startDate = new Date();
-        startDate.setHours(0, 0, 0, 0);
-        break;
-
-      case "weekly":
-        startDate = new Date();
-        startDate.setDate(today.getDate() - 6);
-        startDate.setHours(0, 0, 0, 0);
-        break;
-
-      case "monthly":
-        startDate = new Date(today.getFullYear(), today.getMonth(), 1);
-        break;
-
-      case "yearly":
-        startDate = new Date(today.getFullYear(), 0, 1);
-        break;
-
-      case "custom":
-        if (!fromDateInput || !toDateInput) {
-          Swal.fire("Missing Dates", "Please select both From and To dates.", "warning");
-          return;
-        }
-        startDate = new Date(fromDateInput.setHours(0, 0, 0, 0));
-        endDate = new Date(toDateInput.setHours(23, 59, 59, 999));
-
-        if (startDate > endDate) {
-          Swal.fire("Invalid Range", "From Date cannot be later than To Date.", "error");
-          return;
-        }
-        break;
+    switch(reportType) {
+        case "daily":
+            startDate = new Date(); startDate.setHours(0,0,0,0); break;
+        case "weekly":
+            startDate = new Date(); startDate.setDate(today.getDate()-6); startDate.setHours(0,0,0,0); break;
+        case "monthly":
+            startDate = new Date(today.getFullYear(), today.getMonth(), 1); break;
+        case "yearly":
+            startDate = new Date(today.getFullYear(), 0, 1); break;
+        case "custom":a
+            if(!fromDateInput || !toDateInput) {
+                Swal.fire("Missing Dates", "Please select both From and To dates.", "warning");
+                return;
+            }
+            startDate = new Date(fromDateInput.setHours(0,0,0,0));
+            endDate = new Date(toDateInput.setHours(23,59,59,999));
+            if(startDate > endDate){
+                Swal.fire("Invalid Range","From Date cannot be later than To Date.","error");
+                return;
+            }
+            break;
     }
-    // --- Queries ---
-let appointmentQuery = query(
-  collection(db, "Appointment"),
-  where("status", "==", "Completed")
-);
 
-let walkInQuery = query(
-  collection(db, "WalkInAppointment"),
-  where("status", "==", "Completed")
-);
+    // --- Fetch Appointments ---
+    let appointmentQuery = query(collection(db, "Appointment"), where("status","==","Completed"));
+    let walkInQuery = query(collection(db, "WalkInAppointment"), where("status","==","Completed"));
 
-if (category.toLowerCase() !== "all") {
-  // Appointment
-  appointmentQuery = query(
-    appointmentQuery,
-    where("service", "==", category.toLowerCase())
-  );
+    if(category.toLowerCase() !== "all"){
+        appointmentQuery = query(appointmentQuery, where("service","==",category.toLowerCase()));
+        walkInQuery = query(walkInQuery, where("serviceType","==",category.toLowerCase()));
+    }
 
-  // Walk-in
-  walkInQuery = query(
-    walkInQuery,
-    where("serviceType", "==", category.toLowerCase())
-  );
-}
+    const [apptSnapshot, walkInSnapshot] = await Promise.all([getDocs(appointmentQuery), getDocs(walkInQuery)]);
 
+    const processDoc = (docSnap,type) => {
+        const data = docSnap.data();
+        if((data.status||"").toLowerCase() !== "completed") return;
 
+        let amount = Number((data.totalAmount||"0").toString().replace(/[^\d.-]/g,""))||0;
+        const saleDate = data.createdAt?.toDate ? data.createdAt.toDate() : (data.timestamp ? new Date(data.timestamp) : new Date());
+        if(!saleDate) return;
+        if(startDate && saleDate < startDate) return;
+        if(endDate && saleDate > endDate) return;
 
-    const [apptSnapshot, walkInSnapshot] = await Promise.all([
-      getDocs(appointmentQuery),
-      getDocs(walkInQuery),
-    ]);
+        const serviceType = type==="walkin" ? data.serviceType||"Walk-In" : data.service||"Appointment";
+        if(category.toLowerCase() !== "all" && serviceType.toLowerCase() !== category.toLowerCase()) return;
 
-  const processDoc = (docSnap, type) => {
-  const data = docSnap.data();
+        totalRevenue += amount;
+        totalServices += 1;
 
-  // ✅ Skip if not completed
-  if ((data.status || "").toLowerCase() !== "completed") return;
+        rows.push({
+            date: saleDate.toLocaleDateString(),
+            type: serviceType,
+            revenue: amount,
+            avg: amount
+        });
+    };
 
-  let amount = Number((data.totalAmount || "0").toString().replace(/[^\d.-]/g, "")) || 0;
+    apptSnapshot.forEach(doc => processDoc(doc,"appointment"));
+    walkInSnapshot.forEach(doc => processDoc(doc,"walkin"));
 
-  const saleDate = data.createdAt?.toDate
-    ? data.createdAt.toDate()
-    : (data.timestamp ? new Date(data.timestamp) : new Date());
-
-  if (!saleDate) return;
-  if (startDate && saleDate < startDate) return;
-  if (endDate && saleDate > endDate) return;
-
-  const serviceType = type === "walkin" ? data.serviceType || "Walk-In" : data.service || "Appointment";
-
-  // ✅ Skip if category filter is applied
-  if (category.toLowerCase() !== "all" && serviceType.toLowerCase() !== category.toLowerCase()) return;
-
-  totalRevenue += amount;
-  totalServices += 1;
-
-  rows.push({
-    date: saleDate.toLocaleDateString(), 
-    type: serviceType,
-    revenue: amount,
-    avg: amount,
-    growth: "N/A",
-  });
-};
-
-
-    apptSnapshot.forEach(doc => processDoc(doc, "appointment"));
-    walkInSnapshot.forEach(doc => processDoc(doc, "walkin"));
-
-    // --- Clear old SalesReport docs ---
-    const salesSnapshot = await getDocs(collection(db, "SalesReport"));
+    // --- Clear old SalesReport and save new ---
+    const salesSnapshot = await getDocs(collection(db,"SalesReport"));
     const batch = writeBatch(db);
     salesSnapshot.forEach(d => batch.delete(d.ref));
     await batch.commit();
 
-    // --- Save new report ---
-    await addDoc(collection(db, "SalesReport"), {
-      reportType,
-      category,
-      fromDate: startDate || null,
-      toDate: endDate || null,
-      totalRevenue,
-      totalServices,
-      createdAt: serverTimestamp(),
-      details: rows,
+    await addDoc(collection(db,"SalesReport"),{
+        reportType,
+        category,
+        fromDate: startDate||null,
+        toDate: endDate||null,
+        totalRevenue,
+        totalServices,
+        createdAt: serverTimestamp(),
+        details: rows
     });
 
     // --- Populate table ---
     reportTableBody.innerHTML = "";
-    if (rows.length > 0) {
-      rows.forEach(r => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${r.date}</td>
-          <td>${r.type}</td>
-          <td>₱${r.revenue.toLocaleString()}</td>
-          <td>₱${r.avg.toLocaleString()}</td>
-        `;
-        reportTableBody.appendChild(tr);
-      });
+    if(rows.length > 0){
+        rows.forEach(r=>{
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${r.date}</td>
+                <td>${r.type}</td>
+                <td>₱${r.revenue.toLocaleString()}</td>
+                <td>₱${r.avg.toLocaleString()}</td>
+            `;
+            reportTableBody.appendChild(tr);
+        });
     } else {
-      reportTableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;">No data found.</td></tr>`;
+        reportTableBody.innerHTML = `<tr><td colspan="4" style="text-align:center;">No data found.</td></tr>`;
     }
 
-    // ✅ Update stats
+    // --- Update stats ---
     document.getElementById("servicesCompleted").textContent = totalServices.toLocaleString();
-    document.getElementById("todayRevenue").textContent = "₱" + totalRevenue.toLocaleString();
-
+    document.getElementById("todayRevenue").textContent = "₱"+totalRevenue.toLocaleString();
     await updateRevenueCards(category, reportType);
 
-  } catch (err) {
+    // --- ✅ Enable export/print buttons and show Swal ---
+    exportPdfBtn.disabled = false;
+    exportExcelBtn.disabled = false;
+    printBtn.disabled = false;
+
+    Swal.fire({
+        icon: "success",
+        title: "Report Generated",
+        text: "You can now print or export the report.",
+        timer: 2500,
+        showConfirmButton: false
+    });
+
+  } catch(err){
     console.error("Error generating report:", err);
+    Swal.fire("Error","Failed to generate report. Check console for details.","error");
   }
 });
 });
+
+// ===== External JS for Export & Print (without growth) =====
+
+// Buttons
+const exportPdfBtn = document.getElementById('exportPdfBtn');
+const exportExcelBtn = document.getElementById('exportExcelBtn');
+const printBtn = document.getElementById('print-btn');
+
+// Fetch all details from SalesReport
+async function fetchSalesReportDetails() {
+    const querySnapshot = await getDocs(collection(db, "SalesReport"));
+    const rows = [];
+
+    querySnapshot.forEach(doc => {
+        const data = doc.data();
+        const details = data.details || [];
+        details.forEach(item => {
+            rows.push({
+                date: item.date || '',
+                type: item.type || '',
+                revenue: item.revenue || 0,
+                avg: item.avg || 0
+            });
+        });
+    });
+
+    return rows;
+}
+
+// Generate HTML table dynamically
+function generateTableHTML(rows) {
+    let html = `<table border="1" id="reportTable" style="border-collapse: collapse; width: 100%;">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Service Type</th>
+                <th>Revenue</th>
+                <th>Average</th>
+            </tr>
+        </thead>
+        <tbody>`;
+
+    rows.forEach(row => {
+        html += `<tr>
+            <td>${row.date}</td>
+            <td>${row.type}</td>
+            <td>${row.revenue}</td>
+            <td>${row.avg}</td>
+        </tr>`;
+    });
+
+    html += `</tbody></table>`;
+    return html;
+}
+
+// ===== Export to PDF =====
+exportPdfBtn.addEventListener('click', async () => {
+    const rows = await fetchSalesReportDetails();
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    doc.text("Sales Report", 14, 20);
+
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = generateTableHTML(rows);
+    document.body.appendChild(tempDiv);
+
+    doc.autoTable({ html: tempDiv.querySelector('#reportTable'), startY: 30 });
+    doc.save('Sales_Report.pdf');
+
+    document.body.removeChild(tempDiv);
+});
+
+// ===== Export to Excel =====
+exportExcelBtn.addEventListener('click', async () => {
+    const rows = await fetchSalesReportDetails();
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = generateTableHTML(rows);
+    document.body.appendChild(tempDiv);
+
+    const wb = XLSX.utils.table_to_book(tempDiv.querySelector('#reportTable'), { sheet: "Report" });
+    XLSX.writeFile(wb, "Sales_Report.xlsx");
+
+    document.body.removeChild(tempDiv);
+});
+
+// ===== Print Report =====
+printBtn.addEventListener('click', async () => {
+    const rows = await fetchSalesReportDetails();
+    const tableHTML = generateTableHTML(rows);
+
+    const newWin = window.open('', '', 'width=900,height=700');
+    newWin.document.write('<html><head><title>Print Report</title></head><body>');
+    newWin.document.write('<h2>Sales Report</h2>');
+    newWin.document.write(tableHTML);
+    newWin.document.write('</body></html>');
+    newWin.document.close();
+    newWin.print();
+});
+
 
 
   // 🕓 Load recent activities

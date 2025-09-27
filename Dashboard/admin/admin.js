@@ -183,15 +183,8 @@ document.addEventListener("DOMContentLoaded", () => {
         case 'Reprint Label':
           alert('Printing document...');
           break;
-        case 'Generate Report':
-          alert('Generating report...');
-          break;
-        case 'Export to PDF':
-          alert('Exporting to PDF...');
-          break;
-        case 'Export to Excel':
-          alert('Exporting to Excel...');
-          break;
+      
+  
         case 'Send Reminder':
           alert('Vaccination reminder sent successfully!');
           break;

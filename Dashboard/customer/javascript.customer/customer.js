@@ -662,6 +662,9 @@ let blockedSlots = []; // Firestore blocked slots
 let clinicOpen = "09:00";
 let clinicClose = "17:30";
 
+
+
+
 // ===== DYNAMIC TIME SLOT GENERATOR =====
 function generateTimeSlots(start="09:00", end="17:30", interval=30) {
   const slots = [];
@@ -691,6 +694,12 @@ function timeToMinutes(t) {
   }
   const [h, m] = t.split(':').map(Number);
   return h*60 + m;
+}
+
+function minutesToTime(totalMinutes) {
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 }
 
 function formatTo12Hour(timeStr) {
@@ -752,6 +761,7 @@ async function loadBlockedSlots() {
   });
   console.log("Blocked slots:", blockedSlots);
 }
+
 
 // ===== CALENDAR =====
 const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -890,6 +900,14 @@ function selectDate(date){
   updateSidebar();
 }
 
+// ✅ Define your clinic settings globally
+const clinicSettings = {
+  appointmentDuration: 30, // minutes
+  weekdayHours: { start: "08:00", end: "18:00" },
+  saturdayHours: { start: "08:00", end: "16:00" }
+};
+
+
 function updateSidebar() {
   const selectedDateDiv = document.getElementById('selectedDate');
   const timeSlotsDiv = document.getElementById('timeSlots');
@@ -912,43 +930,86 @@ function updateSidebar() {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
   });
 
-  // Render all time slots
-  timeSlotsDiv.innerHTML = '';
-  timeSlots.forEach(time => {
-    const timeSlot = document.createElement('div');
-    timeSlot.className = 'calendar-time-slot';
-    timeSlot.textContent = formatTo12Hour(time);
-
-    const slotMinutes = timeToMinutes(time);
-    const blockedEntry = dayBlocks.find(b => slotMinutes >= timeToMinutes(b.startTime) && slotMinutes < timeToMinutes(b.endTime));
-    const isBooked = dayAppointments.some(a => a.time === time);
-    const outsideClinicHours = slotMinutes < timeToMinutes(clinicOpen) || slotMinutes >= timeToMinutes(clinicClose);
-
-    if (blockedEntry) {
-      timeSlot.classList.add('blocked');
-      timeSlot.textContent += ` (${blockedEntry.reason})`;
-      timeSlot.style.pointerEvents = 'none';
-    } else if (isBooked) {
-      timeSlot.classList.add('booked');
-      timeSlot.style.pointerEvents = 'none';
-    } else if (outsideClinicHours) {
-      timeSlot.classList.add('outside-hours');
-      timeSlot.style.pointerEvents = 'none';
-    } else {
-      timeSlot.addEventListener('click', () => selectTimeSlot(time));
+  // 🔹 Generate slots from clinicSettings
+  function generateTimeSlotsForDate(date) {
+    if (!clinicSettings) {
+      console.warn("⚠️ Clinic settings not loaded yet");
+      return [];
     }
 
-    if (selectedTimeSlot === time) timeSlot.classList.add('selected');
-    timeSlotsDiv.appendChild(timeSlot);
-  });
+    const appointmentDuration = clinicSettings.appointmentDuration || 30;
+    if (!date || !appointmentDuration || isNaN(appointmentDuration)) {
+      console.warn("⚠️ Cannot generate slots: invalid date or appointmentDuration");
+      return [];
+    }
 
-  // Render appointments for the day
+    const day = date.getDay(); // 0 = Sun, 6 = Sat
+    let start, end;
+
+    if (day === 0) return []; // Sunday closed
+    else if (day === 6 && clinicSettings.saturdayHours) { // Saturday
+      start = clinicSettings.saturdayHours.start || "08:00";
+      end   = clinicSettings.saturdayHours.end   || "16:00";
+    } else if (clinicSettings.weekdayHours) { // Weekdays
+      start = clinicSettings.weekdayHours.start || "08:00";
+      end   = clinicSettings.weekdayHours.end   || "18:00";
+    } else {
+      console.warn("⚠️ No clinic hours found for this day, using default 08:00–17:00");
+      start = "08:00";
+      end   = "17:00";
+    }
+
+    const slots = [];
+    let current = timeToMinutes(start);
+    const endMinutes = timeToMinutes(end);
+
+    while (current + appointmentDuration <= endMinutes) {
+      slots.push(minutesToTime(current));
+      current += appointmentDuration;
+    }
+
+    return slots;
+  }
+
+  // ===== Render all time slots =====
+  timeSlotsDiv.innerHTML = '';
+  const dynamicSlots = generateTimeSlotsForDate(selectedDate);
+
+  if (dynamicSlots.length === 0) {
+    timeSlotsDiv.innerHTML = '<p style="text-align:center;color:#6c757d;">No available slots for this day</p>';
+  } else {
+    dynamicSlots.forEach(time => {
+      const timeSlot = document.createElement('div');
+      timeSlot.className = 'calendar-time-slot';
+      timeSlot.textContent = formatTo12Hour(time);
+
+      const slotMinutes = timeToMinutes(time);
+      const blockedEntry = dayBlocks.find(b => slotMinutes >= timeToMinutes(b.startTime) && slotMinutes < timeToMinutes(b.endTime));
+      const isBooked = dayAppointments.some(a => a.time === time);
+
+      if (blockedEntry) {
+        timeSlot.classList.add('blocked');
+        timeSlot.textContent += ` (${blockedEntry.reason})`;
+        timeSlot.style.pointerEvents = 'none';
+      } else if (isBooked) {
+        timeSlot.classList.add('booked');
+        timeSlot.style.pointerEvents = 'none';
+      } else {
+        timeSlot.addEventListener('click', () => selectTimeSlot(time));
+      }
+
+      if (selectedTimeSlot === time) timeSlot.classList.add('selected');
+      timeSlotsDiv.appendChild(timeSlot);
+    });
+  }
+
+  // ===== Render appointments for the day =====
   appointmentsListDiv.innerHTML = '';
-let filteredAppointments = [...dayAppointments]; // default all appointments
+  let filteredAppointments = [...dayAppointments]; // default all appointments
 
-if (selectedTimeSlot) {
-  filteredAppointments = dayAppointments.filter(apt => apt.time === selectedTimeSlot);
-}
+  if (selectedTimeSlot) {
+    filteredAppointments = dayAppointments.filter(apt => apt.time === selectedTimeSlot);
+  }
 
   if (filteredAppointments.length > 0) {
     const seen = new Set();
@@ -979,6 +1040,7 @@ if (selectedTimeSlot) {
 
   bookBtn.disabled = !selectedTimeSlot;
 }
+
 
 
 function selectTimeSlot(time){

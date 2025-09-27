@@ -495,3 +495,70 @@ if (typeof updateTotalAmount === "function") updateTotalAmount();
 });
 
 
+// ===============================
+// 📌 PRINT RECEIPT LOGIC
+// ===============================
+document.addEventListener("DOMContentLoaded", () => {
+  const printBtn = document.getElementById("print-btn");
+
+  if (printBtn) {
+    printBtn.addEventListener("click", () => {
+      try {
+        // Collect appointment details from DOM
+        const ownerName = document.getElementById("owner-name")?.textContent || "";
+        const petName = document.getElementById("pet-name")?.textContent || "";
+        const petSize = document.getElementById("pet-size")?.value || "";
+        const service = document.getElementById("main-service")?.textContent || "";
+        const veterinarian = document.getElementById("veterinarian")?.textContent || "";
+        const apptDate = document.getElementById("appt-date")?.textContent || "";
+        const apptTime = document.getElementById("appt-time")?.textContent || "";
+        const serviceFee = document.getElementById("service-fee")?.textContent || "";
+        const reservationFee = document.getElementById("reservation-fee")?.textContent || "";
+        const totalAmount = document.getElementById("total-amount")?.textContent || "";
+
+        // Build receipt HTML
+        const receiptContent = `
+          <div style="font-family: Arial, sans-serif; padding:20px; max-width:600px; margin:auto;">
+            <h2 style="text-align:center;">🐾 Veterinary Clinic Receipt</h2>
+            <hr/>
+            <p><strong>Owner Name:</strong> ${ownerName}</p>
+            <p><strong>Pet Name:</strong> ${petName}</p>
+            <p><strong>Pet Size:</strong> ${petSize}</p>
+            <p><strong>Service:</strong> ${service}</p>
+            <p><strong>Veterinarian:</strong> ${veterinarian}</p>
+            <p><strong>Date:</strong> ${apptDate}</p>
+            <p><strong>Time:</strong> ${apptTime}</p>
+            <hr/>
+            <p><strong>Service Fee:</strong> ${serviceFee}</p>
+            <p><strong>Reservation Fee:</strong> ${reservationFee}</p>
+            <p><strong>Total Amount Due:</strong> ${totalAmount}</p>
+            <hr/>
+            <p style="text-align:center; font-size:12px; color:gray;">
+              Thank you for trusting our clinic. Get well soon, ${petName}! 🐶🐱
+            </p>
+          </div>
+        `;
+
+        // Open new window for printing
+        const printWindow = window.open("", "_blank");
+        printWindow.document.write(`
+          <html>
+            <head>
+              <title>Receipt - ${petName}</title>
+            </head>
+            <body>
+              ${receiptContent}
+            </body>
+          </html>
+        `);
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.print();
+        printWindow.close();
+      } catch (error) {
+        console.error("Error printing receipt:", error);
+        alert("Failed to generate receipt. Please try again.");
+      }
+    });
+  }
+});
