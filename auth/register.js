@@ -368,6 +368,7 @@ setTimeout(() => {
                 const newPassword = document.getElementById('swal-password').value.trim();
                 if (!email || !newPassword) {
                     Swal.showValidationMessage('Please enter both email and new password');
+                    return false;
                 }
                 return { email, newPassword };
             },
@@ -393,13 +394,14 @@ setTimeout(() => {
 
         if (!phoneNumber) return;
 
-        // --- Step 3: Send OTP ---
-        const sendRes = await fetch('http://localhost:3000/send-otp', {
+        // --- Step 3: Send OTP using MessageBird backend ---
+        const sendRes = await fetch('https://petstop-project.vercel.app/send-otp', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ phoneNumber })
         });
 
+        if (!sendRes.ok) throw new Error('Failed to send OTP');
         const sendData = await sendRes.json();
         if (!sendData.success) throw new Error(sendData.message || 'Failed to send OTP');
 
@@ -420,23 +422,26 @@ setTimeout(() => {
         if (!otp) return;
 
         // --- Step 5: Verify OTP ---
-        const verifyRes = await fetch('http://localhost:3000/verify-otp', {
+        const verifyRes = await fetch('https://petstop-project.vercel.app/verify-otp', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ phoneNumber, otp })
         });
 
+        if (!verifyRes.ok) throw new Error('OTP verification failed');
         const verifyData = await verifyRes.json();
         if (!verifyData.success) throw new Error(verifyData.message || 'OTP verification failed');
 
         // --- Step 6: Update password ---
-        const updateRes = await fetch('http://localhost:3000/update-password', {
+        const updateRes = await fetch('https://petstop-project.vercel.app/update-password', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email: formValues.email, newPassword: formValues.newPassword })
         });
 
+        if (!updateRes.ok) throw new Error('Failed to update password');
         const updateData = await updateRes.json();
+
         if (updateData.success) {
             Swal.fire('Success', 'Your password has been updated.', 'success');
         } else {
