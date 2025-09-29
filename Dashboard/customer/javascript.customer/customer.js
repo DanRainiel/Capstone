@@ -665,19 +665,32 @@ let clinicClose = "17:30";
 
 
 
-// ===== DYNAMIC TIME SLOT GENERATOR =====
-function generateTimeSlots(start="09:00", end="17:30", interval=30) {
+function generateTimeSlots(startTime, endTime, duration) {
   const slots = [];
-  let current = timeToMinutes(start);
-  const endMinutes = timeToMinutes(end);
-  while (current < endMinutes) {
-    const h = Math.floor(current/60).toString().padStart(2,'0');
-    const m = (current%60).toString().padStart(2,'0');
-    slots.push(`${h}:${m}`);
-    current += interval;
-  }
+  let [startHour, startMin] = startTime.split(":").map(Number);
+  let [endHour, endMin] = endTime.split(":").map(Number);
+
+  const start = new Date();
+  start.setHours(startHour, startMin, 0, 0);
+
+  const end = new Date();
+  end.setHours(endHour, endMin, 0, 0);
+
+  let current = new Date(start);
+
+while (current.getTime() < end.getTime()) {
+  let next = new Date(current.getTime() + duration * 60000);
+  if (next.getTime() > end.getTime()) break; // don't overflow past end
+  slots.push(
+    `${current.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} - ` +
+    `${next.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+  );
+  current = next;
+}
+
   return slots;
 }
+
 
 const timeSlots = generateTimeSlots(clinicOpen, clinicClose, 30);
 
@@ -905,11 +918,25 @@ function selectDate(date){
 }
 
 // ✅ Define your clinic settings globally
-const clinicSettings = {
-  appointmentDuration: 30, // minutes
-  weekdayHours: { start: "08:00", end: "18:00" },
-  saturdayHours: { start: "08:00", end: "16:00" }
-};
+let clinicSettings = null;  // use let, not const
+
+
+async function loadClinicSettings() {
+  const docRef = doc(db, "ClinicSettings", "schedule");
+  const snap = await getDoc(docRef);
+  if (snap.exists()) {
+    clinicSettings = snap.data();
+
+    // Fallback if appointmentDuration is invalid
+    if (isNaN(clinicSettings.appointmentDuration) || !clinicSettings.appointmentDuration) {
+      clinicSettings.appointmentDuration = 30; // default 30 minutes
+    }
+
+    console.log("✅ Loaded clinic settings:", clinicSettings);
+  } else {
+    console.error("❌ No clinic settings found in Firestore");
+  }
+}
 
 
 function updateSidebar() {
@@ -934,46 +961,51 @@ function updateSidebar() {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
   });
 
-  // 🔹 Generate slots from clinicSettings
   function generateTimeSlotsForDate(date) {
-    if (!clinicSettings) {
-      console.warn("⚠️ Clinic settings not loaded yet");
-      return [];
-    }
-
-    const appointmentDuration = clinicSettings.appointmentDuration || 30;
-    if (!date || !appointmentDuration || isNaN(appointmentDuration)) {
-      console.warn("⚠️ Cannot generate slots: invalid date or appointmentDuration");
-      return [];
-    }
-
-    const day = date.getDay(); // 0 = Sun, 6 = Sat
-    let start, end;
-
-    if (day === 0) return []; // Sunday closed
-    else if (day === 6 && clinicSettings.saturdayHours) { // Saturday
-      start = clinicSettings.saturdayHours.start || "08:00";
-      end   = clinicSettings.saturdayHours.end   || "16:00";
-    } else if (clinicSettings.weekdayHours) { // Weekdays
-      start = clinicSettings.weekdayHours.start || "08:00";
-      end   = clinicSettings.weekdayHours.end   || "18:00";
-    } else {
-      console.warn("⚠️ No clinic hours found for this day, using default 08:00–17:00");
-      start = "08:00";
-      end   = "17:00";
-    }
-
-    const slots = [];
-    let current = timeToMinutes(start);
-    const endMinutes = timeToMinutes(end);
-
-    while (current + appointmentDuration <= endMinutes) {
-      slots.push(minutesToTime(current));
-      current += appointmentDuration;
-    }
-
-    return slots;
+  if (!clinicSettings) {
+    console.warn("⚠️ Clinic settings not loaded yet");
+    return [];
   }
+
+  const appointmentDuration = clinicSettings.appointmentDuration || 30;
+  if (!date || !appointmentDuration || isNaN(appointmentDuration)) {
+    console.warn("⚠️ Cannot generate slots: invalid date or appointmentDuration");
+    return [];
+  }
+
+  const day = date.getDay();
+  let start, end;
+
+  if (day === 0) return []; // Sunday closed
+  else if (day === 6 && clinicSettings.saturdayHours) {
+    start = clinicSettings.saturdayHours.start || "08:00";
+    end   = clinicSettings.saturdayHours.end   || "16:00";
+  } else if (clinicSettings.weekdayHours) {
+    start = clinicSettings.weekdayHours.start || "08:00";
+    end   = clinicSettings.weekdayHours.end   || "18:00";
+  } else {
+    console.warn("⚠️ No clinic hours found for this day, using default 08:00–17:00");
+    start = "08:00";
+    end   = "17:00";
+  }
+
+  const slots = [];
+  let current = timeToMinutes(start);
+  const endMinutes = timeToMinutes(end);
+
+ while (current <= endMinutes - appointmentDuration) {
+  slots.push(minutesToTime(current));
+  current += appointmentDuration;
+}
+
+// ✅ add exact closing time as a final slot (if you want it shown)
+if (current === endMinutes) {
+  slots.push(minutesToTime(current));
+}
+
+
+  return slots;
+}
 
   // ===== Render all time slots =====
   timeSlotsDiv.innerHTML = '';
@@ -1061,11 +1093,13 @@ function navigateMonth(dir){
   updateCalendar();
 }
 
-// ===== REBOOK BUTTON =====
-document.addEventListener('DOMContentLoaded',async()=>{
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadClinicSettings();            // 🔹 load from Firestore
   await loadAppointmentsFromFirestore();
   await loadBlockedSlots();
   initCalendar();
+
+
 
   const bookBtn=document.getElementById('bookBtn');
   if(!bookBtn) return;

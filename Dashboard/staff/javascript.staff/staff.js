@@ -1409,6 +1409,53 @@ document.getElementById("statusFilter").addEventListener("change", function () {
   });
 });
 
+// 🔎 Filter table rows by service (History Table)
+document.getElementById("serviceFilter").addEventListener("change", function () {
+  const filterValue = this.value.toLowerCase();
+  const rows = document.querySelectorAll("#historytable tr"); // ✅ history table body
+
+  rows.forEach((row) => {
+    const cells = row.querySelectorAll("td");
+    if (cells.length < 5) return; // skip rows without enough columns
+
+    // Service column may contain "vaccination - small dog"
+    const rowService = cells[4].textContent.trim().toLowerCase();
+
+    // Extract only the first word before " - " for exact matching
+    const baseService = rowService.split(" - ")[0].trim();
+
+    if (filterValue === "all" || baseService === filterValue) {
+      row.style.display = "";   // show row
+    } else {
+      row.style.display = "none"; // hide row
+    }
+  });
+});
+
+// 🔎 Filter Walk-in table rows by status
+document.getElementById("walkinStatusFilter").addEventListener("change", function () {
+  const filterValue = this.value.toLowerCase();
+  const rows = document.querySelectorAll("#walkinTableBody tr"); // ✅ only walk-in table rows
+
+  rows.forEach((row) => {
+    const cells = row.querySelectorAll("td");
+    if (cells.length < 6) return; // safety, Status = 6th column
+
+    const rowStatus = cells[5].textContent.trim().toLowerCase(); // 6th column = Status
+
+    if (filterValue === "all" || rowStatus === filterValue) {
+      row.style.display = "";   // ✅ show row
+    } else {
+      row.style.display = "none"; // ❌ hide row
+    }
+  });
+});
+
+
+
+
+
+
 document.addEventListener("click", async (e) => {
   const btn = e.target.closest(".btn.accept, .btn.decline, .btn.complete, .btn.add-discount, .btn.reschedule");
   if (!btn) return;

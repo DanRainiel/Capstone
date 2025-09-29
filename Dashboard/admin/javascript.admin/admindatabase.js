@@ -1197,6 +1197,46 @@ document.getElementById("statusFilter").addEventListener("change", function () {
   });
 });
 
+// 🔎 Filter Walk-in table rows by status
+document.getElementById("walkinStatusFilter").addEventListener("change", function () {
+  const filterValue = this.value.toLowerCase();
+  const rows = document.querySelectorAll("#walkinTableBody tr"); // ✅ only walk-in table rows
+
+  rows.forEach((row) => {
+    const cells = row.querySelectorAll("td");
+    if (cells.length < 6) return; // safety, Status = 6th column
+
+    const rowStatus = cells[5].textContent.trim().toLowerCase(); // 6th column = Status
+
+    if (filterValue === "all" || rowStatus === filterValue) {
+      row.style.display = "";   // ✅ show row
+    } else {
+      row.style.display = "none"; // ❌ hide row
+    }
+  });
+});
+
+
+// 🔎 Filter table rows by service (using column index)
+document.getElementById("serviceFilter").addEventListener("change", function () {
+  const filterValue = this.value.toLowerCase();
+  const rows = document.querySelectorAll("#walkinTableBody tr");
+
+  rows.forEach((row) => {
+    const cells = row.querySelectorAll("td");
+    if (cells.length < 5) return; // safety
+
+    const rowService = cells[4].textContent.trim().toLowerCase(); // 5th column = Service
+
+    if (filterValue === "all" || rowService.includes(filterValue)) {
+      row.style.display = "";
+    } else {
+      row.style.display = "none";
+    }
+  });
+});
+
+
 
 
 
