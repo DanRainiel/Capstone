@@ -1073,18 +1073,18 @@ allAppointments.forEach((apt) => {
   const rowHTML = renderRow(apt, apt.type, apt.id);
 });
 
-// 📅 Listen to appointments and users in real-time
+// 📅 Listen to appointments, walk-ins, and users in real-time
 function listenRealtime() {
   const dashboardTable = document.getElementById("table-dashboard");
   const appointmentTable = document.getElementById("appointmentTable");
   const historyTable = document.getElementById("historytable");
   const walkInTable = document.getElementById("walkinTableBody");
-  const userTable = document.getElementById("userTable"); // Users table
+  const userTable = document.getElementById("userTable");
 
   const today = new Date().toISOString().split("T")[0];
 
   // -----------------------
-  // Appointments + Walk-ins
+  // Appointments
   // -----------------------
   const appointmentsRef = collection(db, "Appointment");
   onSnapshot(appointmentsRef, (snapshot) => {
@@ -1094,65 +1094,111 @@ function listenRealtime() {
       allAppointments.push({ ...doc.data(), id: doc.id, type: "appointment" });
     });
 
+    // -----------------------
+    // Walk-ins (merged into same array)
+    // -----------------------
     const walkInsRef = collection(db, "WalkInAppointment");
     onSnapshot(walkInsRef, (walkInSnapshot) => {
       walkInSnapshot.forEach((doc) => {
         allAppointments.push({ ...doc.data(), id: doc.id, type: "walkin" });
       });
 
-      // Clear tables
-      if (dashboardTable) dashboardTable.innerHTML = "";
-      if (appointmentTable) appointmentTable.innerHTML = "";
-      if (historyTable) historyTable.innerHTML = "";
-      if (walkInTable) walkInTable.innerHTML = "";
+      // -----------------------
+      // Users (also merged into same array)
+      // -----------------------
+      const usersRef = collection(db, "Users");
+      onSnapshot(usersRef, (userSnapshot) => {
+        const allUsers = [];
+        userSnapshot.forEach((doc) => {
+          allUsers.push({ ...doc.data(), id: doc.id, type: "user" });
+        });
 
-      // Sort appointments
-      allAppointments.sort((a, b) => {
-        const statusOrder = { pending: 1, "in progress": 2, cancelled: 98, completed: 99 };
-        const aStatus = statusOrder[a.status?.toLowerCase()] || 50;
-        const bStatus = statusOrder[b.status?.toLowerCase()] || 50;
-        if (aStatus !== bStatus) return aStatus - bStatus;
+        // -----------------------
+        // Clear tables
+        // -----------------------
+        if (dashboardTable) dashboardTable.innerHTML = "";
+        if (appointmentTable) appointmentTable.innerHTML = "";
+        if (historyTable) historyTable.innerHTML = "";
+        if (walkInTable) walkInTable.innerHTML = "";
+        if (userTable) userTable.innerHTML = "";
 
-        const aCreated = getCreatedAtFromId(a.id);
-        const bCreated = getCreatedAtFromId(b.id);
-        if (aCreated && bCreated) return bCreated - aCreated;
+        // -----------------------
+        // Sort appointments/walk-ins
+        // -----------------------
+        const appointmentsOnly = allAppointments.filter(a => a.type !== "user");
+        appointmentsOnly.sort((a, b) => {
+          const statusOrder = { pending: 1, "in progress": 2, cancelled: 98, completed: 99 };
+          const aStatus = statusOrder[a.status?.toLowerCase()] || 50;
+          const bStatus = statusOrder[b.status?.toLowerCase()] || 50;
+          if (aStatus !== bStatus) return aStatus - bStatus;
 
-        return 0;
-      });
+          const aCreated = getCreatedAtFromId(a.id);
+          const bCreated = getCreatedAtFromId(b.id);
+          if (aCreated && bCreated) return bCreated - aCreated;
 
-      // Render rows
-      allAppointments.forEach((apt) => {
-        renderRow(apt, apt.type, apt.id);
-      });
-    });
-  });
+          return 0;
+        });
 
-  // -----------------------
-  // Users table (real-time)
-  // -----------------------
-  if (userTable) {
-    const usersRef = collection(db, "users");
-    onSnapshot(usersRef, (snapshot) => {
-      userTable.innerHTML = ""; // Clear table first
+        // -----------------------
+        // Render appointments/walk-ins
+        // -----------------------
+        appointmentsOnly.forEach((apt) => {
+          renderRow(apt, apt.type, apt.id);
+        });
 
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${data.name || ""}</td>
-          <td>${data.email || ""}</td>
-          <td>${data.contact || ""}</td>
-          <td>${data.role || ""}</td>
-        `;
-        userTable.appendChild(row);
-      });
-    });
-  }
+        // -----------------------
+        // Render users with action buttons
+        // -----------------------
+        allUsers.forEach((user) => {
+          if (!userTable) return;
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${user.name || ""}</td>
+            <td>${user.email || ""}</td>
+            <td>${user.contact || ""}</td>
+            <td>${user.role || ""}</td>
+            <td>
+              <button class="btn view-user" data-id="${user.id}">View</button>
+              <button class="btn edit-user" data-id="${user.id}">Edit</button>
+              <button class="btn deactivate-user" data-id="${user.id}">Deactivate</button>
+            </td>
+          `;
+          userTable.appendChild(row);
+        });
+      }); // end users onSnapshot
+    }); // end walk-ins onSnapshot
+  }); // end appointments onSnapshot
 }
 
 // Call this once when your page loads
 listenRealtime();
 
+// -----------------------
+// Optional: add click handlers for user actions
+// -----------------------
+document.addEventListener("click", async (e) => {
+  const btn = e.target.closest(".view-user, .edit-user, .deactivate-user");
+  if (!btn) return;
+
+  const userId = btn.getAttribute("data-id");
+  const userRef = doc(db, "Users", userId);
+
+  if (btn.classList.contains("view-user")) {
+    const snap = await getDoc(userRef);
+    if (snap.exists()) {
+      console.log("User data:", snap.data());
+      alert(JSON.stringify(snap.data(), null, 2)); // simple view
+    }
+  } else if (btn.classList.contains("edit-user")) {
+    // Implement your edit logic here
+    console.log("Edit user:", userId);
+    alert("Edit user feature not implemented yet");
+  } else if (btn.classList.contains("deactivate-user")) {
+    // Example: update user status to inactive
+    await updateDoc(userRef, { status: "inactive" });
+    alert("User deactivated");
+  }
+});
 
 
 
