@@ -195,7 +195,11 @@ document.addEventListener("DOMContentLoaded", function () {
         const selectedServicesList = document.getElementById("selected-services-list");
         const petSizeSelect = document.getElementById("pet-size");
 
-        
+        // Default values
+serviceFeeDisplay.textContent = `₱0.00`;
+document.getElementById("reservation-fee").textContent = `₱0.00`;
+totalAmountDisplay.textContent = `₱0.00`;
+baseServiceFee = 0;
        
         document.getElementById("reservation-fee").textContent = `₱0.00`;
 
@@ -287,6 +291,13 @@ if (feeTypeDropdown) {
     console.error("Error processing appointment data:", error);
 }
 function updateTotalAmount() {
+    // Only calculate if baseServiceFee is greater than 0
+    if (baseServiceFee <= 0) {
+        document.getElementById("reservation-fee").textContent = `₱0.00`;
+        document.getElementById("total-amount").textContent = `₱0.00`;
+        return; // exit early
+    }
+
     const type = document.getElementById("Reservation-fee-type")?.value;
     let reservationFee = 0;
     let grandTotal = baseServiceFee; // start with full service fee
