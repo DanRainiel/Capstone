@@ -1106,7 +1106,7 @@ function listenRealtime() {
       // -----------------------
       // Users (also merged into same array)
       // -----------------------
-      const usersRef = collection(db, "Users");
+      const usersRef = collection(db, "users");
       onSnapshot(usersRef, (userSnapshot) => {
         const allUsers = [];
         userSnapshot.forEach((doc) => {
@@ -1181,7 +1181,7 @@ document.addEventListener("click", async (e) => {
   if (!btn) return;
 
   const userId = btn.getAttribute("data-id");
-  const userRef = doc(db, "Users", userId);
+  const userRef = doc(db, "users", userId);
 
   if (btn.classList.contains("view-user")) {
     const snap = await getDoc(userRef);
