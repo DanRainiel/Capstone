@@ -1284,28 +1284,25 @@ document.getElementById("walkinStatusFilter").addEventListener("change", functio
 });
 
 
-// 🔎 Filter table rows by service (History Table)
+// 🔎 Filter table rows by service (using column index)
 document.getElementById("serviceFilter").addEventListener("change", function () {
   const filterValue = this.value.toLowerCase();
-  const rows = document.querySelectorAll("#historytable tr"); // ✅ history table body
+  const rows = document.querySelectorAll("#walkinTableBody tr");
 
   rows.forEach((row) => {
     const cells = row.querySelectorAll("td");
-    if (cells.length < 5) return; // skip rows without enough columns
+    if (cells.length < 5) return; // safety
 
-    // Service column may contain "vaccination - small dog"
-    const rowService = cells[4].textContent.trim().toLowerCase();
+    const rowService = cells[4].textContent.trim().toLowerCase(); // 5th column = Service
 
-    // Extract only the first word before " - " for exact matching
-    const baseService = rowService.split(" - ")[0].trim();
-
-    if (filterValue === "all" || baseService === filterValue) {
-      row.style.display = "";   // show row
+    if (filterValue === "all" || rowService.includes(filterValue)) {
+      row.style.display = "";
     } else {
-      row.style.display = "none"; // hide row
+      row.style.display = "none";
     }
   });
 });
+
 
 
 
@@ -1532,18 +1529,19 @@ document.getElementById("dateTo").addEventListener("change", filterHistory);
 document.querySelector(".btn-primary").addEventListener("click", filterHistory);
 
 
-
-//USER MANAGEMENT//
-// 👥 Listen to users in real-time + update stats
-function listenUsersRealtime() {
+// 👥 Real-time Users Listener
+function loadAllUsers() {
   const userTable = document.getElementById("userTable");
+  if (userTable) userTable.innerHTML = "";
 
   const usersRef = collection(db, "users");
+
   onSnapshot(usersRef, async (snapshot) => {
-    if (userTable) userTable.innerHTML = "";
+    if (!userTable) return;
+    userTable.innerHTML = "";
 
     if (snapshot.empty) {
-      if (userTable) userTable.innerHTML = "<tr><td colspan='8'>No users found.</td></tr>";
+      userTable.innerHTML = "<tr><td colspan='8'>No users found.</td></tr>";
       return;
     }
 
@@ -1566,17 +1564,8 @@ function listenUsersRealtime() {
 
       // ✅ Count new users this month
       if (joinedDate) {
-        let joinDateObj;
-        if (joinedDate.toDate) {
-          joinDateObj = joinedDate.toDate();
-        } else {
-          joinDateObj = new Date(joinedDate);
-        }
-
-        if (
-          joinDateObj.getMonth() === currentMonth &&
-          joinDateObj.getFullYear() === currentYear
-        ) {
+        let joinDateObj = joinedDate.toDate ? joinedDate.toDate() : new Date(joinedDate);
+        if (joinDateObj.getMonth() === currentMonth && joinDateObj.getFullYear() === currentYear) {
           newUsersThisMonth++;
         }
       }
@@ -1587,9 +1576,7 @@ function listenUsersRealtime() {
       }
 
       // Count pets
-      const petSnapshot = await getDocs(
-        query(collection(db, "Pets"), where("userId", "==", userId))
-      );
+      const petSnapshot = await getDocs(query(collection(db, "Pets"), where("userId", "==", userId)));
       const petCount = petSnapshot.size;
 
       // Action buttons
@@ -1601,22 +1588,20 @@ function listenUsersRealtime() {
         ? `<button class="btn deactivate" data-id="${userId}">Deactivate</button>`
         : `<button class="btn activate" data-id="${userId}">Activate</button>`;
 
-      if (userTable) {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${userId}</td>
-          <td>${name}</td>
-          <td>${email}</td>
-          <td>${contact}</td>
-          <td>${petCount}</td>
-          <td class="status">${status}</td>
-          <td>${actions}</td>
-        `;
-        userTable.appendChild(row);
-      }
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${userId}</td>
+        <td>${name}</td>
+        <td>${email}</td>
+        <td>${contact}</td>
+        <td>${petCount}</td>
+        <td class="status">${status}</td>
+        <td>${actions}</td>
+      `;
+      userTable.appendChild(row);
     }
 
-    // ✅ Update the dashboard stat cards
+    // ✅ Update stats
     document.querySelector("#user-management .stat-card:nth-child(1) .stat-number").textContent = totalUsers;
     document.querySelector("#user-management .stat-card:nth-child(2) .stat-number").textContent = newUsersThisMonth;
     document.querySelector("#user-management .stat-card:nth-child(3) .stat-number").textContent = deactivatedAccounts;
