@@ -16,7 +16,7 @@
       onSnapshot,
       getDoc,
       deleteDoc,
-      joinedDate,
+     
       writeBatch,  // ✅ needed for changing user status
       doc      
     } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
