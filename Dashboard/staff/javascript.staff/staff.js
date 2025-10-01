@@ -1324,38 +1324,63 @@ function normalizeDate(dateStr) {
   return new Date(dateStr); // fallback
 }
 
-// ✅ Custom sort: latest date/time first, but completed always at bottom
-allAppointments.sort((a, b) => {
-  const statusOrder = { 
-    pending: 1,
-    "in progress": 2,
-    cancelled: 98,
-    completed: 99
-  };
+// Listen to the 'appointments' collection
+const appointmentsRef = collection(db, "appointments");
 
-  const aStatus = statusOrder[a.status?.toLowerCase()] || 50;
-  const bStatus = statusOrder[b.status?.toLowerCase()] || 50;
+onSnapshot(appointmentsRef, (snapshot) => {
+  const allAppointments = [];
 
-  if (aStatus !== bStatus) {
-    return aStatus - bStatus;
-  }
+  snapshot.forEach((doc) => {
+    allAppointments.push({ id: doc.id, ...doc.data() });
+  });
 
-  // ⬇️ use normalizeDate here
-  const aDate = normalizeDate(a.date);
-  const bDate = normalizeDate(b.date);
-
-  if (aDate && bDate && aDate.getTime() !== bDate.getTime()) {
-    return bDate - aDate; // latest first
-  }
-
-  // If same date, sort by time (latest first)
-  return (b.time || "").localeCompare(a.time || "");
+  renderAppointments(allAppointments); // render table
 });
 
-// ✅ Render into the correct table
-allAppointments.forEach((apt) => {
-  const rowHTML = renderRow(apt, apt.type, apt.id);
-});
+// ✅ Helper: extract createdAt from custom ID
+function getCreatedAtFromId(id) {
+  // Example: owner1_2025-10-01T01-38-35-518Z
+  const parts = id.split("_");
+  if (parts.length < 2) return null;
+
+  const raw = parts.slice(1).join("_"); 
+  // convert 2025-10-01T01-38-35-518Z → 2025-10-01T01:38:35.518Z
+  const iso = raw.replace(/T(\d+)-(\d+)-(\d+)-(\d+)Z$/, "T$1:$2:$3.$4Z");
+  return new Date(iso);
+}
+function renderAppointments(allAppointments) {
+  // Sort appointments
+  allAppointments.sort((a, b) => {
+    const statusOrder = { 
+      pending: 1,
+      "in progress": 2,
+      cancelled: 98,
+      completed: 99
+    };
+
+    const aStatus = statusOrder[a.status?.toLowerCase()] || 50;
+    const bStatus = statusOrder[b.status?.toLowerCase()] || 50;
+
+    if (aStatus !== bStatus) return aStatus - bStatus;
+
+    const aCreated = getCreatedAtFromId(a.id);
+    const bCreated = getCreatedAtFromId(b.id);
+
+    if (aCreated && bCreated) return bCreated - aCreated;
+    return 0;
+  });
+
+  // Render table
+  const tbody = document.querySelector("#appointmentsTableBody");
+  tbody.innerHTML = ""; // clear old rows
+
+  allAppointments.forEach((apt) => {
+    const rowHTML = renderRow(apt, apt.type, apt.id);
+    tbody.insertAdjacentHTML("beforeend", rowHTML);
+  });
+}
+
+ 
 
 
     // ✅ Update dashboard stats
