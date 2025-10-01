@@ -1073,19 +1073,18 @@ allAppointments.forEach((apt) => {
   const rowHTML = renderRow(apt, apt.type, apt.id);
 });
 
-// 📅 Listen to appointments, walk-ins, and users in real-time
-function listenRealtime() {
+ // 📅 Listen to appointments in real-time
+function listenAppointmentsRealtime() {
   const dashboardTable = document.getElementById("table-dashboard");
   const appointmentTable = document.getElementById("appointmentTable");
   const historyTable = document.getElementById("historytable");
   const walkInTable = document.getElementById("walkinTableBody");
-  const userTable = document.getElementById("userTable");
 
   const today = new Date().toISOString().split("T")[0];
 
-  // -----------------------
-  // Appointments
-  // -----------------------
+  // Helper functions (keep your existing renderRow, getCreatedAtFromId, etc.)
+  
+  // Listen to Appointment collection
   const appointmentsRef = collection(db, "Appointment");
   onSnapshot(appointmentsRef, (snapshot) => {
     const allAppointments = [];
@@ -1094,74 +1093,43 @@ function listenRealtime() {
       allAppointments.push({ ...doc.data(), id: doc.id, type: "appointment" });
     });
 
-    // -----------------------
-    // Walk-ins
-    // -----------------------
+    // Similarly listen to WalkInAppointment
     const walkInsRef = collection(db, "WalkInAppointment");
     onSnapshot(walkInsRef, (walkInSnapshot) => {
       walkInSnapshot.forEach((doc) => {
         allAppointments.push({ ...doc.data(), id: doc.id, type: "walkin" });
       });
 
-      // -----------------------
-      // Users
-      // -----------------------
-      const usersRef = collection(db, "users");
-      onSnapshot(usersRef, (userSnapshot) => {
-        const allUsers = [];
-        userSnapshot.forEach((doc) => {
-          allUsers.push({ ...doc.data(), id: doc.id, type: "user" });
-        });
+      // Clear tables
+      if (dashboardTable) dashboardTable.innerHTML = "";
+      if (appointmentTable) appointmentTable.innerHTML = "";
+      if (historyTable) historyTable.innerHTML = "";
+      if (walkInTable) walkInTable.innerHTML = "";
 
-        // -----------------------
-        // Clear all tables
-        // -----------------------
-        if (dashboardTable) dashboardTable.innerHTML = "";
-        if (appointmentTable) appointmentTable.innerHTML = "";
-        if (historyTable) historyTable.innerHTML = "";
-        if (walkInTable) walkInTable.innerHTML = "";
-        if (userTable) userTable.innerHTML = "";
+      // Sort appointments (your existing sort code)
+      allAppointments.sort((a, b) => {
+        const statusOrder = { pending: 1, "in progress": 2, cancelled: 98, completed: 99 };
+        const aStatus = statusOrder[a.status?.toLowerCase()] || 50;
+        const bStatus = statusOrder[b.status?.toLowerCase()] || 50;
+        if (aStatus !== bStatus) return aStatus - bStatus;
 
-        // -----------------------
-        // Sort appointments/walk-ins
-        // -----------------------
-        const appointmentsOnly = allAppointments.filter(a => a.type !== "user");
-        appointmentsOnly.sort((a, b) => {
-          const statusOrder = { pending: 1, "in progress": 2, cancelled: 98, completed: 99 };
-          const aStatus = statusOrder[a.status?.toLowerCase()] || 50;
-          const bStatus = statusOrder[b.status?.toLowerCase()] || 50;
-          if (aStatus !== bStatus) return aStatus - bStatus;
+        const aCreated = getCreatedAtFromId(a.id);
+        const bCreated = getCreatedAtFromId(b.id);
+        if (aCreated && bCreated) return bCreated - aCreated;
 
-          const aCreated = getCreatedAtFromId(a.id);
-          const bCreated = getCreatedAtFromId(b.id);
-          if (aCreated && bCreated) return bCreated - aCreated;
+        return 0;
+      });
 
-          return 0;
-        });
-
-        // -----------------------
-        // Render appointments/walk-ins
-        // -----------------------
-        appointmentsOnly.forEach((apt) => {
-          renderRow(apt, apt.type, apt.id); // you already have this
-        });
-
-        // -----------------------
-        // Render users (no innerHTML, use your renderer)
-        // -----------------------
-        allUsers.forEach((user) => {
-          renderUserRow(user, user.id); // your own function like renderRow
-        });
-      }); // end users snapshot
-    }); // end walk-ins snapshot
-  }); // end appointments snapshot
+      // Render rows
+      allAppointments.forEach((apt) => {
+        renderRow(apt, apt.type, apt.id);
+      });
+    });
+  });
 }
 
-// Call once on page load
-listenRealtime();
-
-
-
+// Call this once when your page loads
+listenAppointmentsRealtime();
 
 
 
@@ -1566,13 +1534,13 @@ document.querySelector(".btn-primary").addEventListener("click", filterHistory);
 
 
 //USER MANAGEMENT//
-  // 👥 Load all users + update stats
-async function loadAllUsers() {
+// 👥 Listen to users in real-time + update stats
+function listenUsersRealtime() {
   const userTable = document.getElementById("userTable");
-  if (userTable) userTable.innerHTML = "";
 
-  try {
-    const snapshot = await getDocs(collection(db, "users"));
+  const usersRef = collection(db, "users");
+  onSnapshot(usersRef, async (snapshot) => {
+    if (userTable) userTable.innerHTML = "";
 
     if (snapshot.empty) {
       if (userTable) userTable.innerHTML = "<tr><td colspan='8'>No users found.</td></tr>";
@@ -1654,11 +1622,9 @@ async function loadAllUsers() {
     document.querySelector("#user-management .stat-card:nth-child(3) .stat-number").textContent = deactivatedAccounts;
 
     attachUserStatusListeners();
-  } catch (error) {
-    console.error("Error loading users:", error);
-    if (userTable) userTable.innerHTML = "<tr><td colspan='8'>Error loading users.</td></tr>";
-  }
+  });
 }
+
 
 // 🔄 Update user status
 async function updateUserStatus(userId, newStatus) {
