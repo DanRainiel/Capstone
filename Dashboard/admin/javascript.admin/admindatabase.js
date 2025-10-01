@@ -1284,25 +1284,28 @@ document.getElementById("walkinStatusFilter").addEventListener("change", functio
 });
 
 
-// 🔎 Filter table rows by service (using column index)
+// 🔎 Filter table rows by service (History Table)
 document.getElementById("serviceFilter").addEventListener("change", function () {
   const filterValue = this.value.toLowerCase();
-  const rows = document.querySelectorAll("#walkinTableBody tr");
+  const rows = document.querySelectorAll("#historytable tr"); // ✅ history table body
 
   rows.forEach((row) => {
     const cells = row.querySelectorAll("td");
-    if (cells.length < 5) return; // safety
+    if (cells.length < 5) return; // skip rows without enough columns
 
-    const rowService = cells[4].textContent.trim().toLowerCase(); // 5th column = Service
+    // Service column may contain "vaccination - small dog"
+    const rowService = cells[4].textContent.trim().toLowerCase();
 
-    if (filterValue === "all" || rowService.includes(filterValue)) {
-      row.style.display = "";
+    // Extract only the first word before " - " for exact matching
+    const baseService = rowService.split(" - ")[0].trim();
+
+    if (filterValue === "all" || baseService === filterValue) {
+      row.style.display = "";   // show row
     } else {
-      row.style.display = "none";
+      row.style.display = "none"; // hide row
     }
   });
 });
-
 
 
 
