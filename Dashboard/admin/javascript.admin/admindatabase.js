@@ -16,6 +16,7 @@
       onSnapshot,
       getDoc,
       deleteDoc,
+      joinedDate,
       writeBatch,  // ✅ needed for changing user status
       doc      
     } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
@@ -1521,6 +1522,8 @@ async function filterHistory() {
   });
 }
 
+
+
 // 📌 Event Listeners
 document.getElementById("searchOwner").addEventListener("input", filterHistory);
 document.getElementById("searchPet").addEventListener("input", filterHistory);
@@ -1528,13 +1531,13 @@ document.getElementById("dateFrom").addEventListener("change", filterHistory);
 document.getElementById("dateTo").addEventListener("change", filterHistory);
 document.querySelector(".btn-primary").addEventListener("click", filterHistory);
 
-
-// 👥 Real-time Users Listener
+// 👥 Real-time Users Listener (sorted latest → oldest)
 function loadAllUsers() {
   const userTable = document.getElementById("userTable");
   if (userTable) userTable.innerHTML = "";
 
-  const usersRef = collection(db, "users");
+  // 👇 orderBy joinedDate DESC
+  const usersRef = query(collection(db, "users"), orderBy("joinedDate", "desc"));
 
   onSnapshot(usersRef, async (snapshot) => {
     if (!userTable) return;
@@ -1609,6 +1612,7 @@ function loadAllUsers() {
     attachUserStatusListeners();
   });
 }
+
 
 
 // 🔄 Update user status
