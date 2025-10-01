@@ -1106,7 +1106,7 @@ function listenRealtime() {
       // -----------------------
       // Users
       // -----------------------
-      const usersRef = collection(db, "Users");
+      const usersRef = collection(db, "users");
       onSnapshot(usersRef, (userSnapshot) => {
         const allUsers = [];
         userSnapshot.forEach((doc) => {
