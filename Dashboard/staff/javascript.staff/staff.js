@@ -1368,7 +1368,62 @@ allAppointments.forEach((apt) => {
   const rowHTML = renderRow(apt, apt.type, apt.id);
 });
 
+ function listenAppointmentsRealtime() {
+   const dashboardTable = document.getElementById("table-dashboard");
+   const appointmentTable = document.getElementById("appointmentTable");
+   const historyTable = document.getElementById("historytable");
+   const walkInTable = document.getElementById("walkinTableBody");
  
+   const today = new Date().toISOString().split("T")[0];
+ 
+   // Helper functions (keep your existing renderRow, getCreatedAtFromId, etc.)
+   
+   // Listen to Appointment collection
+   const appointmentsRef = collection(db, "Appointment");
+   onSnapshot(appointmentsRef, (snapshot) => {
+     const allAppointments = [];
+ 
+     snapshot.forEach((doc) => {
+       allAppointments.push({ ...doc.data(), id: doc.id, type: "appointment" });
+     });
+ 
+     // Similarly listen to WalkInAppointment
+     const walkInsRef = collection(db, "WalkInAppointment");
+     onSnapshot(walkInsRef, (walkInSnapshot) => {
+       walkInSnapshot.forEach((doc) => {
+         allAppointments.push({ ...doc.data(), id: doc.id, type: "walkin" });
+       });
+ 
+       // Clear tables
+       if (dashboardTable) dashboardTable.innerHTML = "";
+       if (appointmentTable) appointmentTable.innerHTML = "";
+       if (historyTable) historyTable.innerHTML = "";
+       if (walkInTable) walkInTable.innerHTML = "";
+ 
+       // Sort appointments (your existing sort code)
+       allAppointments.sort((a, b) => {
+         const statusOrder = { pending: 1, "in progress": 2, cancelled: 98, completed: 99 };
+         const aStatus = statusOrder[a.status?.toLowerCase()] || 50;
+         const bStatus = statusOrder[b.status?.toLowerCase()] || 50;
+         if (aStatus !== bStatus) return aStatus - bStatus;
+ 
+         const aCreated = getCreatedAtFromId(a.id);
+         const bCreated = getCreatedAtFromId(b.id);
+         if (aCreated && bCreated) return bCreated - aCreated;
+ 
+         return 0;
+       });
+ 
+       // Render rows
+       allAppointments.forEach((apt) => {
+         renderRow(apt, apt.type, apt.id);
+       });
+     });
+   });
+ }
+ 
+ // Call this once when your page loads
+ listenAppointmentsRealtime();
 
 
     // ✅ Update dashboard stats
