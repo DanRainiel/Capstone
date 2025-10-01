@@ -1200,26 +1200,26 @@ const PetManager = {
   },
 
   async addPetToFirestore(petData) {
-    try {
-      const userId = sessionStorage.getItem("userId");
-      if (!userId) return alert("User not logged in.");
+  try {
+    const userId = sessionStorage.getItem("userId");
+    if (!userId) return alert("User not logged in.");
 
-      const timestamp = Date.now();
-      const docId = `${userId}_${petData.petName}_${timestamp}`;
-     await setDoc(doc(db, "Pets", docId), {
-  ownerId: petData.ownerId,   // ✅ save ownerId instead of userId
-  petName: petData.petName,
-  species: petData.species,
-  breed: petData.breed,
-  age: petData.age,
-  sex: petData.sex,
-  size: petData.size,
-  weight: petData.weight,
-  color: petData.color,
-  medicalHistory: petData.medicalHistory,
-  createdAt: new Date().toISOString()
-});
+    const timestamp = Date.now();
+    const docId = `${userId}_${petData.petName}_${timestamp}`;
 
+    await setDoc(doc(db, "Pets", docId), {
+      userId: userId,                // ✅ Save userId for queries
+      ownerId: petData.ownerId || userId,  // ✅ Keep ownerId if needed
+      petName: petData.petName,
+      species: petData.species,
+      breed: petData.breed,
+      sex: petData.sex,
+      size: petData.size,
+      weight: petData.weight || null, // ✅ add weight if needed
+      color: petData.color || "",
+      medicalHistory: petData.medicalHistory || "",
+      createdAt: new Date().toISOString()
+    });
 
       await logActivity(userId, "Pet Added", `User ${userId} added pet ${petData.petName}.`);
       this.closePetModal();
@@ -1306,17 +1306,15 @@ const PetManager = {
   submitPetForm(event) {
     event.preventDefault();
 
-    const petData = {
-      petName: document.getElementById('petFormName').value.trim(),
-      species: document.getElementById('petSpecies').value.trim(),
-      breed: document.getElementById('petBreed').value.trim(),
-      age: parseInt(document.getElementById('petAge').value.trim()),
-      sex: document.getElementById('petSex').value.trim(),
-      size: document.getElementById('petSize').value.trim(),
-      weight: parseFloat(document.getElementById('petWeight').value.trim()),
-      color: document.getElementById('petColor').value.trim(),
-      medicalHistory: document.getElementById('petMedicalHistory').value.trim()
-    };
+   const petData = {
+  petName: document.getElementById('petFormName').value.trim(),
+  species: document.getElementById('petSpecies').value.trim(),
+  breed: document.getElementById('petBreed').value.trim(),
+  sex: document.getElementById('petSex').value.trim(),
+  size: document.getElementById('petSize').value.trim(),
+  medicalHistory: document.getElementById('petMedicalHistory').value.trim()
+};
+
 
     if (!petData.petName) return alert("Pet name is required.");
 
@@ -1335,11 +1333,10 @@ const PetManager = {
     document.getElementById('petFormName').value = pet.petName;
     document.getElementById('petSpecies').value = pet.species;
     document.getElementById('petBreed').value = pet.breed;
-    document.getElementById('petAge').value = pet.age;
+
     document.getElementById('petSex').value = pet.sex;
     document.getElementById('petSize').value = pet.size;
-    document.getElementById('petWeight').value = pet.weight;
-    document.getElementById('petColor').value = pet.color;
+
     document.getElementById('petMedicalHistory').value = pet.medicalHistory;
 
     document.getElementById('modalTitle').textContent = 'Edit Pet';
