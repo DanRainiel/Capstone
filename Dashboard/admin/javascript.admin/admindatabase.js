@@ -1073,8 +1073,8 @@ allAppointments.forEach((apt) => {
   const rowHTML = renderRow(apt, apt.type, apt.id);
 });
 
- // 📅 Listen to appointments in real-time
-function listenAppointmentsRealtime() {
+// 📅 Listen to appointments and users in real-time
+function listenRealtime() {
   const dashboardTable = document.getElementById("table-dashboard");
   const appointmentTable = document.getElementById("appointmentTable");
   const historyTable = document.getElementById("historytable");
@@ -1128,10 +1128,10 @@ function listenAppointmentsRealtime() {
   });
 
   // -----------------------
-  // Users table
+  // Users table (real-time)
   // -----------------------
   if (userTable) {
-    const usersRef = collection(db, "Users");
+    const usersRef = collection(db, "users");
     onSnapshot(usersRef, (snapshot) => {
       userTable.innerHTML = ""; // Clear table first
 
@@ -1151,7 +1151,8 @@ function listenAppointmentsRealtime() {
 }
 
 // Call this once when your page loads
-listenAppointmentsRealtime();
+listenRealtime();
+
 
 
 
