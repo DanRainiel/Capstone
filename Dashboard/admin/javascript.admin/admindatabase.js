@@ -1079,12 +1079,13 @@ function listenAppointmentsRealtime() {
   const appointmentTable = document.getElementById("appointmentTable");
   const historyTable = document.getElementById("historytable");
   const walkInTable = document.getElementById("walkinTableBody");
+  const userTable = document.getElementById("userTable"); // Users table
 
   const today = new Date().toISOString().split("T")[0];
 
-  // Helper functions (keep your existing renderRow, getCreatedAtFromId, etc.)
-  
-  // Listen to Appointment collection
+  // -----------------------
+  // Appointments + Walk-ins
+  // -----------------------
   const appointmentsRef = collection(db, "Appointment");
   onSnapshot(appointmentsRef, (snapshot) => {
     const allAppointments = [];
@@ -1093,7 +1094,6 @@ function listenAppointmentsRealtime() {
       allAppointments.push({ ...doc.data(), id: doc.id, type: "appointment" });
     });
 
-    // Similarly listen to WalkInAppointment
     const walkInsRef = collection(db, "WalkInAppointment");
     onSnapshot(walkInsRef, (walkInSnapshot) => {
       walkInSnapshot.forEach((doc) => {
@@ -1106,7 +1106,7 @@ function listenAppointmentsRealtime() {
       if (historyTable) historyTable.innerHTML = "";
       if (walkInTable) walkInTable.innerHTML = "";
 
-      // Sort appointments (your existing sort code)
+      // Sort appointments
       allAppointments.sort((a, b) => {
         const statusOrder = { pending: 1, "in progress": 2, cancelled: 98, completed: 99 };
         const aStatus = statusOrder[a.status?.toLowerCase()] || 50;
@@ -1126,10 +1126,33 @@ function listenAppointmentsRealtime() {
       });
     });
   });
+
+  // -----------------------
+  // Users table
+  // -----------------------
+  if (userTable) {
+    const usersRef = collection(db, "Users");
+    onSnapshot(usersRef, (snapshot) => {
+      userTable.innerHTML = ""; // Clear table first
+
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${data.name || ""}</td>
+          <td>${data.email || ""}</td>
+          <td>${data.contact || ""}</td>
+          <td>${data.role || ""}</td>
+        `;
+        userTable.appendChild(row);
+      });
+    });
+  }
 }
 
 // Call this once when your page loads
 listenAppointmentsRealtime();
+
 
 
 
