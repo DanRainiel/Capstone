@@ -1095,7 +1095,7 @@ function listenRealtime() {
     });
 
     // -----------------------
-    // Walk-ins (merged into same array)
+    // Walk-ins
     // -----------------------
     const walkInsRef = collection(db, "WalkInAppointment");
     onSnapshot(walkInsRef, (walkInSnapshot) => {
@@ -1104,9 +1104,9 @@ function listenRealtime() {
       });
 
       // -----------------------
-      // Users (also merged into same array)
+      // Users
       // -----------------------
-      const usersRef = collection(db, "users");
+      const usersRef = collection(db, "Users");
       onSnapshot(usersRef, (userSnapshot) => {
         const allUsers = [];
         userSnapshot.forEach((doc) => {
@@ -1147,21 +1147,36 @@ function listenRealtime() {
         });
 
         // -----------------------
-        // Render users with action buttons
+        // Render users (like pet table style)
         // -----------------------
         allUsers.forEach((user) => {
           if (!userTable) return;
+
+          const userId = user.id;
+          const name = user.name || "";
+          const email = user.email || "";
+          const contact = user.contact || "";
+          const petCount = user.petCount || 0; // if you track number of pets
+          const status = user.status || "Active";
+
+          // Action buttons
+          let actions = `
+            <button class="btn view-users" data-id="${userId}">View</button>
+            <button class="btn edit-users" data-id="${userId}">Edit</button>
+          `;
+          actions += status === "Active"
+            ? `<button class="btn deactivate" data-id="${userId}">Deactivate</button>`
+            : `<button class="btn activate" data-id="${userId}">Activate</button>`;
+
           const row = document.createElement("tr");
           row.innerHTML = `
-            <td>${user.name || ""}</td>
-            <td>${user.email || ""}</td>
-            <td>${user.contact || ""}</td>
-            <td>${user.role || ""}</td>
-            <td>
-              <button class="btn view-user" data-id="${user.id}">View</button>
-              <button class="btn edit-user" data-id="${user.id}">Edit</button>
-              <button class="btn deactivate-user" data-id="${user.id}">Deactivate</button>
-            </td>
+            <td>${userId}</td>
+            <td>${name}</td>
+            <td>${email}</td>
+            <td>${contact}</td>
+            <td>${petCount}</td>
+            <td class="status">${status}</td>
+            <td>${actions}</td>
           `;
           userTable.appendChild(row);
         });
@@ -1173,32 +1188,6 @@ function listenRealtime() {
 // Call this once when your page loads
 listenRealtime();
 
-// -----------------------
-// Optional: add click handlers for user actions
-// -----------------------
-document.addEventListener("click", async (e) => {
-  const btn = e.target.closest(".view-user, .edit-user, .deactivate-user");
-  if (!btn) return;
-
-  const userId = btn.getAttribute("data-id");
-  const userRef = doc(db, "users", userId);
-
-  if (btn.classList.contains("view-user")) {
-    const snap = await getDoc(userRef);
-    if (snap.exists()) {
-      console.log("User data:", snap.data());
-      alert(JSON.stringify(snap.data(), null, 2)); // simple view
-    }
-  } else if (btn.classList.contains("edit-user")) {
-    // Implement your edit logic here
-    console.log("Edit user:", userId);
-    alert("Edit user feature not implemented yet");
-  } else if (btn.classList.contains("deactivate-user")) {
-    // Example: update user status to inactive
-    await updateDoc(userRef, { status: "inactive" });
-    alert("User deactivated");
-  }
-});
 
 
 
