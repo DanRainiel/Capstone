@@ -1324,18 +1324,6 @@ function normalizeDate(dateStr) {
   return new Date(dateStr); // fallback
 }
 
-// Listen to the 'appointments' collection
-const appointmentsRef = collection(db, "appointments");
-
-onSnapshot(appointmentsRef, (snapshot) => {
-  const allAppointments = [];
-
-  snapshot.forEach((doc) => {
-    allAppointments.push({ id: doc.id, ...doc.data() });
-  });
-
-  renderAppointments(allAppointments); // render table
-});
 
 // ✅ Helper: extract createdAt from custom ID
 function getCreatedAtFromId(id) {
@@ -1348,37 +1336,37 @@ function getCreatedAtFromId(id) {
   const iso = raw.replace(/T(\d+)-(\d+)-(\d+)-(\d+)Z$/, "T$1:$2:$3.$4Z");
   return new Date(iso);
 }
-function renderAppointments(allAppointments) {
-  // Sort appointments
-  allAppointments.sort((a, b) => {
-    const statusOrder = { 
-      pending: 1,
-      "in progress": 2,
-      cancelled: 98,
-      completed: 99
-    };
 
-    const aStatus = statusOrder[a.status?.toLowerCase()] || 50;
-    const bStatus = statusOrder[b.status?.toLowerCase()] || 50;
+// ✅ Sort by status first, then latest created first
+allAppointments.sort((a, b) => {
+  const statusOrder = { 
+    pending: 1,
+    "in progress": 2,
+    cancelled: 98,
+    completed: 99
+  };
 
-    if (aStatus !== bStatus) return aStatus - bStatus;
+  const aStatus = statusOrder[a.status?.toLowerCase()] || 50;
+  const bStatus = statusOrder[b.status?.toLowerCase()] || 50;
 
-    const aCreated = getCreatedAtFromId(a.id);
-    const bCreated = getCreatedAtFromId(b.id);
+  // 1. Sort by status order
+  if (aStatus !== bStatus) return aStatus - bStatus;
 
-    if (aCreated && bCreated) return bCreated - aCreated;
-    return 0;
-  });
+  // 2. Sort by createdAt (descending)
+  const aCreated = getCreatedAtFromId(a.id);
+  const bCreated = getCreatedAtFromId(b.id);
 
-  // Render table
-  const tbody = document.querySelector("#appointmentsTableBody");
-  tbody.innerHTML = ""; // clear old rows
+  if (aCreated && bCreated) {
+    return bCreated - aCreated; // newest first
+  }
 
-  allAppointments.forEach((apt) => {
-    const rowHTML = renderRow(apt, apt.type, apt.id);
-    tbody.insertAdjacentHTML("beforeend", rowHTML);
-  });
-}
+  return 0;
+});
+
+// ✅ Render into the correct table
+allAppointments.forEach((apt) => {
+  const rowHTML = renderRow(apt, apt.type, apt.id);
+});
 
  
 
