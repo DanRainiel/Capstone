@@ -1106,7 +1106,7 @@ function listenRealtime() {
       // -----------------------
       // Users
       // -----------------------
-      const usersRef = collection(db, "users");
+      const usersRef = collection(db, "Users");
       onSnapshot(usersRef, (userSnapshot) => {
         const allUsers = [];
         userSnapshot.forEach((doc) => {
@@ -1114,7 +1114,7 @@ function listenRealtime() {
         });
 
         // -----------------------
-        // Clear tables
+        // Clear all tables
         // -----------------------
         if (dashboardTable) dashboardTable.innerHTML = "";
         if (appointmentTable) appointmentTable.innerHTML = "";
@@ -1143,50 +1143,23 @@ function listenRealtime() {
         // Render appointments/walk-ins
         // -----------------------
         appointmentsOnly.forEach((apt) => {
-          renderRow(apt, apt.type, apt.id);
+          renderRow(apt, apt.type, apt.id); // you already have this
         });
 
         // -----------------------
-        // Render users (like pet table style)
+        // Render users (no innerHTML, use your renderer)
         // -----------------------
         allUsers.forEach((user) => {
-          if (!userTable) return;
-
-          const userId = user.id;
-          const name = user.name || "";
-          const email = user.email || "";
-          const contact = user.contact || "";
-          const petCount = user.petCount || 0; // if you track number of pets
-          const status = user.status || "Active";
-
-          // Action buttons
-          let actions = `
-            <button class="btn view-users" data-id="${userId}">View</button>
-            <button class="btn edit-users" data-id="${userId}">Edit</button>
-          `;
-          actions += status === "Active"
-            ? `<button class="btn deactivate" data-id="${userId}">Deactivate</button>`
-            : `<button class="btn activate" data-id="${userId}">Activate</button>`;
-
-          const row = document.createElement("tr");
-          row.innerHTML = `
-            <td>${userId}</td>
-            <td>${name}</td>
-            <td>${email}</td>
-            <td>${contact}</td>
-            <td>${petCount}</td>
-            <td class="status">${status}</td>
-            <td>${actions}</td>
-          `;
-          userTable.appendChild(row);
+          renderUserRow(user, user.id); // your own function like renderRow
         });
-      }); // end users onSnapshot
-    }); // end walk-ins onSnapshot
-  }); // end appointments onSnapshot
+      }); // end users snapshot
+    }); // end walk-ins snapshot
+  }); // end appointments snapshot
 }
 
-// Call this once when your page loads
+// Call once on page load
 listenRealtime();
+
 
 
 
