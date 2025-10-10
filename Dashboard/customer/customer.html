@@ -90,51 +90,72 @@
                     <img src="/images/petpeek.png" alt="Peeking Pet" class="peeking-pet">
                 </div>
                 
-            <form action="" id="appointment-form">
-                <h3>Appointment Details</h3>
-                
-            <div class="form-scroll">
-                <input type="text" placeholder="Your Name" class="box" id="appt-name" required>
-                <input type="number" placeholder="Your Number" class="box" id="appt-number" required>
-                <input type="text" placeholder="Pet Name" class="box" id="appt-petname"required>
-                <input type="text" placeholder="Species/Breed" class="box" id="appt-breed" required>
-                
-                <select class="box" id="appt-size"required>
-                <option value="" disabled selected>Select Pet Size</option>
-                <option value="small">Small</option>
-                <option value="medium">Medium</option>
-                <option value="large">Large</option>
-                <option value="extra-large">Extra Large</option>
-                </select>
+      <form action="" id="appointment-form">
+    <h3>Appointment Details</h3>
+    
+    <div class="form-scroll">
+      
+  <div class="form-group">  <select id="appt-petname"> <option value="">Your Pet</option>  </select></div>
 
-                <select class="box" id="appt-sex" required>
-                <option value="" disabled selected>Sex</option>
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-                </select>
+ <input type="text" placeholder="Your Name" class="box" id="appt-name" required>
 
-                <select class="box" id="appt-service" required>
-                <option value="" disabled selected>Services</option>
-                <option value="grooming">Grooming</option>
-                <option value="vaccination">Vaccinations</option>
-                <option value="deworming">Deworming</option>
-                <option value="consultation">Consultation</option>
-                <option value="laboratory">Laboratory</option>
-                <option value="treatment">Treatments</option>
-                
-                </select>
+ 
+        <input type="number" placeholder="Your Number" class="box" id="appt-number" required>
+        <!-- Species Input -->
+        <div class="form-group">
+            
+            <input type="text" id="appt-species" list="speciesList" placeholder="Type or select species..." required>
+            <datalist id="speciesList"></datalist>
+        </div>
 
-               <select id="appt-time" class="box" required>
-                        <option value="" disabled selected>Select Time</option>
-                          
-                </select>
+        <!-- Breed Input with dropdown -->
+        <div class="form-group" style="position: relative;">
+            
+            <input type="text" id="appt-breed" placeholder="Select species first" disabled autocomplete="off" required>
+            <div id="appt-breedDropdown" class="custom-dropdown"></div>
+        </div>
+
+        <!-- Weight Input -->
+        <div class="form-group">
+            <input type="number" id="appt-weight" placeholder="Enter pet weight" required>
+        </div>
+
+       <!-- Auto-calculated size -->
+<div class="form-group">
+    <input type="text" id="appt-size" placeholder="Size" readonly>
+</div>
 
 
-                <input type="date" placeholder="Appointment Date" class="box" id="appt-date" required>
+        <!-- Sex -->
+        <select class="box" id="appt-sex" required>
+            <option value="" disabled selected>Sex</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+        </select>
 
-            </div>
-                <input type="submit" value="Submit" class="btn" id="submit-appointment">
-            </form>
+        <!-- Service -->
+        <select class="box" id="appt-service" required>
+            <option value="" disabled selected>Services</option>
+            <option value="grooming">Grooming</option>
+            <option value="vaccination">Vaccinations</option>
+            <option value="deworming">Deworming</option>
+            <option value="consultation">Consultation</option>
+            <option value="laboratory">Laboratory</option>
+            <option value="treatment">Treatments</option>
+        </select>
+
+        <!-- Time -->
+        <select id="appt-time" class="box" required>
+            <option value="" disabled selected>Select Time</option>
+        </select>
+
+        <!-- Date -->
+        <input type="date" placeholder="Appointment Date" class="box" id="appt-date" required>
+    </div>
+
+    <input type="submit" value="Submit" class="btn" id="submit-appointment">
+</form>
+
         </div>
     </section>
 
@@ -191,192 +212,109 @@
 
         </div>
 
-            <!-- Pet Health Treatments Modal -->
-                <div class="modal" id="modal-1">
-                    <img src="/images/dogsit.png" alt="Dog Sitting" class="dog-cartoon">
-                    <div class="modal-content">
-                        <button class="modal-close" data-close="modal-1">
-                            <i class="fa-solid fa-xmark"></i>
-                        </button>
-                        <h2 class="md-heading"><i class="fa-solid fa-shield-dog"></i>Pet Health Treatments</h2>
+          <!-- Pet Health Treatments Modal -->
+<div class="modal" id="modal-1">
+    <img src="/images/dogsit.png" alt="Dog Sitting" class="dog-cartoon">
+    <div class="modal-content">
+        <button class="modal-close" data-close="modal-1">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+        <h2 class="md-heading"><i class="fa-solid fa-shield-dog"></i>Pet Health Treatments</h2>
+        <p>
+            Pet Health Treatments are all about making sure your pet stays healthy and happy. 
+            This includes check-ups, treating illnesses, medications, and recovery care.
+        </p>
+        <hr>
+        <h1 class="price-heading">Price <i class="fa-solid fa-tags"></i></h1>
+        <div class="price-list"><!-- JS will populate prices dynamically --></div>
+    </div>
+</div>
 
-                        <p>
-                            Pet Health Treatments are all about making sure your pet stays healthy and happy. 
-                            This includes regular check-ups to catch any issues early, treating illnesses, giving the right medications, 
-                            and helping pets recover after surgery. If your pet has a long-term condition like arthritis or skin problems, 
-                            we also create care plans to manage it properly. Whether your pet just needs a routine visit or is feeling unwell, 
-                            our goal is to give them safe, gentle, and professional care every time.
-                        </p>
+<!-- Consultation Modal -->
+<div class="modal" id="modal-2">
+    <img src="/images/dogconsult.png" alt="Dog Consultation" class="dog-cartoon2">
+    <div class="modal-content">
+        <button class="modal-close" data-close="modal-2">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+        <h2 class="md-heading"><i class="fa-solid fa-notes-medical"></i>Consultation</h2>
+        <p>
+            One-on-one consultation with our veterinary team to discuss your pet's health and develop personalized care plans.
+        </p>
+        <hr>
+        <h1 class="price-heading">Price <i class="fa-solid fa-tags"></i></h1>
+        <div class="price-list"></div>
+    </div>
+</div>
 
-                        <hr>
-                        <h1 class ="price-heading">Price <i class="fa-solid fa-tags"></i></h1>
-                        <p>--Treatment--</p>
-                        <p class ="price"> Dog Tick and Flea Treatment:</p>
-                        <p class ="price"><i class="fa-solid fa-peso-sign"></i> 650 - Small</p>
-                        <p class ="price"><i class="fa-solid fa-peso-sign"></i> 700 - Medium</p>
-                        <p class ="price"><i class="fa-solid fa-peso-sign"></i> 800 - Large</p>
-                        
-                        <p class ="price">Dog HeartWorm Prevention:</p>
-                        <p class ="price"><i class="fa-solid fa-peso-sign"></i> 2000 - Small up to 10kg</p>
-                        <p class ="price"><i class="fa-solid fa-peso-sign"></i> 2500 - Medium 10-15kg</p>
-                        <p class ="price"><i class="fa-solid fa-peso-sign"></i> 3000 - Large 15-25kg</p>
-                        <p class ="price"><i class="fa-solid fa-peso-sign"></i> 3500-4500 - Large 15-25kg</p>
+<!-- Grooming Modal -->
+<div class="modal" id="modal-4">
+    <img src="/images/doggroom.png" alt="Dog Grooming" class="dog-cartoon2">
+    <div class="modal-content">
+        <button class="modal-close" data-close="modal-4">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+        <h2 class="md-heading"><i class="fa-solid fa-scissors"></i>Grooming</h2>
+        <p>
+            Professional grooming for pets, including coat, skin, nails, ears, and teeth care.
+        </p>
+        <hr>
+        <h1 class="price-heading">Price <i class="fa-solid fa-tags"></i></h1>
+        <div class="price-list"></div>
+    </div>
+</div>
 
-                        <p class ="price-heading">Cat Tick and Flea Treatment with Deworming:</p>
-                        <p class ="price"><i class="fa-solid fa-peso-sign"></i> 650 - Small</p>
-                        <p class ="price"><i class="fa-solid fa-peso-sign"></i> 750 - Large</p>
+<!-- Vaccination Modal -->
+<div class="modal" id="modal-3">
+    <img src="/images/dogvaccine.png" alt="Dog Vaccination" class="dog-cartoon">
+    <div class="modal-content">
+        <button class="modal-close" data-close="modal-3">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+        <h2 class="md-heading"><i class="fa-solid fa-syringe"></i>Vaccination</h2>
+        <p>
+            Preventive medical treatments to protect animals from serious infectious diseases.
+        </p>
+        <hr>
+        <h1 class="price-heading">Price <i class="fa-solid fa-tags"></i></h1>
+        <div class="price-list"></div>
+    </div>
+</div>
 
+<!-- Laboratory Modal -->
+<div class="modal" id="modal-5">
+    <img src="/images/doglab.png" alt="Laboratory" class="dog-cartoon3">
+    <div class="modal-content">
+        <button class="modal-close" data-close="modal-5">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+        <h2 class="md-heading"><i class="fa-solid fa-flask-vial"></i>Laboratory</h2>
+        <p>
+            Diagnostic tests to examine blood, urine, feces, and other samples for accurate health assessment.
+        </p>
+        <hr>
+        <h1 class="price-heading">Price <i class="fa-solid fa-tags"></i></h1>
+        <div class="price-list"></div>
+    </div>
+</div>
 
-                    </div>
-                </div>
+<!-- Deworming Modal -->
+<div class="modal" id="modal-6">
+    <img src="/images/Removal-369.png" alt="Deworming" class="dog-cartoon2">
+    <div class="modal-content">
+        <button class="modal-close" data-close="modal-6">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+        <h2 class="md-heading"><i class="fa-solid fa-shield-virus"></i>Deworming</h2>
+        <p>
+            Medication to eliminate intestinal parasites safely and effectively for pets.
+        </p>
+        <hr>
+        <h1 class="price-heading">Price <i class="fa-solid fa-tags"></i></h1>
+        <div class="price-list"></div>
+    </div>
+</div>
 
-                <!-- Consultation -->
-                <div class="modal" id="modal-2">
-                    <img src="/images/dogconsult.png" alt="Dog Sitting" class="dog-cartoon2">
-                    <div class="modal-content">
-                        <button class="modal-close" data-close="modal-2">
-                            <i class="fa-solid fa-xmark"></i>
-                        </button>
-                        <h2 class="md-heading"><i class="fa-solid fa-notes-medical"></i>Consultation</h2>
-
-                        <p>
-                            A pet consultation at PetStop Veterinary Clinic is a comprehensive, one-on-one meeting between you and our experienced veterinary team to discuss your pet's health, 
-                                 address concerns, and develop personalized care plans. 
-                            Our consultations combine thorough examinations with compassionate communication to ensure your pet receives the best possible care.
-                        </p>
-
-                        <hr>
-                        <h1 class ="price-heading">Price <i class="fa-solid fa-tags"></i></h1>
-                        <p>--Consultation--</p>
-                        <p class ="price"><i class="fa-solid fa-peso-sign"></i>350</p>
-
-                    </div>
-                </div>
-
-                <!-- Grooming -->
-                <div class="modal" id="modal-4">
-                    <img src="/images/doggroom.png" alt="Dog Sitting" class="dog-cartoon2">
-                    <div class="modal-content">
-                        <button class="modal-close" data-close="modal-4">
-                            <i class="fa-solid fa-xmark"></i>
-                        </button>
-                        <h2 class="md-heading"><i class="fa-solid fa-scissors"></i>Grooming</h2>
-
-                        <p>
-                            Pet grooming is a comprehensive care service that goes far beyond making your pet look their best. 
-                            It's an essential aspect of pet health and wellness that involves the cleaning, styling, and maintenance of your 
-                            pet's coat, skin, nails, ears, and teeth. At Pet Stop, our professional grooming services 
-                            combine aesthetic care with preventive health measures to keep your furry family members comfortable, healthy, and happy.
-                        </p>
-
-                        <hr>
-                        <h1 class ="price-heading">Price <i class="fa-solid fa-tags"></i></h1>
-                        <p>--Grooming--</p>
-                        <p class ="price"><i class="fa-solid fa-peso-sign"></i>Small - 450</p>
-                        <p class ="price"><i class="fa-solid fa-peso-sign"></i>Medium - 600</p>
-                        <p class ="price"><i class="fa-solid fa-peso-sign"></i>Large - 800</p>
-                        <p class ="price"><i class="fa-solid fa-peso-sign"></i>Cat - 600</p>
-                        <p>Price depends on the size of the pet</p>
-                        
-                    </div>
-                </div>
-
-                 <!-- Vaccination -->
-                <div class="modal" id="modal-3">
-                    <img src="/images/dogvaccine.png" alt="Dog Sitting" class="dog-cartoon">
-                    <div class="modal-content">
-                        <button class="modal-close" data-close="modal-3">
-                            <i class="fa-solid fa-xmark"></i>
-                        </button>
-                        <h2 class="md-heading"><i class="fa-solid fa-syringe"></i>Vaccination</h2>
-
-                        <p>
-                            Pet vaccinations are preventive medical treatments that help protect animals from serious, potentially life-threatening infectious diseases. 
-                            Vaccines work by stimulating the immune system to produce antibodies against specific pathogens, creating immunity without causing the actual disease. 
-                            This biological process helps pets develop resistance to dangerous viruses, bacteria, and other infectious agents.
-                        </p>
-
-                         <hr>
-                        <h1 class ="price-heading">Price <i class="fa-solid fa-tags"></i></h1>
-                            <p>--Vaccination--</p>
-                            <p class ="price"> Canine Vaccination:</p>
-                            <p class ="price"><i class="fa-solid fa-peso-sign"></i> 500 - 5in1</p>
-                            <p class ="price"><i class="fa-solid fa-peso-sign"></i> 600 - 8in1</p>
-                            <p class ="price"><i class="fa-solid fa-peso-sign"></i> 500 - Kennel Cough</p>
-                            
-                            <p class ="price"> Feline Vaccination:</p>
-                            <p class ="price"><i class="fa-solid fa-peso-sign"></i> 950 - 4n1</p>
-                            
-
-                            <p class ="price"> Anti-Rabies Vaccination:</p>
-                            <p class ="price"><i class="fa-solid fa-peso-sign"></i> 350</p>
-
-                    </div>
-                </div>
-
-                <!-- Laboratory -->
-                <div class="modal" id="modal-5">
-                    <img src="/images/doglab.png" alt="Dog Sitting" class="dog-cartoon3">
-                    <div class="modal-content">
-                        <button class="modal-close" data-close="modal-5">
-                            <i class="fa-solid fa-xmark"></i>
-                        </button>
-                        <h2 class="md-heading"><i class="fa-solid fa-flask-vial"></i>Laboratory</h2>
-
-                        <p>
-                            Laboratory tests are diagnostic tools that allow our veterinary team at Pet Stop to examine your pet's blood, urine, 
-                            feces, and other biological samples to assess their health status. These tests provide crucial information about your pet's internal organ function, detect diseases in their early stages, and help us monitor ongoing health conditions. 
-                            Laboratory diagnostics are an essential component of preventive care and accurate medical diagnosis.
-                        </p>
-
-                        <hr>
-                        
-                        <h1 class ="price-heading">Price <i class="fa-solid fa-tags"></i></h1>
-                            <p>--Laboratory--</p>
-                            <p class ="price">4 Way Test: <i class="fa-solid fa-peso-sign"></i> 1200</p>
-                            <p class ="price">CBC Bloodchem Package: <i class="fa-solid fa-peso-sign"></i> 1500</p>
-                            <p class ="price">Cat FIV/Felv Test: <i class="fa-solid fa-peso-sign"></i> 1000</p>
-                            <p class ="price">Leptospirosis Test: <i class="fa-solid fa-peso-sign"></i> 950</p>
-                            <p class ="price">Canine Distemper Test: <i class="fa-solid fa-peso-sign"></i> 850</p>
-                            <p class ="price">Canine Parvo Test: <i class="fa-solid fa-peso-sign"></i> 859</p>
-                            <p class ="price">Parvo/Corona Virus Test: <i class="fa-solid fa-peso-sign"></i> 950</p>
-                            <p class ="price">Earmite Test: <i class="fa-solid fa-peso-sign"></i> 150</p>
-                            <p class ="price">Skin Scraping: <i class="fa-solid fa-peso-sign"></i> 150</p>
-                            <p class ="price">Stool Exam: <i class="fa-solid fa-peso-sign"></i> 300</p>
-                            <p class ="price">Urinalysis: <i class="fa-solid fa-peso-sign"></i> 950</p>
-                            
-                    </div>
-                </div>
-
-                <!-- Deworming -->
-                <div class="modal" id="modal-6">
-                    <img src="/images/Removal-369.png" alt="Dog Sitting" class="dog-cartoon2">
-                    <div class="modal-content">
-                        <button class="modal-close" data-close="modal-6">
-                            <i class="fa-solid fa-xmark"></i>
-                        </button>
-                        <h2 class="md-heading"><i class="fa-solid fa-shield-virus"></i>Deworming</h2>
-
-                        <p>
-                            Deworming is a crucial preventive healthcare measure that involves administering medication to eliminate intestinal parasites 
-                            (worms) from your pet's system. These parasites can seriously impact your pet's health and, in some cases, can be transmitted to humans. 
-                            At Pet Stop, we provide comprehensive deworming services using safe, 
-                            effective medications tailored to your pet's specific needs and parasite exposure risks.
-                        </p>
-                        
-                        <hr>
-                        <h1 class ="price-heading">Price <i class="fa-solid fa-tags"></i></h1>
-                            <p>--Deworming--</p>
-                            <p class ="price-heading">Dog Deworming:</p>
-                            <p class="price"><i class="fa-solid fa-peso-sign"></i>200 - Small</p>
-                            <p class="price"><i class="fa-solid fa-peso-sign"></i>300 - Medium</p>
-                            <p class="price"><i class="fa-solid fa-peso-sign"></i>400 - Large</p>
-
-                            <p class ="price-heading">Cat Deworming:</p>
-                            <p class="price"><i class="fa-solid fa-peso-sign"></i>300</p>
-                    </div>
-                    </div>
-                </div>
     </section>
 
     <section class="tab-content" id="calendar" style="display: none;">
@@ -500,65 +438,63 @@
         </div>
     </div>
 
-    <!-- Add/Edit Pet Modal -->
-    <div class="petmodal" id="petModal">
-        <div class="petmodal-content">
-            <div class="modal-header">
-                <h2 id="modalTitle">Add New Pet</h2>
-                <button class="close-btn" onclick="closePetModal()">&times;</button>
-            </div>
-            <form id="petForm">
-                <div class="form-group">
-                    <label for="petName">Pet Name *</label>
-                    <input type="text" id="petFormName" required>
-                </div>
-                <div class="form-group">
-                    <label for="petSpecies">Species *</label>
-                    <select id="petSpecies" required>
-                        <option value="">Select species...</option>
-                        <option value="dog">Dog</option>
-                        <option value="cat">Cat</option>
-                        <option value="bird">Bird</option>
-                        <option value="rabbit">Rabbit</option>
-                        <option value="hamster">Hamster</option>
-                        <option value="other">Other</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="petBreed">Breed</label>
-                    <input type="text" id="petBreed" placeholder="e.g., Golden Retriever">
-                </div>
-               
-                <div class="form-group">
-                    <label for="petSex">Sex *</label>
-                    <select id="petSex" required>
-                        <option value="">Select sex...</option>
-                        <option value="male">Male</option>
-                        <option value="female">Female</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="petSize">Size *</label>
-                    <select id="petSize" required>
-                        <option value="">Select size...</option>
-                        <option value="small">Small</option>
-                        <option value="medium">Medium</option>
-                        <option value="large">Large</option>
-                        <option value="extra-large">Extra Large</option>
-                    </select>
-                </div>
-               
-                <div class="form-group">
-                    <label for="petMedicalHistory">Medical History</label>
-                    <textarea id="petMedicalHistory" placeholder="Any allergies, medications, or medical conditions..."></textarea>
-                </div>
-                <div class="form-actions">
-                    <button type="button" class="form-btn btn-secondary" onclick="closePetModal()">Cancel</button>
-                    <button type="submit" class="form-btn btn-primary" id="submitBtn">Add Pet</button>
-                </div>
-            </form>
-        </div>
+   <!-- Add/Edit Pet Modal -->
+<div class="petmodal" id="petModal">
+  <div class="petmodal-content">
+    <div class="modal-header">
+      <h2 id="modalTitle">Add New Pet</h2>
+      <button class="close-btn" onclick="closePetModal()">&times;</button>
     </div>
+    <form id="petForm">
+      <div class="form-group">
+        <label for="petName">Pet Name *</label>
+        <input type="text" id="petFormName" required>
+      </div>
+
+     <div class="form-group">
+  <label for="petSpecies">Species</label>
+  <input type="text" id="petSpecies" list="speciesList" placeholder="Type or select species...">
+  <datalist id="speciesList"></datalist>
+</div>
+
+<div class="form-group" style="position: relative;">
+  <label for="petBreed">Breed</label>
+  <input type="text" id="petBreed" placeholder="Select species first" disabled autocomplete="off">
+  <div id="breedDropdown" class="custom-dropdown"></div>
+</div>
+
+
+
+
+      <div class="form-group">
+        <label for="petSex">Sex *</label>
+        <select id="petSex" required>
+          <option value="">Select sex...</option>
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+        </select>
+      </div>
+
+      <!-- ✅ Weight input -->
+      <div class="form-group">
+        <label for="petWeight">Weight (kg) *</label>
+        <input type="number" id="petWeight" placeholder="Enter pet weight" required>
+      </div>
+
+      <!-- ✅ Auto-calculated size (read-only) -->
+      <div class="form-group">
+        <label for="petSize">Size (auto-calculated)</label>
+        <input type="text" id="petSize" readonly>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="form-btn btn-secondary" onclick="closePetModal()">Cancel</button>
+        <button type="submit" class="form-btn btn-primary" id="submitBtn">Add Pet</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 
     <!-- Quick Appointment Modal -->
     <div class="petmodal" id="appointmentModal">
@@ -660,7 +596,7 @@
               
   
    <body>
-  ...
+  
  <script type="module" src="javascript.customer/customer.js"></script>
 
  <script src="script.js"></script>

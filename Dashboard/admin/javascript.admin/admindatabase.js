@@ -48,167 +48,254 @@
         console.error("Failed to log activity:", error);
       }
     }
-
-
 document.addEventListener("DOMContentLoaded", async () => {
 
   let services = [];
 
   const tableBody = document.querySelector("#fee-discount table tbody");
   const editModal = document.getElementById("editServiceModal");
-  const specialDiscountsList = document.getElementById("specialDiscountsList");
+  const specialDiscountsList = document.getElementById("specialDiscountsList"); 
   let currentServiceIndex = null;
 
   // ---------------- Firestore Helpers ----------------
-  async function saveServiceToFirestore(service) {
+  async function saveServiceToServicesCollection(service) {
     const docId = service.name.toLowerCase().replace(/\s+/g, '-');
-    await setDoc(doc(db, "services", docId), service);
+    await setDoc(doc(db, "Services", docId), service);
   }
 
- async function loadServicesFromFirestore() {
-  services = [];
-  const querySnapshot = await getDocs(collection(db, "services"));
+  async function loadServicesFromServicesCollection() {
+    services = [];
+    const querySnapshot = await getDocs(collection(db, "Services"));
 
-  if (querySnapshot.empty) {
-    // add default services if Firestore is totally empty
-    services = [
-      { name: "General Consultation", basePrice: 500, loyaltyDiscount: 10, notes: '', discounts: [] },
-      { name: "Vaccination", basePrice: 800, loyaltyDiscount: 5, notes: '', discounts: [] },
-      { name: "Deworming", basePrice: 300, loyaltyDiscount: 5, notes: '', discounts: [] },
-      { name: "Grooming", basePrice: 800, loyaltyDiscount: 10, notes: '', discounts: [] },
-      { name: "Treatment", basePrice: 800, loyaltyDiscount: 10, notes: '', discounts: [] },
-      { name: "Laboratory", basePrice: 800, loyaltyDiscount: 10, notes: '', discounts: [] }
-    ];
+    if (querySnapshot.empty) {
+      console.log("⚙️ Firestore 'Services' empty — seeding servicePrices with variants...");
 
-    for (const s of services) {
-      await saveServiceToFirestore(s);
-    }
-  } else {
-    querySnapshot.forEach(docSnap => {
-      const data = docSnap.data();
+      const servicePrices = {
+        vaccination: {
+          "5n1": { small: 500, medium: 500, large: 500 },
+          "8in1": { small: 600, medium: 600, large: 600 },
+          "Kennel Cough": { small: 500, medium: 500, large: 500 },
+          "4n1": { small: 950, medium: 950, large: 950, cat: 950 },
+          "Anti-Rabies": { small: 350, medium: 350, large: 350, cat: 350 }
+        },
+        grooming: { basic: { small: 450, medium: 600, large: 800, cat: 600 } },
+        consultation: { regular: { small: 350, medium: 350, large: 350, cat: 350 } },
+        treatment: {
+          tickFlea: { small: 650, medium: 700, large: 800 },
+          heartwormPrevention: { small: 2000, medium: 2500, large: 3000, xl: 4500 },
+          catTickFleaDeworm: { small: 650, large: 750 }
+        },
+        deworming: { regular: { small: 200, medium: 300, large: 400, cat: 300 } },
+        laboratory: {
+          "4 Way Test": 1200,
+          "CBC Bloodchem Package": 1500,
+          "Cat FIV/Felv Test": 1000,
+          "Leptospirosis Test": 950,
+          "Canine Distemper Test": 850,
+          "Canine Parvo Test": 859,
+          "Parvo/Corona Virus Test": 950,
+          "Earmite Test": 150,
+          "Skin Scraping": 150,
+          "Stool Exam": 300,
+          "Urinalysis": 950
+        }
+      };
 
-      services.push({
-        name: data.name || docSnap.id,  // fallback to doc ID
-        basePrice: data.basePrice || 0,
-        loyaltyDiscount: data.loyaltyDiscount || 0,
-        notes: data.notes || "",
-        discounts: data.discounts || []
+      for (const [serviceName, variants] of Object.entries(servicePrices)) {
+        const docData = {
+          name: serviceName,
+          variants: variants,
+          loyaltyDiscount: 10, // default 10%
+          notes: "",
+          discounts: []
+        };
+        await saveServiceToServicesCollection(docData);
+        services.push(docData);
+      }
+
+    } else {
+      console.log("✅ Existing services found — loading from 'Services' collection...");
+      querySnapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        services.push({
+          name: data.name || docSnap.id,
+          loyaltyDiscount: data.loyaltyDiscount !== undefined ? data.loyaltyDiscount : 10,
+          notes: data.notes || "",
+          discounts: data.discounts || [],
+          variants: data.variants || {}
+        });
       });
-    });
+    }
+
+    renderServices();
   }
-
-  renderServices();
-}
-
 
   // ---------------- Rendering ----------------
   function renderServices() {
     tableBody.innerHTML = "";
-    services.forEach((s, index) => {
+
+    services.forEach((s, serviceIndex) => {
       const discountList = s.discounts.length > 0
         ? s.discounts.map(d => `${d.name} (${d.type === "percentage" ? d.value + "%" : "₱" + d.value})`).join(", ")
         : "None";
 
-      const row = document.createElement("tr");
-      row.innerHTML = `
-        <td>${s.name}</td>
-        <td>₱${s.basePrice}</td>
+      // Parent row
+      const parentRow = document.createElement("tr");
+      parentRow.innerHTML = `
+        <td><strong>${s.name}</strong></td>
         <td>${s.loyaltyDiscount}%</td>
         <td>${discountList}</td>
-        <td><button class="btn-primary" data-index="${index}">Edit</button></td>
+        <td><button class="btn-primary edit-service-btn" data-index="${serviceIndex}">Edit</button></td>
       `;
-      tableBody.appendChild(row);
-    });
-  }
+      tableBody.appendChild(parentRow);
 
-  // ---------------- Edit Modal ----------------
-  tableBody.addEventListener("click", (e) => {
-    if (e.target.tagName === "BUTTON") {
-      currentServiceIndex = e.target.dataset.index;
-      const service = services[currentServiceIndex];
-
-      document.getElementById("editServiceName").value = service.name;
-      document.getElementById("editBasePrice").value = service.basePrice;
-      document.getElementById("editLoyaltyDiscount").value = service.loyaltyDiscount;
-      document.getElementById("editNotes").value = service.notes;
-
-      renderServiceDiscounts(service);
-      editModal.style.display = "block";
-    }
-  });
-
-  function renderServiceDiscounts(service) {
-    specialDiscountsList.innerHTML = "<h3>Applied Special Discounts</h3>";
-    service.discounts.forEach((d, idx) => {
-      const div = document.createElement("div");
-      div.innerHTML = `
-        ${d.name} - ${d.type === "percentage" ? d.value + "%" : "₱" + d.value} 
-        <button data-discount-index="${idx}">Delete</button>
-      `;
-      specialDiscountsList.appendChild(div);
-    });
-
-    specialDiscountsList.onclick = async (e) => {
-      if (e.target.tagName === "BUTTON") {
-        const discountIndex = e.target.dataset.discountIndex;
-        service.discounts.splice(discountIndex, 1);
-        await saveServiceToFirestore(service);
-        renderServiceDiscounts(service);
-        renderServices();
+      // Variant rows
+      if (s.variants) {
+        for (const [variantName, variantData] of Object.entries(s.variants)) {
+          const variantRow = document.createElement("tr");
+          variantRow.classList.add("variant-row");
+          variantRow.innerHTML = `
+            <td style="padding-left: 30px;">- ${variantName}</td>
+            <td colspan="3">
+              ${typeof variantData === "object"
+                ? Object.entries(variantData)
+                    .map(([size, price]) => `${size}: ₱${price}`)
+                    .join(" | ")
+                : `₱${variantData}`
+              }
+            </td>
+          `;
+          tableBody.appendChild(variantRow);
+        }
       }
-    };
+    });
+
+    document.querySelectorAll(".edit-service-btn").forEach(btn => {
+      btn.addEventListener("click", e => {
+        const index = e.target.dataset.index;
+        openEditModal(index);
+      });
+    });
   }
+
+function openEditModal(serviceIndex) {
+  const service = services[serviceIndex];
+  currentServiceIndex = serviceIndex;
+
+  document.getElementById("editServiceName").value = service.name;
+  document.getElementById("editLoyaltyDiscount").value = service.loyaltyDiscount;
+
+  const variantContainer = document.getElementById("specialDiscountsList");
+  variantContainer.innerHTML = "<h3>Variants & Prices</h3>";
+
+  for (const [variantName, variantData] of Object.entries(service.variants)) {
+    const div = document.createElement("div");
+    div.style.marginBottom = "12px";
+
+    // Add the variant name as a heading
+    const variantTitle = document.createElement("strong");
+    variantTitle.textContent = variantName;
+    div.appendChild(variantTitle);
+
+    // Container for the inputs
+    const inputsContainer = document.createElement("div");
+    inputsContainer.style.marginTop = "4px";
+    inputsContainer.style.display = "flex";
+    inputsContainer.style.flexDirection = "column"; // Stack vertically
+
+    if (typeof variantData === "object") {
+      for (const [size, price] of Object.entries(variantData)) {
+        const inputDiv = document.createElement("div");
+        inputDiv.style.marginBottom = "4px";
+
+        inputDiv.innerHTML = `${size}: <input type="number" class="modal-variant-input" 
+                          data-variant-name="${variantName}" data-size="${size}" 
+                          value="${price}" min="0" step="0.01">`;
+
+        inputsContainer.appendChild(inputDiv);
+      }
+    } else {
+      // Single price
+      const inputDiv = document.createElement("div");
+      inputDiv.innerHTML = `<input type="number" class="modal-variant-input" 
+                          data-variant-name="${variantName}" value="${variantData}" 
+                          min="0" step="0.01">`;
+      inputsContainer.appendChild(inputDiv);
+    }
+
+    div.appendChild(inputsContainer);
+    variantContainer.appendChild(div);
+  }
+
+  editModal.style.display = "block";
+}
+
 
   document.getElementById("saveServiceChanges").addEventListener("click", async () => {
-    if (currentServiceIndex !== null) {
-      const service = services[currentServiceIndex];
-      service.basePrice = parseFloat(document.getElementById("editBasePrice").value);
-      service.loyaltyDiscount = parseFloat(document.getElementById("editLoyaltyDiscount").value);
-      service.notes = document.getElementById("editNotes").value;
+    if (currentServiceIndex === null) return;
+    const service = services[currentServiceIndex];
 
-      await saveServiceToFirestore(service);
-      renderServices();
-      editModal.style.display = "none";
-    }
+
+    service.loyaltyDiscount = parseFloat(document.getElementById("editLoyaltyDiscount").value);
+
+    // Update variant prices
+    document.querySelectorAll(".modal-variant-input").forEach(input => {
+      const variantName = input.dataset.variantName;
+      const size = input.dataset.size;
+      const value = parseFloat(input.value);
+
+      if (size) {
+        service.variants[variantName][size] = value;
+      } else {
+        service.variants[variantName] = value;
+      }
+    });
+
+    await saveServiceToServicesCollection(service);
+    renderServices();
+    editModal.style.display = "none";
   });
 
- // ---------------- Discounts ----------------
-document.getElementById("discountForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const formData = new FormData(e.target);
+  document.querySelector("#editServiceModal .close").addEventListener("click", () => {
+    editModal.style.display = "none";
+  });
 
-  const discount = {
-    name: formData.get("discountName"),
-    type: formData.get("discountType"),
-    value: parseFloat(formData.get("discountValue")),
-    applicableServices: formData.getAll("applicableServices"),
-    validFrom: formData.get("validFrom") || null,
-    validUntil: formData.get("validUntil") || null,
-    createdAt: new Date().toISOString()
-  };
+  document.getElementById("cancelEdit").addEventListener("click", () => {
+    editModal.style.display = "none";
+  });
 
-  // Apply discount
-  for (const s of services) {
-    // Normalize service key (consultation, vaccination, etc.)
-    const key = s.name.toLowerCase().split(" ")[0]; 
+  // ---------------- Discounts ----------------
+  document.getElementById("discountForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
 
-    if (discount.applicableServices.includes("all") ||
-        discount.applicableServices.includes(key)) {
-      if (!s.discounts) s.discounts = [];
-      s.discounts.push(discount);
-      await saveServiceToFirestore(s);
+    const discount = {
+      name: formData.get("discountName"),
+      type: formData.get("discountType"),
+      value: parseFloat(formData.get("discountValue")),
+      applicableServices: formData.getAll("applicableServices"),
+      validFrom: formData.get("validFrom") || null,
+      validUntil: formData.get("validUntil") || null,
+      createdAt: new Date().toISOString()
+    };
+
+    for (const s of services) {
+      const key = s.name.toLowerCase().split(" ")[0];
+      if (discount.applicableServices.includes("all") || discount.applicableServices.includes(key)) {
+        if (!s.discounts) s.discounts = [];
+        s.discounts.push(discount);
+        await saveServiceToServicesCollection(s);
+      }
     }
-  }
 
-  renderServices();
-  e.target.reset();
-});
-
+    renderServices();
+    e.target.reset();
+  });
 
   // ---------------- Initial Load ----------------
-  await loadServicesFromFirestore();
-});
+  await loadServicesFromServicesCollection();
 
+});
 
 
 
@@ -763,6 +850,94 @@ document.addEventListener("click", async (e) => {
   }
 });
 
+/// -------------------------
+// 🐾 View Appointment Details (includes Pet + Appointment Info)
+// -------------------------
+async function viewAppointmentDetails(appointmentId) {
+  try {
+    const apptRef = doc(db, "Appointment", appointmentId);
+    const apptSnap = await getDoc(apptRef);
+
+    if (!apptSnap.exists()) {
+      return Swal.fire("Not Found", "Appointment not found in database.", "warning");
+    }
+
+    const data = apptSnap.data();
+    const safe = (val) => (val ? val : "—");
+
+    // 🖼️ Optional pet image (if exists in related Pets record)
+    let petImageHTML = "";
+    if (data.petId) {
+      try {
+        const petRef = doc(db, "Pets", data.petId);
+        const petSnap = await getDoc(petRef);
+        if (petSnap.exists()) {
+          const petData = petSnap.data();
+          if (petData.petImage) {
+            petImageHTML = `
+              <div style="text-align:center;margin-bottom:10px;">
+                <img src="${petData.petImage}" alt="${safe(data.petName)}"
+                     style="width:120px;height:120px;border-radius:10px;object-fit:cover;">
+              </div>`;
+          }
+        }
+      } catch (e) {
+        console.warn("⚠️ Could not load pet image:", e);
+      }
+    }
+
+    // 🧾 Display combined details
+    await Swal.fire({
+      title: `<i class="fa-solid fa-calendar-check"></i> Appointment Details`,
+      html: `
+        ${petImageHTML}
+        <div style="text-align:left;line-height:1.8;">
+          <strong>Owner Name:</strong> ${safe(data.name)}<br>
+          <strong>Contact Number:</strong> ${safe(data.ownerNumber)}<br>
+          <strong>Pet Name:</strong> ${safe(data.petName)}<br>
+          <strong>Pet Size:</strong> ${safe(data.petSize)}<br>
+          <strong>Service:</strong> ${safe(data.service)}<br>
+          <strong>Selected Service:</strong> ${safe(data.selectedServices?.join(", "))}<br>
+          <strong>Service Fee:</strong> ${safe(data.serviceFee)}<br>
+          <strong>Reservation Fee:</strong> ${safe(data.reservationFee)}<br>
+          <strong>Total Amount:</strong> ${safe(data.totalAmount)}<br>
+          <strong>Vet:</strong> ${safe(data.vet)}<br>
+          <strong>Status:</strong> ${safe(data.status)}<br>
+          <strong>Date:</strong> ${safe(data.date)}<br>
+          <strong>Time:</strong> ${safe(data.time)}<br>
+          <strong>Reservation Type:</strong> ${safe(data.reservationType)}<br>
+          <strong>Instructions:</strong> ${safe(data.instructions)}<br>
+        </div>
+      `,
+      confirmButtonText: "Close",
+      width: 520,
+      confirmButtonColor: "#3085d6"
+    });
+
+  } catch (err) {
+    console.error("❌ Error loading appointment details:", err);
+    Swal.fire("Error", "Failed to load appointment details. Please try again.", "error");
+  }
+}
+document.addEventListener("click", async (e) => {
+  const btn = e.target.closest(".btn.view-pet-details");
+  if (!btn) return;
+
+  // Read appointment ID from the button itself (matches innerHTML)
+  const appointmentId = btn.dataset.appointmentId;
+  const type = btn.dataset.type || "appointment"; // fallback
+
+  if (!appointmentId) {
+    Swal.fire("Missing Info", "Appointment ID not found for this record.", "warning");
+    return;
+  }
+
+  console.log("Viewing appointment:", appointmentId, "Type:", type);
+  await viewAppointmentDetails(appointmentId);
+});
+
+
+
 
 
   // 📅 Load appointments into two tables
@@ -896,10 +1071,12 @@ document.addEventListener("click", async (e) => {
     } else if (normalizedStatus === "in progress") {
       actionButtons = `
         <button class="btn complete" data-id="${docId}" data-type="${type}">Complete</button>
+         <button class="btn view-pet-details" data-id="${docId}" data-type="${type}">View Pet Details</button>
         <button class="btn add-discount" data-id="${docId}" data-type="${type}" 
           data-service="${displayData.walkinService || displayData.serviceType}">
           Apply Discount
         </button>
+
       `;
     } else if (normalizedStatus === "completed") {
       actionButtons = `
@@ -937,6 +1114,13 @@ document.addEventListener("click", async (e) => {
       } else if (normalizedStatus === "in progress") {
         actionButtons = `
           <button class="btn complete" data-id="${docId}" data-type="${type}">Complete</button>
+      <button 
+  class="btn view-pet-details" 
+  data-appointment-id="${docId}" 
+  data-type="${type}">
+  View Pet Details
+</button>
+
         
           <button class="btn add-discount" data-id="${docId}" data-type="${type}" data-service="${displayData.service}">Apply Discount</button>
         `;
@@ -1327,7 +1511,7 @@ document.getElementById("serviceFilter").addEventListener("change", function () 
       const serviceName = data.service || data.serviceType;
 
       // Fetch services from Firestore
-      const q = query(collection(db, "services"));
+      const q = query(collection(db, "Services"));
       const querySnapshot = await getDocs(q);
 
       let service = null;
@@ -3773,6 +3957,278 @@ onSnapshot(collection(db, "Pets"), () => {
       deletePet
     };
 
-    
+// 🔹 DOM References
+const addSpeciesBtn = document.getElementById("addSpeciesBtn");
+const speciesTable = document.getElementById("speciesTable");
+const totalSpecies = document.getElementById("totalSpecies");
+const activeSpecies = document.getElementById("activeSpecies");
+const inactiveSpecies = document.getElementById("inactiveSpecies");
+
+// ✅ Render Species Row
+function renderSpeciesRow(docId, data) {
+  const row = document.createElement("tr");
+  row.innerHTML = `
+    <td>${data.name}</td>
+    <td>${data.status}</td>
+    <td>${new Date(data.createdAt?.seconds * 1000).toLocaleDateString()}</td>
+    <td>
+      ${
+        data.status === "Active"
+          ? `<button class="btn-inactive" data-id="${docId}">Inactive</button>`
+          : `<span style="color: gray;">Already Inactive</span>`
+      }
+      <button class="btn-delete" data-id="${docId}">Delete</button>
+    </td>
+  `;
+  speciesTable.appendChild(row);
+
+  // 🔹 Inactive button event
+  const inactiveBtn = row.querySelector(".btn-inactive");
+  if (inactiveBtn) {
+    inactiveBtn.addEventListener("click", async () => {
+      const confirm = await Swal.fire({
+        title: "Mark Inactive?",
+        text: "This species will be marked as Inactive.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Yes, mark inactive"
+      });
+
+      if (confirm.isConfirmed) {
+        await updateDoc(doc(db, "Species", docId), {
+          status: "Inactive"
+        });
+        Swal.fire("Updated!", "Species marked as Inactive.", "success");
+      }
+    });
+  }
+
+  // 🔹 Delete button event
+  const deleteBtn = row.querySelector(".btn-delete");
+  deleteBtn.addEventListener("click", async () => {
+    const confirm = await Swal.fire({
+      title: "Delete Species?",
+      text: "This action cannot be undone.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, delete it"
+    });
+
+    if (confirm.isConfirmed) {
+      await deleteDoc(doc(db, "Species", docId));
+      Swal.fire("Deleted!", "Species has been deleted.", "success");
+    }
+  });
+}
+
+// ✅ Open Swal for Adding Species (auto Active)
+addSpeciesBtn.addEventListener("click", async () => {
+  const { value: formValues } = await Swal.fire({
+    title: "Add New Species",
+    html: `
+      <input id="swal-species-name" class="swal2-input" placeholder="Species Name">
+    `,
+    focusConfirm: false,
+    preConfirm: () => {
+      const name = document.getElementById("swal-species-name").value.trim();
+
+      if (!name) {
+        Swal.showValidationMessage("Species Name is required");
+        return false;
+      }
+
+      return { name };
+    }
+  });
+
+  if (formValues) {
+    try {
+      await addDoc(collection(db, "Species"), {
+        name: formValues.name,
+        status: "Active", // ✅ auto active
+        createdAt: serverTimestamp()
+      });
+      Swal.fire("Success!", "Species added successfully.", "success");
+    } catch (error) {
+      console.error("Error adding species:", error);
+      Swal.fire("Error", "Failed to add species.", "error");
+    }
+  }
+});
+
+// ✅ Real-time Listener for Species
+onSnapshot(collection(db, "Species"), (snapshot) => {
+  speciesTable.innerHTML = ""; // clear old rows
+  let activeCount = 0;
+  let inactiveCount = 0;
+
+  snapshot.forEach((doc) => {
+    const data = doc.data();
+    renderSpeciesRow(doc.id, data);
+
+    if (data.status === "Active") activeCount++;
+    else inactiveCount++;
+  });
+
+  totalSpecies.textContent = snapshot.size;
+  activeSpecies.textContent = activeCount;
+  inactiveSpecies.textContent = inactiveCount;
+});
 
 
+
+// ---------------- Load Existing Services ----------------
+async function loadServices() {
+  const servicesRef = collection(db, "Services");
+  const snapshot = await getDocs(servicesRef);
+  const tableBody = document.getElementById("servicesTable");
+  tableBody.innerHTML = "";
+
+  let total = 0, active = 0, inactive = 0;
+
+  snapshot.forEach((docSnap) => {
+    const service = docSnap.data();
+    const id = docSnap.id;
+
+    total++;
+
+    // Default to Active if no status field
+    const status = service.status || "Active";
+    if (status === "Active") active++;
+    else inactive++;
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${service.name}</td>
+      <td>${service.duration || "—"}</td>
+      <td>${status}</td>
+      <td>
+        <button class="btn-edit" data-id="${id}">Edit Duration</button>
+        <button class="btn-status" data-id="${id}" data-status="${status}">
+          ${status === "Active" ? "Deactivate" : "Activate"}
+        </button>
+      </td>
+    `;
+    tableBody.appendChild(tr);
+  });
+
+  document.getElementById("totalServices").textContent = total;
+  document.getElementById("activeServices").textContent = active;
+  document.getElementById("inactiveServices").textContent = inactive;
+
+  // Edit duration
+  document.querySelectorAll(".btn-edit").forEach((btn) => {
+    btn.addEventListener("click", () => openDurationEditor(btn.dataset.id));
+  });
+
+  // Activate / Deactivate
+  document.querySelectorAll(".btn-status").forEach((btn) => {
+    btn.addEventListener("click", () =>
+      toggleServiceStatus(btn.dataset.id, btn.dataset.status)
+    );
+  });
+}
+
+// ---------------- Edit Duration (SweetAlert) ----------------
+async function openDurationEditor(serviceId) {
+  const serviceDoc = doc(db, "Services", serviceId);
+  const servicesRef = collection(db, "Services");
+  const snapshot = await getDocs(servicesRef);
+  const service = snapshot.docs.find((d) => d.id === serviceId).data();
+
+  const { value: newDuration } = await Swal.fire({
+    title: `Edit Duration for "${service.name}"`,
+    input: "number",
+    inputLabel: "Enter new duration (in minutes)",
+    inputValue: service.duration || "",
+    inputAttributes: { min: 1 },
+    showCancelButton: true,
+    confirmButtonText: "Save",
+    cancelButtonText: "Cancel",
+    inputValidator: (value) => {
+      if (!value || value <= 0) return "Please enter a valid duration.";
+    },
+  });
+
+  if (newDuration) {
+    await updateDoc(serviceDoc, { duration: parseInt(newDuration) });
+    Swal.fire("✅ Updated!", "Service duration updated successfully.", "success");
+    loadServices();
+  }
+}
+
+// ---------------- Activate / Deactivate Service ----------------
+async function toggleServiceStatus(serviceId, currentStatus) {
+  const serviceDoc = doc(db, "Services", serviceId);
+  const newStatus = currentStatus === "Active" ? "Inactive" : "Active";
+
+  const confirm = await Swal.fire({
+    title: `${newStatus === "Active" ? "Activate" : "Deactivate"} this service?`,
+    text:
+      newStatus === "Active"
+        ? "This service will now be available for booking."
+        : "This service will no longer appear for clients.",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: `Yes, ${newStatus.toLowerCase()} it`,
+    cancelButtonText: "Cancel",
+  });
+
+  if (confirm.isConfirmed) {
+    await updateDoc(serviceDoc, { status: newStatus });
+    Swal.fire(
+      "Done!",
+      `Service has been marked as ${newStatus}.`,
+      "success"
+    );
+    loadServices();
+  }
+}
+
+// ---------------- Add New Service ----------------
+document.getElementById("addServiceBtn").addEventListener("click", async () => {
+  const { value: formValues } = await Swal.fire({
+    title: "Add New Service",
+    html: `
+      <input id="swal-service-name" class="swal2-input" placeholder="Service Name">
+      <input id="swal-service-duration" type="number" min="1" class="swal2-input" placeholder="Duration (in minutes)">
+    `,
+    focusConfirm: false,
+    showCancelButton: true,
+    confirmButtonText: "Add Service",
+    cancelButtonText: "Cancel",
+    preConfirm: () => {
+      const name = document.getElementById("swal-service-name").value.trim();
+      const duration = parseInt(document.getElementById("swal-service-duration").value);
+      
+      if (!name) {
+        Swal.showValidationMessage("Please enter a service name");
+        return false;
+      }
+      if (!duration || duration <= 0) {
+        Swal.showValidationMessage("Please enter a valid duration");
+        return false;
+      }
+
+      return { name, duration };
+    },
+  });
+
+  if (formValues) {
+    const { name, duration } = formValues;
+
+    // Add to Firestore
+    await addDoc(collection(db, "Services"), {
+      name,
+      duration,
+      status: "Active",
+      createdAt: serverTimestamp(),
+    });
+
+    Swal.fire("✅ Added!", "New service has been added successfully.", "success");
+    loadServices();
+  }
+});
+
+// ---------------- Initialize ----------------
+window.addEventListener("DOMContentLoaded", loadServices);

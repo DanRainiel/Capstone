@@ -955,6 +955,86 @@
 }
 
 
+/* Species Table Styles */
+#speciesTable tr.active-species {
+  background-color: #e8f9e9;   /* light green */
+  color: #2e7d32;              /* dark green text */
+  font-weight: 500;
+}
+
+#speciesTable tr.inactive-species {
+  background-color: #fbeaea;   /* light red */
+  color: #c62828;              /* dark red text */
+  font-style: italic;
+  opacity: 0.8;
+}
+
+/* Buttons */
+.btn-inactive {
+  background: #f57c00;
+  color: white;
+  border: none;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.btn-inactive:hover {
+  background: #ef6c00;
+}
+
+.btn-delete {
+  background: #d32f2f;
+  color: white;
+  border: none;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.btn-delete:hover {
+  background: #b71c1c;
+}
+
+/* --- Action Buttons --- */
+#Service-Management .btn-edit,
+#Service-Management .btn-status {
+  padding: 6px 14px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  color: #fff;
+  font-weight: 500;
+}
+
+/* Edit Button */
+#Service-Management .btn-edit {
+  background-color: var(--background-color);
+  margin-right: 6px;
+}
+#Service-Management .btn-edit:hover {
+  background-color: var(--background-color);
+  transform: scale(1.05);
+}
+
+/* Activate Button */
+#Service-Management .btn-status[data-status="Inactive"] {
+  background-color: var(--inactive-color);
+}
+#Service-Management .btn-status[data-status="Inactive"]:hover {
+  background-color: var(--inactive-hover-color);
+  transform: scale(1.05);
+}
+
+/* Deactivate Button */
+#Service-Management .btn-status[data-status="Active"] {
+  background-color: #dc3545;
+}
+#Service-Management .btn-status[data-status="Active"]:hover {
+  background-color: #c82333;
+  transform: scale(1.05);
+}
+
 
     @media (max-width: 991px) {
         .navigation {

@@ -464,6 +464,56 @@ form {
   border-radius: 10px;
 }
 
+/* Make species, breed, weight, and size match other form boxes */
+#appt-species,
+#appt-breed,
+#appt-weight,
+#appt-size, #appt-petname {
+    width: 100%;
+    margin: 0.6rem 0;
+    border-radius: 0.5rem;
+    font-size: 1.6rem;
+    border: var(--background-color) 1px solid;
+    color: var(--black);
+    text-transform: none;
+    padding: 1rem;
+    box-sizing: border-box;
+    background: #fff;
+}
+
+/* Auto-size field readonly style */
+#appt-size[readonly] {
+    background: #f5f5f5;
+    cursor: not-allowed;
+
+}
+
+/* Remove gaps/margins between inputs */
+#appointment-form .form-scroll .box,
+#appointment-form .form-scroll .form-group input,
+#appointment-form .form-scroll .form-group select {
+     margin:.6rem 0;/* remove vertical spacing */
+    border-radius: 0.5rem;
+    padding: 1rem;
+    font-size: 1.6rem;
+    border: var(--background-color) 1px solid;
+    box-sizing: border-box;
+    width: 100%;
+}
+
+/* If you have form-group divs, remove extra spacing */
+#appointment-form .form-group {
+    margin: 0;
+    padding: 0;
+}
+
+/* Optional: add small spacing for readability (like 4px) */
+#appointment-form .form-scroll .box + .box,
+#appointment-form .form-scroll .form-group + .form-group {
+    margin-top: 4px;
+}
+
+
 .second-navbar {
   background-color: transparent;
   justify-content: center;
@@ -672,6 +722,33 @@ form {
     font-weight: 500;
     padding: 1rem 0;
 } 
+
+/* Style for custom breed dropdown */
+#appt-breedDropdown {
+    position: absolute;
+    top: 100%;           /* position below the input */
+    left: 0;
+    right: 0;
+    max-height: 250px;   /* adjust to your preferred height */
+    overflow-y: auto;    /* enable scrolling if too many items */
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #fff;
+    z-index: 999;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    display: none;       /* default hidden, show via JS */
+}
+
+/* Each breed item */
+#appt-breedDropdown .dropdown-item {
+    padding: 8px 12px;
+    cursor: pointer;
+}
+
+#appt-breedDropdown .dropdown-item:hover {
+    background-color: #f0f0f0;
+}
+
 
 hr{
   margin-bottom: 20px;
@@ -1386,6 +1463,7 @@ body.modal-open {
   box-shadow: rgba(0, 0, 0, 0.1) 0px 10px 30px;
   transition: all 0.3s ease;
   position: relative;
+  
   overflow: hidden;
 }
 
@@ -1524,6 +1602,27 @@ body.modal-open {
 }
 
 
+.custom-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: 150px; /* max visible items */
+  overflow-y: auto;
+  border: 1px solid #ccc;
+  background: white;
+  z-index: 10;
+  display: none;
+}
+
+.custom-dropdown div {
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+.custom-dropdown div:hover {
+  background-color: #eee;
+}
 
 
 /* Fade-in animation */

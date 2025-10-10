@@ -289,104 +289,335 @@ function toMinutes(timeStr) {
   return hours * 60 + minutes;
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-    const appointmentForm = document.getElementById("appointment-form");
-    const apptDateInput = document.getElementById("appt-date");
-    const apptTimeInput = document.getElementById("appt-time");
+// -----------------------------
+// 🕒 Dynamic Service Durations (Loaded from Firestore)
+// -----------------------------
+let serviceDurations = {}; // will be populated from Firestore dynamically
 
-    if (!appointmentForm) {
-        console.error("❌ appointment-form not found in DOM");
-        return;
-    }
+async function loadServiceDurations() {
+  try {
+    const servicesRef = collection(db, "Services");
+    const snapshot = await getDocs(servicesRef);
 
-  // 🔹 Update available times when date changes
-if (apptDateInput && apptTimeInput) {
-    apptDateInput.addEventListener("change", async () => {
-        const selectedDate = apptDateInput.value;
-        if (!selectedDate) return;
-
-        const day = new Date(selectedDate).getDay(); // 0=Sun, 6=Sat
-
-        // 🚫 Block Sundays immediately
-        if (day === 0) {
-            await Swal.fire({
-                icon: "warning",
-                title: "Closed on Sundays",
-                text: "Appointments cannot be scheduled on Sundays. Please choose another day.",
-                confirmButtonColor: "#f8732b"
-            });
-            apptDateInput.value = ""; // reset date
-            apptTimeInput.innerHTML = `<option value="">Select Time</option>`;
-            apptTimeInput.disabled = true;
-            return;
-        }
-
-        try {
-            // Fetch clinic hours
-            const clinicSettingsRef = collection(db, "ClinicSettings");
-            const clinicSnap = await getDocs(clinicSettingsRef);
-            if (clinicSnap.empty) return;
-
-            const clinicData = clinicSnap.docs[0].data();
-            const weekdayHours = clinicData.weekdayHours; // { start: "08:00", end: "18:00" }
-            const saturdayHours = clinicData.saturdayHours; // { start: "08:00", end: "16:00" }
-
-            let clinicStart, clinicEnd;
-            if (day === 6) {
-                clinicStart = saturdayHours.start;
-                clinicEnd = saturdayHours.end;
-            } else {
-                clinicStart = weekdayHours.start;
-                clinicEnd = weekdayHours.end;
-            }
-
-            console.log(`📅 Selected date clinic hours: ${clinicStart} - ${clinicEnd}`);
-
-            // Build <select> options as time ranges
-            if (apptTimeInput.tagName.toLowerCase() === "select") {
-                apptTimeInput.innerHTML = `<option value="">Select Time</option>`; // reset
-                const startMinutes = toMinutes(clinicStart);
-                const endMinutes = toMinutes(clinicEnd);
-
-                for (let m = startMinutes; m < endMinutes; m += 30) {
-                    const slotStart = `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
-                    const slotEndMinutes = m + 30;
-                    const slotEnd = `${String(Math.floor(slotEndMinutes / 60)).padStart(2, "0")}:${String(slotEndMinutes % 60).padStart(2, "0")}`;
-
-                    const option = document.createElement("option");
-                    option.value = slotStart; // use start time as value
-                    option.textContent = `${formatTo12Hour(slotStart)} - ${formatTo12Hour(slotEnd)}`;
-
-                    apptTimeInput.appendChild(option);
-                }
-
-                apptTimeInput.disabled = false;
-            } else {
-                // Fallback for <input type="time">
-                apptTimeInput.min = clinicStart;
-                apptTimeInput.max = clinicEnd;
-                apptTimeInput.disabled = false;
-            }
-        } catch (err) {
-            console.error("⚠️ Error updating clinic hours:", err);
-        }
+    serviceDurations = {}; // reset
+    snapshot.forEach(docSnap => {
+      const service = docSnap.data();
+      if (service.name && service.duration) {
+        // normalize service name (lowercase for consistency)
+        serviceDurations[service.name.toLowerCase()] = service.duration;
+      }
     });
+
+    console.log("✅ Service durations loaded:", serviceDurations);
+  } catch (err) {
+    console.error("❌ Error loading service durations:", err);
+  }
+}
+
+// Optional: Real-time updates when durations change
+function watchServiceDurations() {
+  const servicesRef = collection(db, "Services");
+  onSnapshot(servicesRef, (snapshot) => {
+    serviceDurations = {}; 
+    snapshot.forEach(docSnap => {
+      const service = docSnap.data();
+      if (service.name && service.duration) {
+        serviceDurations[service.name.toLowerCase()] = service.duration;
+      }
+    });
+    console.log("🔄 Service durations updated:", serviceDurations);
+  });
 }
 
 
-    // ================================
-    // 📌 Appointment Submit Handler
-    // ================================
+
+//PET FORM//
+document.addEventListener("DOMContentLoaded", async () => {
+    await loadServiceDurations();
+    // -----------------------------
+    // DOM Elements
+    // -----------------------------
+    const appointmentForm = document.getElementById("appointment-form");
+    const apptNameInput = document.getElementById("appt-name");
+    const apptNumberInput = document.getElementById("appt-number");
+    const apptPetNameInput = document.getElementById("appt-petname");
+    const apptSpeciesInput = document.getElementById("appt-species");
+    const apptBreedInput = document.getElementById("appt-breed"); 
+    const apptWeightInput = document.getElementById("appt-weight");
+    const apptSizeInput = document.getElementById("appt-size");
+    const apptSexInput = document.getElementById("appt-sex");
+    const apptServiceInput = document.getElementById("appt-service");
+    const apptDateInput = document.getElementById("appt-date");
+    const apptTimeInput = document.getElementById("appt-time");
+
+    if (!appointmentForm) return console.error("❌ appointment-form not found in DOM");
+
+    // -----------------------------
+    // 🆕 Helper: Check if time slot is available
+    // -----------------------------
+    async function isTimeSlotAvailable(date, startTime, serviceDuration) {
+        try {
+            const startMinutes = toMinutes(startTime);
+            const endMinutes = startMinutes + serviceDuration;
+
+            // Query all appointments for the selected date
+            const appointmentsQuery = query(
+                collection(db, "Appointments"),
+                where("date", "==", date)
+            );
+            const appointmentsSnap = await getDocs(appointmentsQuery);
+
+            // Check for conflicts with existing appointments
+            for (const docSnap of appointmentsSnap.docs) {
+                const appt = docSnap.data();
+                const apptStartMinutes = toMinutes(appt.time);
+                const apptDuration = serviceDurations[appt.service] || 30;
+                const apptEndMinutes = apptStartMinutes + apptDuration;
+
+                // Check if there's any overlap
+                if (
+                    (startMinutes >= apptStartMinutes && startMinutes < apptEndMinutes) ||
+                    (endMinutes > apptStartMinutes && endMinutes <= apptEndMinutes) ||
+                    (startMinutes <= apptStartMinutes && endMinutes >= apptEndMinutes)
+                ) {
+                    return false; // Slot is occupied
+                }
+            }
+
+            return true; // Slot is available
+        } catch (err) {
+            console.error("Error checking time slot availability:", err);
+            return false;
+        }
+    }
+
+    // -----------------------------
+    // 🕒 Populate available time slots dynamically
+    // -----------------------------
+    async function loadAvailableTimeSlots() {
+        try {
+            const clinicSnap = await getDocs(collection(db, "ClinicSettings"));
+            if (clinicSnap.empty) return console.warn("No clinic hours found!");
+
+            const clinicData = clinicSnap.docs[0].data();
+            const weekdayHours = clinicData.weekdayHours;
+            const saturdayHours = clinicData.saturdayHours;
+
+            const selectedDate = apptDateInput.value;
+            const selectedService = apptServiceInput.value;
+            
+            if (!selectedDate) return;
+
+            const day = new Date(selectedDate).getDay();
+            if (day === 0) {
+                apptTimeInput.innerHTML = `<option value="">Closed on Sundays</option>`;
+                return;
+            }
+
+            const start = day === 6 ? toMinutes(saturdayHours.start) : toMinutes(weekdayHours.start);
+            const end = day === 6 ? toMinutes(saturdayHours.end) : toMinutes(weekdayHours.end);
+
+           const serviceDuration = serviceDurations[selectedService?.toLowerCase()] || 30;
+
+
+            // Generate times in 30-minute intervals
+            apptTimeInput.innerHTML = `<option value="">-- Select Time --</option>`;
+
+            for (let t = start; t < end; t += 30) {
+                const nextT = t + serviceDuration;
+                
+                // Skip if the service would extend beyond clinic hours
+                if (nextT > end) continue;
+
+                const startHours = Math.floor(t / 60);
+                const startMinutes = t % 60;
+                const endHours = Math.floor(nextT / 60);
+                const endMinutes = nextT % 60;
+
+                const timeValue = `${String(startHours).padStart(2, "0")}:${String(startMinutes).padStart(2, "0")}`;
+                const startLabel = formatTo12Hour(timeValue);
+                const endLabel = formatTo12Hour(`${String(endHours).padStart(2, "0")}:${String(endMinutes).padStart(2, "0")}`);
+
+                // Check if this time slot is available
+                const isAvailable = await isTimeSlotAvailable(selectedDate, timeValue, serviceDuration);
+
+                const option = document.createElement("option");
+                option.value = timeValue;
+                option.textContent = `${startLabel} - ${endLabel}${!isAvailable ? ' (Unavailable)' : ''}`;
+                option.disabled = !isAvailable;
+                
+                apptTimeInput.appendChild(option);
+            }
+
+        } catch (err) {
+            console.error("Error loading time slots:", err);
+        }
+    }
+
+    // -----------------------------
+    // 🐾 Auto compute size based on weight
+    // -----------------------------
+    function getSizeFromWeight(weight) {
+        if (weight < 10) return "Small";
+        if (weight >= 10 && weight < 25) return "Medium";
+        if (weight >= 25 && weight < 40) return "Large";
+        return "Extra Large";
+    }
+
+    // -----------------------------
+    // 🐾 Species -> Breeds mapping
+    // -----------------------------
+    const speciesBreeds = {
+        dog: ["Affenpinscher", "Afghan Hound", "Airedale Terrier", "Akita", "Beagle", "Boxer", "Bulldog", "Chihuahua", "Dalmatian", "Doberman"],
+        cat: ["Abyssinian", "Bengal", "Birman", "Maine Coon", "Persian", "Ragdoll", "Siamese", "Sphynx"],
+        bird: ["Budgerigar", "Cockatiel", "Canary", "Lovebird", "Parrot", "Finch"],
+        rabbit: ["Dutch", "Flemish Giant", "Lionhead", "Mini Lop", "Netherland Dwarf"],
+        hamster: ["Syrian", "Roborovski", "Djungarian", "Chinese"],
+        fish: ["Goldfish", "Betta", "Guppy", "Tetra", "Molly"]
+    };
+
+    const speciesListEl = document.getElementById("speciesList");
+    Object.keys(speciesBreeds).forEach(specie => {
+        const option = document.createElement("option");
+        option.value = specie.charAt(0).toUpperCase() + specie.slice(1);
+        speciesListEl.appendChild(option);
+    });
+
+    // -----------------------------
+    // Enable breed input when species is selected
+    // -----------------------------
+    apptSpeciesInput.addEventListener("input", (e) => {
+        const value = e.target.value.trim().toLowerCase();
+        const breedList = document.getElementById("breedList");
+        breedList.innerHTML = "";
+
+        if (speciesBreeds[value]) {
+            speciesBreeds[value].forEach(breed => {
+                const option = document.createElement("option");
+                option.value = breed;
+                breedList.appendChild(option);
+            });
+            apptBreedInput.disabled = false;
+        } else {
+            apptBreedInput.disabled = true;
+        }
+    });
+
+    // -----------------------------
+    // Auto update pet size on weight change
+    // -----------------------------
+    apptWeightInput.addEventListener("input", () => {
+        const weight = parseFloat(apptWeightInput.value);
+        if (!isNaN(weight)) {
+            apptSizeInput.value = getSizeFromWeight(weight);
+        } else {
+            apptSizeInput.value = "";
+        }
+    });
+
+    // -----------------------------
+    // 🐾 Detect current user dynamically
+    // -----------------------------
+    const currentUserId = sessionStorage.getItem("currentUserId");
+    const currentUserName = sessionStorage.getItem("currentUserName");
+    
+    if (!currentUserId && !currentUserName) {
+        console.warn("⚠️ No current user found. Fullname and pets will not be loaded.");
+    } else {
+        try {
+            let userQuery;
+            if (currentUserId) {
+                userQuery = query(collection(db, "users"), where("userId", "==", currentUserId));
+            } else {
+                userQuery = query(collection(db, "users"), where("name", "==", currentUserName));
+            }
+
+            const userSnap = await getDocs(userQuery);
+            if (!userSnap.empty) {
+                const userData = userSnap.docs[0].data();
+                apptNameInput.value = userData.fullName || currentUserName || "";
+            }
+
+            const petsQuery = query(collection(db, "Pets"), where("ownerId", "==", currentUserId || currentUserName));
+
+            onSnapshot(petsQuery, (snapshot) => {
+                apptPetNameInput.innerHTML = `<option value="">-- Select Pet --</option>`;
+
+                snapshot.forEach(docSnap => {
+                    const pet = docSnap.data();
+                    const option = document.createElement("option");
+                    option.value = docSnap.id;
+                    option.textContent = pet.petName || "Unnamed Pet";
+                    option.dataset.petName = pet.petName || "";
+                    apptPetNameInput.appendChild(option);
+                });
+            });
+
+            apptPetNameInput.addEventListener("change", async (e) => {
+                const petId = e.target.value;
+                if (!petId) {
+                    apptSpeciesInput.value = "";
+                    apptBreedInput.value = "";
+                    apptSexInput.value = "";
+                    apptWeightInput.value = "";
+                    apptSizeInput.value = "";
+                    return;
+                }
+
+                try {
+                    const petDoc = await getDoc(doc(db, "Pets", petId));
+                    if (petDoc.exists()) {
+                        const petData = petDoc.data();
+                        apptSpeciesInput.value = petData.species || "";
+                        apptBreedInput.value = petData.breed || "";
+                        apptSexInput.value = petData.sex || "";
+                        apptWeightInput.value = petData.weight || "";
+                        apptSizeInput.value = petData.size || getSizeFromWeight(petData.weight);
+                    } else {
+                        console.warn("❌ Pet not found for ID:", petId);
+                    }
+                } catch (err) {
+                    console.error("Error loading pet details:", err);
+                }
+            });
+
+        } catch (err) {
+            console.error("Error fetching user or pets:", err);
+        }
+    }
+
+    // -----------------------------
+    // Date input: prevent same-day booking
+    // -----------------------------
+    if (apptDateInput) {
+        const today = new Date();
+        today.setDate(today.getDate() + 1);
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        const minDate = `${yyyy}-${mm}-${dd}`;
+
+        apptDateInput.setAttribute("min", minDate);
+        apptDateInput.value = minDate;
+    }
+
+    // ✅ Reload time slots when date OR service changes
+    apptDateInput.addEventListener("change", loadAvailableTimeSlots);
+    apptServiceInput.addEventListener("change", loadAvailableTimeSlots);
+    await loadAvailableTimeSlots();
+
+    // -----------------------------
+    // Appointment submission
+    // -----------------------------
     appointmentForm.addEventListener("submit", async (e) => {
         e.preventDefault();
 
-        const selectedDate = document.getElementById("appt-date").value;
-        const selectedTime = document.getElementById("appt-time").value;
+        const selectedDate = apptDateInput.value;
+        const selectedTime = apptTimeInput.value;
         const formattedTime = formatTo12Hour(selectedTime);
-        const selectedService = document.getElementById("appt-service").value;
-        const currentUser = document.getElementById("appt-number").value.trim();
+        const selectedService = apptServiceInput.value;
 
-        // 🚫 Prevent same-day booking
+        // Same-day restriction
         const todayDate = new Date().toISOString().split("T")[0];
         if (selectedDate === todayDate) {
             await Swal.fire({
@@ -398,66 +629,59 @@ if (apptDateInput && apptTimeInput) {
             return;
         }
 
-        // 🔹 Check clinic hours + blocked slots
+        // Clinic hours and blocked slots validation
         try {
-            const clinicSettingsRef = collection(db, "ClinicSettings");
-            const clinicSnap = await getDocs(clinicSettingsRef);
+            const clinicSnap = await getDocs(collection(db, "ClinicSettings"));
             if (clinicSnap.empty) throw new Error("Clinic hours not found");
 
             const clinicData = clinicSnap.docs[0].data();
             const weekdayHours = clinicData.weekdayHours;
             const saturdayHours = clinicData.saturdayHours;
 
-            const appointmentDay = new Date(selectedDate).getDay(); // 0=Sun, 6=Sat
-
-            // 🚫 Block Sundays completely
+            const appointmentDay = new Date(selectedDate).getDay();
             if (appointmentDay === 0) {
                 await Swal.fire({
                     icon: "warning",
                     title: "Closed on Sundays",
-                    text: "Appointments cannot be scheduled on Sundays. Please choose another day.",
+                    text: "Appointments cannot be scheduled on Sundays.",
                     confirmButtonColor: "#f8732b"
                 });
                 return;
             }
 
-            let clinicStart, clinicEnd;
-            if (appointmentDay === 6) {
-                clinicStart = saturdayHours.start;
-                clinicEnd = saturdayHours.end;
-            } else {
-                clinicStart = weekdayHours.start;
-                clinicEnd = weekdayHours.end;
-            }
+            const clinicStart = (appointmentDay === 6) ? saturdayHours.start : weekdayHours.start;
+            const clinicEnd = (appointmentDay === 6) ? saturdayHours.end : weekdayHours.end;
 
             const selectedMinutes = toMinutes(selectedTime);
-            const startMinutes = toMinutes(clinicStart);
-            const endMinutes = toMinutes(clinicEnd);
+            const serviceDuration = serviceDurations[selectedService] || 30;
+            const endMinutes = selectedMinutes + serviceDuration;
 
-            if (selectedMinutes < startMinutes || selectedMinutes >= endMinutes) {
+            if (selectedMinutes < toMinutes(clinicStart) || endMinutes > toMinutes(clinicEnd)) {
                 await Swal.fire({
                     icon: "error",
                     title: "Outside Clinic Hours",
-                    text: `Appointments can only be booked between ${clinicStart} and ${clinicEnd}. Please select a valid time.`,
+                    text: `This service (${serviceDuration} mins) would extend beyond clinic hours.`,
                     confirmButtonColor: "#f8732b"
                 });
                 return;
             }
 
-            // 2. Check against blocked slots
-            const blockedRef = collection(db, "BlockedSlots");
-            const qBlocked = query(blockedRef, where("date", "==", selectedDate));
-            const blockedSnap = await getDocs(qBlocked);
-
+            // Check blocked slots for the entire service duration
+            const blockedSnap = await getDocs(query(collection(db, "BlockedSlots"), where("date", "==", selectedDate)));
             let isBlocked = false;
             let reason = "";
-
+            
             blockedSnap.forEach(docSnap => {
                 const block = docSnap.data();
                 const blockStart = toMinutes(block.startTime);
                 const blockEnd = toMinutes(block.endTime);
-
-                if (selectedMinutes >= blockStart && selectedMinutes < blockEnd) {
+                
+                // Check if any part of the appointment overlaps with blocked time
+                if (
+                    (selectedMinutes >= blockStart && selectedMinutes < blockEnd) ||
+                    (endMinutes > blockStart && endMinutes <= blockEnd) ||
+                    (selectedMinutes <= blockStart && endMinutes >= blockEnd)
+                ) {
                     isBlocked = true;
                     reason = block.reason || "Unavailable";
                 }
@@ -467,11 +691,25 @@ if (apptDateInput && apptTimeInput) {
                 await Swal.fire({
                     icon: "error",
                     title: "Time Slot Blocked",
-                    text: `This time is unavailable (${reason}). Please pick another slot.`,
+                    text: `This time is unavailable (${reason}).`,
                     confirmButtonColor: "#f8732b"
                 });
                 return;
             }
+
+            // Final check: verify slot is still available
+            const stillAvailable = await isTimeSlotAvailable(selectedDate, selectedTime, serviceDuration);
+            if (!stillAvailable) {
+                await Swal.fire({
+                    icon: "error",
+                    title: "Time Slot No Longer Available",
+                    text: "This slot was just booked. Please select another time.",
+                    confirmButtonColor: "#f8732b"
+                });
+                await loadAvailableTimeSlots(); // Refresh the list
+                return;
+            }
+
         } catch (err) {
             console.error("Error validating clinic hours/blocked slots:", err);
             await Swal.fire({
@@ -483,31 +721,35 @@ if (apptDateInput && apptTimeInput) {
             return;
         }
 
-        // ✅ Save appointment if no conflicts
-        const appointmentData = {
-            name: document.getElementById("appt-name").value.trim(),
-            number: currentUser,
-            petName: document.getElementById("appt-petname").value.trim(),
-            breed: document.getElementById("appt-breed").value.trim(),
-            petSize: document.getElementById("appt-size").value,
-            sex: document.getElementById("appt-sex").value,
-            service: selectedService,
-            time: formattedTime,
-            date: selectedDate,
-            serviceFee: 0,
-            selectedServices: [],
-            vaccines: [],
-        };
+        apptWeightInput.addEventListener("input", () => {
+    const weight = parseFloat(apptWeightInput.value);
+    apptSizeInput.value = !isNaN(weight) ? getSizeFromWeight(weight) : "";
+});
 
-        // 💰 Apply fee
-        switch (appointmentData.service) {
-            case "grooming": appointmentData.serviceFee = 500; break;
-            case "vaccinations": appointmentData.serviceFee = 700; break;
-            case "dental-care": appointmentData.serviceFee = 600; break;
-            case "consultation": appointmentData.serviceFee = 400; break;
-            case "laboratory": appointmentData.serviceFee = 800; break;
-            case "treatment": appointmentData.serviceFee = 1000; break;
-        }
+const appointmentData = {
+    name: apptNameInput.value.trim(),
+    ownerNumber: apptNumberInput.value ? String(apptNumberInput.value).trim() : "",
+
+    petName: apptPetNameInput.options[apptPetNameInput.selectedIndex]?.dataset.petName 
+              || apptPetNameInput.value.trim(),
+    species: apptSpeciesInput.value.trim(),
+    breed: apptBreedInput.value.trim(),
+    weight: apptWeightInput.value.trim(),
+    petSize: apptSizeInput.value.trim() || getSizeFromWeight(parseFloat(apptWeightInput.value)), // ✅ ensures autofilled size is included
+    sex: apptSexInput.value,
+    service: selectedService,
+    date: selectedDate,
+    time: selectedTime,
+    displayTime: formattedTime,
+    duration: serviceDurations[selectedService] || 30,
+    serviceFee: 0,
+    totalAmount: 0,
+    selectedServices: [],
+    vaccines: [],
+};
+
+
+      
 
         Swal.fire({
             title: 'Processing...',
@@ -518,6 +760,11 @@ if (apptDateInput && apptTimeInput) {
         });
 
         setTimeout(() => {
+          console.log("📋 Saving appointment:", {
+    number: apptNumberInput.value,
+    size: apptSizeInput.value
+});
+
             sessionStorage.setItem("appointment", JSON.stringify(appointmentData));
             Swal.fire({
                 title: 'Appointment Submitted!',
@@ -530,6 +777,74 @@ if (apptDateInput && apptTimeInput) {
             });
         }, 1500);
     });
+
+
+    // -----------------------------
+    // Helper functions
+    // -----------------------------
+    function toMinutes(time) {
+        const [h, m] = time.split(":").map(Number);
+        return h * 60 + m;
+    }
+
+    function formatTo12Hour(time) {
+        if (!time) return "";
+        let [h, m] = time.split(":").map(Number);
+        const ampm = h >= 12 ? "PM" : "AM";
+        h = h % 12 || 12;
+        return `${h}:${String(m).padStart(2,"0")} ${ampm}`;
+    }
+});
+
+document.addEventListener("DOMContentLoaded", async () => {
+    const apptNameInput = document.getElementById("appt-name");
+
+    // Use the correct key
+    const currentUserName = sessionStorage.getItem("userName");
+    if (!currentUserName) {
+        console.warn("No current user found. Fullname and pets will not be loaded.");
+        return;
+    }
+
+    try {
+        const userQuery = query(collection(db, "users"), where("name", "==", currentUserName));
+        const userSnap = await getDocs(userQuery);
+
+        if (!userSnap.empty) {
+            const userData = userSnap.docs[0].data();
+            console.log("User data fetched:", userData);
+
+            // Autofill fullname
+            apptNameInput.value = userData.fullName || currentUserName || "";
+        } else {
+            console.warn("No user found in Firestore with name:", currentUserName);
+        }
+    } catch (err) {
+        console.error("Error fetching user:", err);
+    }
+});
+
+
+
+
+
+
+document.getElementById("petSpecies").addEventListener("input", (e) => {
+    const value = e.target.value.trim().toLowerCase();
+    const breedList = document.getElementById("breedList");
+    breedList.innerHTML = "";
+
+    if (speciesBreeds[value]) {
+        speciesBreeds[value].forEach(breed => {
+            const option = document.createElement("option");
+            option.value = breed;
+            breedList.appendChild(option);
+        });
+        // ✅ Enable breed input
+        apptBreedInput.disabled = false;
+    } else {
+        apptBreedInput.disabled = true;
+    }
 });
 
 
@@ -547,6 +862,86 @@ document.addEventListener("DOMContentLoaded", () => {
     apptDateInput.value = minDate; // optional: pre-select tomorrow
 });
 
+// Map buttons to Firestore service names
+const modalServiceMap = {
+  "lm-1": "Treatment",
+  "lm-2": "consultation",
+  "lm-3": "Vaccination",
+  "lm-4": "Grooming",
+  "lm-5": "Laboratory",
+  "lm-6": "Deworming"
+};
+
+Object.keys(modalServiceMap).forEach(buttonId => {
+  const btn = document.getElementById(buttonId);
+  if (!btn) return;
+
+  btn.addEventListener("click", async () => {
+    const serviceName = modalServiceMap[buttonId];
+    const modalId = "modal-" + buttonId.split("-")[1]; // lm-1 -> modal-1
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+
+    const priceContainer = modal.querySelector(".price-list");
+    if (!priceContainer) return;
+    priceContainer.innerHTML = ""; // Clear old prices
+
+    try {
+      const servicesCol = collection(db, "Services");
+      const snapshot = await getDocs(servicesCol);
+
+      let serviceData = null;
+      snapshot.forEach(doc => {
+        // Match by id or name
+        if (doc.id.toLowerCase() === serviceName.toLowerCase() || (doc.data().name && doc.data().name.toLowerCase() === serviceName.toLowerCase())) {
+          serviceData = doc.data();
+        }
+      });
+
+      if (!serviceData) return;
+
+      // If the service has variants
+      if (serviceData.variants) {
+        for (const [variantName, sizeMap] of Object.entries(serviceData.variants)) {
+          priceContainer.innerHTML += `<p class="price-heading">${variantName.charAt(0).toUpperCase() + variantName.slice(1)}:</p>`;
+          if (typeof sizeMap === "object") {
+            for (const [size, price] of Object.entries(sizeMap)) {
+              priceContainer.innerHTML += `<p class="price">${size.charAt(0).toUpperCase() + size.slice(1)}: <i class="fa-solid fa-peso-sign"></i> ${price}</p>`;
+            }
+          } else {
+            priceContainer.innerHTML += `<p class="price"><i class="fa-solid fa-peso-sign"></i>${sizeMap}</p>`;
+          }
+        }
+      } 
+      // For services without variants but with regular prices
+      else if (serviceData.regular) {
+        priceContainer.innerHTML += `<p class="price-heading">Price:</p>`;
+        for (const [size, price] of Object.entries(serviceData.regular)) {
+          priceContainer.innerHTML += `<p class="price">${size.charAt(0).toUpperCase() + size.slice(1)}: <i class="fa-solid fa-peso-sign"></i> ${price}</p>`;
+        }
+      }
+
+      // Show modal
+      modal.style.display = "block";
+
+    } catch (err) {
+      console.error("Error loading service prices:", err);
+    }
+  });
+});
+
+// Close modal logic
+document.querySelectorAll(".modal-close").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const modalId = btn.getAttribute("data-close");
+    const modal = document.getElementById(modalId);
+    if (modal) modal.style.display = "none";
+  });
+});
+
+
+
+
 
 // ================================
 // 📌 Logic for Calendar Booking Button
@@ -557,6 +952,24 @@ if (bookBtn) {
         const selectedSlot = document.querySelector(".time-slot.selected")?.dataset.value || "09:00 AM";
         const today = new Date().toISOString().split("T")[0];
         const formattedTime = formatTo12Hour(selectedSlot);
+        document.getElementById("petSpecies").addEventListener("input", (e) => {
+    const value = e.target.value.trim().toLowerCase();
+    const breedList = document.getElementById("breedList");
+    breedList.innerHTML = "";
+
+    if (speciesBreeds[value]) {
+        speciesBreeds[value].forEach(breed => {
+            const option = document.createElement("option");
+            option.value = breed;
+            breedList.appendChild(option);
+        });
+        // ✅ Enable breed input
+        apptBreedInput.disabled = false;
+    } else {
+        apptBreedInput.disabled = true;
+    }
+});
+
         const selectedService = document.getElementById("appt-service")?.value;
         const currentUser = document.getElementById("appt-number")?.value?.trim();
 
@@ -1140,8 +1553,67 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById("nextMonthBtn").addEventListener("click",()=>navigateMonth(1));
 });
 
+// 🐾 Auto compute size based on weight
+function getSizeFromWeight(weight) {
+  if (weight < 10) return "Small";          // < 10 kg
+  if (weight >= 10 && weight < 25) return "Medium";   // 10–24.9 kg
+  if (weight >= 25 && weight < 40) return "Large";    // 25–39.9 kg
+  return "Extra Large";                     // >= 40 kg
+}
 
-     
+
+// Attach listener once the form is loaded
+document.addEventListener("DOMContentLoaded", () => {
+  const weightInput = document.getElementById("petWeight");
+  const sizeInput = document.getElementById("petSize"); // make sure you have this field
+
+  if (weightInput && sizeInput) {
+    weightInput.addEventListener("input", () => {
+      const weight = parseFloat(weightInput.value);
+      if (!isNaN(weight)) {
+        sizeInput.value = getSizeFromWeight(weight);
+      } else {
+        sizeInput.value = "";
+      }
+    });
+  }
+});
+
+const speciesInput = document.getElementById("petSpecies");
+const breedInput = document.getElementById("petBreed");
+const breedList = document.getElementById("breedList");
+
+// Initialize breed input as disabled
+breedInput.disabled = true;
+breedInput.placeholder = "Select species first";
+
+speciesInput.addEventListener("input", () => {
+  const value = speciesInput.value.trim().toLowerCase();
+
+  // Reset breed input
+  breedInput.value = "";
+  breedList.innerHTML = "";
+
+  // ✅ Check if species is valid
+  if (PetManager.availableSpecies.includes(value)) {
+    breedInput.disabled = false; // <-- unblock
+    breedInput.placeholder = "Type or select breed...";
+
+    // Populate breed datalist
+    const breeds = speciesBreeds[value] || [];
+    breeds.forEach(b => {
+      const option = document.createElement("option");
+      option.value = b;
+      breedList.appendChild(option);
+    });
+  } else {
+    // Disable breed input if species invalid
+    breedInput.disabled = true;
+    breedInput.placeholder = "Select species first";
+  }
+});
+
+
 // 🐾 PETS MANAGER //
 const PetManager = {
   pets: [],
@@ -1150,19 +1622,43 @@ const PetManager = {
   currentBookingPet: null,
   currentEditAppointmentId: null,
 
+  // ✅ store all available species here
+  availableSpecies: [],
+
   speciesIcons: {
     dog: 'fas fa-dog',
     cat: 'fas fa-cat',
     bird: 'fas fa-dove',
     rabbit: 'fas fa-rabbit',
     hamster: 'fas fa-hamster',
+    fish: 'fas fa-fish',
     other: 'fas fa-paw'
   },
 
   async init() {
     this.bindEvents();
     this.addAnimationStyles();
+    await this.loadSpeciesFromFirestore();   // ✅ load species first
     await this.loadPetsFromFirestore();
+  },
+
+  // ✅ Load Species from Firestore
+  async loadSpeciesFromFirestore() {
+    try {
+      const querySnapshot = await getDocs(collection(db, "Species"));
+      this.availableSpecies = querySnapshot.docs.map(doc => doc.data().name.toLowerCase());
+
+      // Fill datalist for typing suggestion
+      const speciesList = document.getElementById("speciesList");
+      speciesList.innerHTML = "";
+      this.availableSpecies.forEach(specie => {
+        const option = document.createElement("option");
+        option.value = specie.charAt(0).toUpperCase() + specie.slice(1);
+        speciesList.appendChild(option);
+      });
+    } catch (err) {
+      console.error("Error loading species:", err);
+    }
   },
 
   async loadPetsFromFirestore() {
@@ -1170,28 +1666,26 @@ const PetManager = {
       const userId = sessionStorage.getItem("userId");
       if (!userId) return console.error("User not logged in.");
 
-      const q = query(collection(db, "Pets"), where("userId", "==", userId));
+      const q = query(collection(db, "Pets"), where("ownerId", "==", userId));
       const querySnapshot = await getDocs(q);
 
-     this.pets = querySnapshot.docs.map(docSnap => {
-  const data = docSnap.data();
-  return {
-    id: docSnap.id,
-    petName: data.petName || '',
-    species: data.species || 'other',
-    ownerId: data.ownerId || 'N/A',
-    breed: data.breed || '',
-    age: data.age ? parseInt(data.age) : 0,
-    sex: data.sex || '',
-    size: data.size || '',
-    weight: data.weight ? parseFloat(data.weight) : null,
-    color: data.color || '',
-    medicalHistory: data.medicalHistory || '',
-    createdAt: data.createdAt || null   // ✅ keep the saved date
-  };
-});
-
-
+      this.pets = querySnapshot.docs.map(docSnap => {
+        const data = docSnap.data();
+        return {
+          id: docSnap.id,
+          petName: data.petName || '',
+          species: data.species || 'other',
+          ownerId: data.ownerId || userId,
+          breed: data.breed || '',
+          age: data.age ? parseInt(data.age) : 0,
+          sex: data.sex || '',
+          size: data.size || '',
+          weight: data.weight ? parseFloat(data.weight) : null,
+          color: data.color || '',
+          medicalHistory: data.medicalHistory || '',
+          createdAt: data.createdAt || null
+        };
+      });
 
       this.renderPets();
     } catch (error) {
@@ -1199,35 +1693,34 @@ const PetManager = {
     }
   },
 
-  async addPetToFirestore(petData) {
+async addPetToFirestore(petData) {
   try {
     const userId = sessionStorage.getItem("userId");
-    if (!userId) return alert("User not logged in.");
+    if (!userId) {
+      alert("User not logged in.");
+      return;
+    }
 
-    const timestamp = Date.now();
-    const docId = `${userId}_${petData.petName}_${timestamp}`;
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const petId = `${userId}_${petData.petName}_${timestamp}`;
 
-    await setDoc(doc(db, "Pets", docId), {
-      userId: userId,                // ✅ Save userId for queries
-      ownerId: petData.ownerId || userId,  // ✅ Keep ownerId if needed
-      petName: petData.petName,
-      species: petData.species,
-      breed: petData.breed,
-      sex: petData.sex,
-      size: petData.size,
-      weight: petData.weight || null, // ✅ add weight if needed
-      color: petData.color || "",
-      medicalHistory: petData.medicalHistory || "",
+    await setDoc(doc(db, "Pets", petId), {
+      ...petData,
+      ownerId: userId,
       createdAt: new Date().toISOString()
     });
 
-      await logActivity(userId, "Pet Added", `User ${userId} added pet ${petData.petName}.`);
-      this.closePetModal();
-      await this.loadPetsFromFirestore();
-    } catch (error) {
-      console.error("Error adding pet:", error);
-    }
-  },
+    this.closePetModal();
+    await this.loadPetsFromFirestore(); // refresh list
+  } catch (error) {
+    console.error("Error adding pet:", error);
+    alert("Failed to add pet.");
+  }
+},
+
+
+  
+
 
   async updatePetInFirestore(petId, petData) {
     try {
@@ -1250,162 +1743,222 @@ const PetManager = {
     }
   },
 
-  renderPets() {
-    const petsGrid = document.getElementById('petsGrid');
-    const emptyState = document.getElementById('emptyState');
-    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+renderPets() {
+  const petsGrid = document.getElementById('petsGrid');
+  const emptyState = document.getElementById('emptyState');
+  const searchTerm = document.getElementById('searchInput').value.toLowerCase();
 
-    const filteredPets = this.pets.filter(pet =>
-      pet.petName.toLowerCase().includes(searchTerm) ||
-      pet.species.toLowerCase().includes(searchTerm) ||
-      (pet.ownerId && pet.ownerId.toLowerCase().includes(searchTerm))
-    );
+  const filteredPets = this.pets.filter(pet =>
+    pet.petName.toLowerCase().includes(searchTerm) ||
+    pet.species.toLowerCase().includes(searchTerm) ||
+    (pet.ownerId && pet.ownerId.toLowerCase().includes(searchTerm)) ||
+    (pet.breed && pet.breed.toLowerCase().includes(searchTerm))
+  );
 
-    if (filteredPets.length === 0) {
-      petsGrid.innerHTML = '';
-      emptyState.style.display = 'block';
-      return;
-    }
+  if (filteredPets.length === 0) {
+    petsGrid.innerHTML = '';
+    emptyState.style.display = 'block';
+    return;
+  }
 
-    emptyState.style.display = 'none';
-    petsGrid.innerHTML = filteredPets.map(pet => `
-      <div class="pet-card">
-        <div class="pet-avatar">
-         <i class="fas fa-dog"></i>
+  emptyState.style.display = 'none';
+  petsGrid.innerHTML = filteredPets.map(pet => `
+    <div class="pet-card">
+      <div class="pet-avatar">
+        <i class="${this.speciesIcons[pet.species] || 'fas fa-paw'}"></i>
+      </div>
 
-        </div>
-        <div class="pet-info">
-          <h3>${pet.petName}</h3>
-          <div class="pet-details">
-  <div class="pet-detail"><i class="fas fa-paw"></i> <span>${pet.species}</span></div>
-  <div class="pet-detail"><i class="fas fa-user"></i> <span>${pet.ownerId || 'N/A'}</span></div>
-  <div class="pet-detail"><i class="fas fa-user-md"></i> <span>Vet: Dr. Donna Doll Diones</span></div>
-  <div class="pet-detail"><i class="fas fa-calendar"></i> 
-    <span>${pet.createdAt ? new Date(pet.createdAt).toLocaleDateString() : 'No date'}</span>
-  </div>
-</div>
-
-          <div class="pet-actions">
-            <button class="pet-btn btn-edit" onclick="PetManager.editPet('${pet.id}')"><i class="fas fa-edit"></i> Edit</button>
-            <button class="pet-btn btn-book" onclick="PetManager.bookAppointment('${pet.id}')"><i class="fas fa-calendar-plus"></i> Book</button>
-            <button class="pet-btn btn-delete" onclick="PetManager.confirmDelete('${pet.id}')"><i class="fas fa-trash"></i> Delete</button>
+      <div class="pet-info">
+        <h3>${pet.petName}</h3>
+        <div class="pet-details">
+          <div class="pet-detail"><i class="fas fa-paw"></i> <span>${pet.species}</span></div>
+          <div class="pet-detail"><i class="fas fa-dog"></i> <span>${pet.breed || 'N/A'}</span></div>
+          <div class="pet-detail"><i class="fas fa-weight"></i> <span>${pet.weight ? pet.weight + " kg" : "N/A"}</span></div>
+          <div class="pet-detail"><i class="fas fa-ruler-vertical"></i> <span>${pet.size || "N/A"}</span></div>
+          <div class="pet-detail"><i class="fas fa-user"></i> <span>${pet.ownerId || 'N/A'}</span></div>
+          <div class="pet-detail"><i class="fas fa-user-md"></i> <span>Vet: Dr. Donna Doll Diones</span></div>
+          <div class="pet-detail"><i class="fas fa-calendar"></i> 
+            <span>${pet.createdAt ? new Date(pet.createdAt).toLocaleDateString() : 'No date'}</span>
           </div>
         </div>
+
+        <div class="pet-actions">
+          <button class="pet-btn btn-edit" onclick="PetManager.editPet('${pet.id}')"><i class="fas fa-edit"></i> Edit</button>
+          <button class="pet-btn btn-book" onclick="PetManager.bookAppointment('${pet.id}')"><i class="fas fa-calendar-plus"></i> Book</button>
+          <button class="pet-btn btn-delete" onclick="PetManager.confirmDelete('${pet.id}')"><i class="fas fa-trash"></i> Delete</button>
+        </div>
       </div>
-    `).join('');
-  },
-
-  showAddPetModal() {
-    this.currentEditId = null;
-    document.getElementById('petForm').reset();
-    document.getElementById('modalTitle').textContent = 'Add Pet';
-    document.getElementById('submitBtn').textContent = 'Add Pet';
-    document.getElementById('petModal').style.display = 'flex';
-  },
-
-  submitPetForm(event) {
-    event.preventDefault();
-
-   const petData = {
-  petName: document.getElementById('petFormName').value.trim(),
-  species: document.getElementById('petSpecies').value.trim(),
-  breed: document.getElementById('petBreed').value.trim(),
-  sex: document.getElementById('petSex').value.trim(),
-  size: document.getElementById('petSize').value.trim(),
-  medicalHistory: document.getElementById('petMedicalHistory').value.trim()
-};
+    </div>
+  `).join('');
+},
 
 
-    if (!petData.petName) return alert("Pet name is required.");
+// ================================
+// 📌 Show Add Pet Modal
+// ================================
+showAddPetModal() {
+  this.currentEditId = null;
+  document.getElementById("petForm").reset();
 
-    if (this.currentEditId) {
-      this.updatePetInFirestore(this.currentEditId, petData);
-    } else {
-      this.addPetToFirestore(petData);
-    }
-  },
+  document.getElementById("modalTitle").textContent = "Add Pet";
+  document.getElementById("submitBtn").textContent = "Add Pet";
 
-  editPet(id) {
-    const pet = this.pets.find(p => p.id === id);
-    if (!pet) return;
+  document.getElementById("petModal").style.display = "flex";
+},
 
-    this.currentEditId = id;
-    document.getElementById('petFormName').value = pet.petName;
-    document.getElementById('petSpecies').value = pet.species;
-    document.getElementById('petBreed').value = pet.breed;
+submitPetForm(event) {
+  event.preventDefault();
 
-    document.getElementById('petSex').value = pet.sex;
-    document.getElementById('petSize').value = pet.size;
+  const speciesInput = document.getElementById("petSpecies").value.trim().toLowerCase();
+  const breedInput = document.getElementById("petBreed").value.trim();
+  const weight = parseFloat(document.getElementById("petWeight").value);
+  const size = !isNaN(weight) ? getSizeFromWeight(weight) : "";
 
-    document.getElementById('petMedicalHistory').value = pet.medicalHistory;
+  // ✅ validate species
+  if (!this.availableSpecies.includes(speciesInput)) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Invalid Species',
+      text: 'Please select a species from the available list.',
+      confirmButtonText: 'OK',
+      customClass: { popup: 'swal2-popup-custom' }
+    });
+    return;
+  }
 
-    document.getElementById('modalTitle').textContent = 'Edit Pet';
-    document.getElementById('submitBtn').textContent = 'Update Pet';
-    document.getElementById('petModal').style.display = 'flex';
-  },
+  // ✅ validate breed only if species is valid
+  if (breedInput && !speciesBreeds[speciesInput]?.includes(breedInput)) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Invalid Breed',
+      text: 'Please select a valid breed for the chosen species.',
+      confirmButtonText: 'OK'
+    });
+    return;
+  }
 
-  bookAppointment(id) {
-    const pet = this.pets.find(p => p.id === id);
-    if (!pet) return;
+  const petData = {
+    petName: document.getElementById("petFormName").value.trim(),
+    species: speciesInput,
+    breed: breedInput || '',
+    sex: document.getElementById("petSex").value.trim(),
+    weight: weight || null,
+    size: size
+  };
 
-    this.currentBookingPet = pet;
-    this.currentEditAppointmentId = null;
+  if (!petData.petName) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Missing Name',
+      text: 'Pet name is required.',
+      confirmButtonText: 'OK'
+    });
+    return;
+  }
 
-    document.getElementById('appointmentPetName').textContent = pet.petName;
-    document.getElementById('appointmentDate').min = new Date().toISOString().split('T')[0];
+  if (!petData.weight) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Missing Weight',
+      text: 'Pet weight is required.',
+      confirmButtonText: 'OK'
+    });
+    return;
+  }
 
-    document.getElementById('ownerName').value = '';
-    document.getElementById('ownerPhone').value = '';
-    document.getElementById('appointmentService').value = '';
-    document.getElementById('appointmentDate').value = '';
-    document.getElementById('appointmentTime').value = '';
-    document.getElementById('appointmentNotes').value = '';
+  if (this.currentEditId) {
+    this.updatePetInFirestore(this.currentEditId, petData);
+  } else {
+    this.addPetToFirestore(petData);
+  }
+},
 
-    document.getElementById('appointmentModal').style.display = 'flex';
-  },
 
-  async submitAppointmentForm(event) {
-    event.preventDefault();
 
-    const userId = sessionStorage.getItem("userId");
-    const pet = this.currentBookingPet;
 
-    if (!userId || !pet) {
-      alert("User or pet not found.");
-      return;
-    }
 
-    const form = document.getElementById("appointmentForm");
-    const ownerName = form.querySelector("#ownerName").value.trim();
-    const ownerPhone = form.querySelector("#ownerPhone").value.trim();
-    const service = form.querySelector("#appointmentService").value;
-    const date = form.querySelector("#appointmentDate").value;
-    const time = form.querySelector("#appointmentTime").value;
-    const notes = form.querySelector("#appointmentNotes").value.trim();
+// ================================
+// 📌 Edit Pet
+// ================================
+editPet(id) {
+  const pet = this.pets.find((p) => p.id === id);
+  if (!pet) return;
 
-    if (!ownerName || !ownerPhone || !service || !date || !time) {
-      alert("Please fill out all required fields.");
-      return;
-    }
+  this.currentEditId = id;
 
-    const appointmentData = {
-      userId,
-      petId: pet.id,
-      petName: pet.petName,
-      ownerName,
-      ownerPhone,
-      service,
-      date,
-      time,
-      notes,
-      createdAt: new Date().toISOString()
-    };
+  document.getElementById("petFormName").value = pet.petName || "";
+  document.getElementById("petSpecies").value = pet.species || "";
+  document.getElementById("petBreed").value = pet.breed || "";
+  document.getElementById("petSex").value = pet.sex || "";
 
-    sessionStorage.setItem("appointment", JSON.stringify(appointmentData));
+  // ✅ Fill weight & recalc size
+  document.getElementById("petWeight").value = pet.weight || "";
+  document.getElementById("petSize").value = pet.weight ? getSizeFromWeight(pet.weight) : "";
 
-    this.closeAppointmentModal();
-    window.location.href = "custConfirm.html";
-  },
+  document.getElementById("modalTitle").textContent = "Edit Pet";
+  document.getElementById("submitBtn").textContent = "Update Pet";
+
+  document.getElementById("petModal").style.display = "flex";
+},
+
+// ================================
+// 📌 Book Appointment
+// ================================
+bookAppointment(id) {
+  const pet = this.pets.find((p) => p.id === id);
+  if (!pet) return;
+
+  this.currentBookingPet = pet;
+  this.currentEditAppointmentId = null;
+
+  document.getElementById("appointmentPetName").textContent = pet.petName;
+  document.getElementById("appointmentDate").min = new Date().toISOString().split("T")[0];
+
+  // Reset form fields
+  ["ownerName", "ownerPhone", "appointmentService", "appointmentDate", "appointmentTime", "appointmentNotes"]
+    .forEach((field) => (document.getElementById(field).value = ""));
+
+  document.getElementById("appointmentModal").style.display = "flex";
+},
+
+// ================================
+// 📌 Submit Appointment Form
+// ================================
+async submitAppointmentForm(event) {
+  event.preventDefault();
+
+  const userId = sessionStorage.getItem("userId");
+  const pet = this.currentBookingPet;
+
+  if (!userId || !pet) {
+    alert("User or pet not found.");
+    return;
+  }
+
+  const form = document.getElementById("appointmentForm");
+  const appointmentData = {
+    userId,
+    petId: pet.id,
+    petName: pet.petName,
+    ownerName: form.querySelector("#ownerName").value.trim(),
+    ownerPhone: form.querySelector("#ownerPhone").value.trim(),
+    service: form.querySelector("#appointmentService").value,
+    date: form.querySelector("#appointmentDate").value,
+    time: form.querySelector("#appointmentTime").value,
+    notes: form.querySelector("#appointmentNotes").value.trim(),
+    createdAt: new Date().toISOString(),
+  };
+
+  if (!appointmentData.ownerName || !appointmentData.ownerPhone || !appointmentData.service || !appointmentData.date || !appointmentData.time) {
+    alert("Please fill out all required fields.");
+    return;
+  }
+
+  sessionStorage.setItem("appointment", JSON.stringify(appointmentData));
+
+  this.closeAppointmentModal();
+  window.location.href = "custConfirm.html";
+},
 
   confirmDelete(id) {
     const pet = this.pets.find(p => p.id === id);
@@ -1450,6 +2003,172 @@ const PetManager = {
     document.getElementById("appointmentForm").addEventListener("submit", (e) => this.submitAppointmentForm(e));
   }
 };
+
+const speciesBreeds = {
+  dog: [
+    "Affenpinscher", "Afghan Hound", "Airedale Terrier", "Akita", "Alaskan Malamute",
+    "American Bulldog", "American Eskimo Dog", "American Pit Bull Terrier", 
+    "American Staffordshire Terrier", "Australian Cattle Dog", "Australian Shepherd",
+    "Basenji", "Basset Hound", "Beagle", "Bearded Collie", "Bedlington Terrier",
+    "Belgian Malinois", "Bernese Mountain Dog", "Bichon Frise", "Bloodhound",
+    "Border Collie", "Border Terrier", "Boston Terrier", "Boxer", "Brittany Spaniel",
+    "Bull Terrier", "Bulldog", "Bullmastiff", "Cairn Terrier", "Cavalier King Charles Spaniel",
+    "Chesapeake Bay Retriever", "Chihuahua", "Chow Chow", "Cocker Spaniel",
+    "Collie", "Dachshund", "Dalmatian", "Doberman Pinscher", "English Setter", "Doberman",
+    "English Springer Spaniel", "English Toy Spaniel", "Eskimo Dog", "Field Spaniel",
+    "Finnish Spitz", "Flat-Coated Retriever", "Fox Terrier", "French Bulldog",
+    "German Pinscher", "German Shepherd", "German Shorthaired Pointer", "Giant Schnauzer",
+   "Gordon Setter", "Great Dane", "Greater Swiss Mountain Dog",
+    "Greyhound", "Harrier", "Havanese", "Irish Setter", "Irish Terrier", "Irish Wolfhound",
+    "Italian Greyhound", "Jack Russell Terrier", "Japanese Chin", "Keeshond", "Kerry Blue Terrier",
+    "Komondor", "Kuvasz", "Labrador Retriever", "Lakeland Terrier", "Leonberger",
+    "Lhasa Apso", "Lowchen", "Maltese", "Manchester Terrier", "Mastiff", "Miniature Bull Terrier",
+    "Miniature Pinscher", "Miniature Poodle", "Miniature Schnauzer", "Newfoundland",
+    "Norfolk Terrier", "Norwegian Buhund", "Norwegian Elkhound", "Norwich Terrier",
+    "Old English Sheepdog", "Otterhound", "Papillon", "Pekingese", "Pembroke Welsh Corgi",
+    "Petit Basset Griffon Vendeen", "Pharaoh Hound", "Plott", "Pointer", "Pomeranian", "Poodle",
+    "Portuguese Water Dog", "Presa Canario", "Pug", "Puli", "Pumi", "Rat Terrier", "Redbone Coonhound",
+    "Rhodesian Ridgeback", "Saint Bernard", "Saluki", "Samoyed", "Schipperke",
+    "Schnauzer", "Scottish Deerhound", "Scottish Terrier", "Sealyham Terrier", "Shetland Sheepdog",
+    "Shiba Inu", "Siberian Husky", "Silky Terrier", "Skye Terrier", "Sloughi",
+    "English Springer Spaniel", "French Bulldog", "German Shepherd", "Golden Retriever",
+    "Great Dane", "Greyhound", "Irish Setter", "Irish Wolfhound", "Jack Russell Terrier",
+    "Labrador Retriever", "Maltese", "Newfoundland", "Papillon", "Pekingese",
+    "Pembroke Welsh Corgi", "Pointer", "Pomeranian", "Poodle", "Pug", "Rottweiler",
+    "Saint Bernard", "Samoyed", "Schnauzer", "Scottish Terrier", "Shar Pei",
+    "Shetland Sheepdog", "Shiba Inu", "Shih Tzu", "Siberian Husky", "Staffordshire Bull Terrier",
+    "Weimaraner", "West Highland White Terrier", "Whippet", "Yorkshire Terrier"
+  ],
+  cat: [
+    "Abyssinian", "American Bobtail", "American Curl", "American Shorthair",
+    "American Wirehair", "Balinese", "Bengal", "Birman", "Bombay", "British Shorthair",
+    "Burmese", "Burmilla", "Chartreux", "Cornish Rex", "Cymric", "Devon Rex",
+    "Egyptian Mau", "Exotic Shorthair", "Havana Brown", "Himalayan", "Japanese Bobtail",
+    "Korat", "LaPerm", "Maine Coon", "Manx", "Norwegian Forest", "Ocicat", "Oriental",
+    "Persian", "Peterbald", "Pixiebob", "Ragdoll", "Russian Blue", "Savannah", "Scottish Fold",
+    "Selkirk Rex", "Siamese", "Siberian", "Singapura", "Somali", "Sphynx", "Tonkinese",
+    "Turkish Angora", "Turkish Van"
+  ],
+  bird: [
+    "African Grey Parrot", "Amazon Parrot", "Budgerigar", "Canary", "Cockatiel", "Cockatoo",
+    "Conure", "Dove", "Eclectus Parrot", "Finch", "Lovebird", "Macaw", "Parakeet",
+    "Parrotlet", "Quaker Parrot", "Ringneck Parakeet"
+  ],
+  rabbit: [
+    "American Fuzzy Lop", "American Rabbit", "Angora", "Belgian Hare", "Beveren",
+    "Britannia Petite", "Californian", "Checkered Giant", "Dutch", "Dwarf Hotot",
+    "English Angora", "English Lop", "English Spot", "Flemish Giant", "Florida White",
+    "French Angora", "French Lop", "Harlequin", "Havana", "Himalayan", "Holland Lop",
+    "Jersey Wooly", "Lionhead", "Mini Lop", "Mini Rex", "Netherland Dwarf", "New Zealand",
+    "Polish", "Rex", "Satin", "Silver", "Silver Fox"
+  ],
+  hamster: [
+    "Syrian Hamster", "Winter White Dwarf Hamster", "Campbell’s Dwarf Hamster",
+    "Roborovski Hamster", "Chinese Hamster"
+  ],
+  fish: [
+    "Angelfish", "Archerfish", "Arowana", "Barb", "Betta", "Catfish", "Clownfish",
+    "Corydoras", "Discus", "Goby", "Goldfish", "Gourami", "Guppy", "Koi", "Molly",
+    "Oscar", "Platy", "Pleco", "Rainbowfish", "Swordtail", "Tetra", "Zebra Danio"
+  ]
+};
+
+
+// Populate species list
+const speciesList = document.getElementById("speciesList");
+Object.keys(speciesBreeds).forEach(specie => {
+  const option = document.createElement("option");
+  option.value = specie.charAt(0).toUpperCase() + specie.slice(1);
+  speciesList.appendChild(option);
+});
+
+document.getElementById("petSpecies").addEventListener("input", (e) => {
+  const value = e.target.value.trim().toLowerCase();
+  const breedList = document.getElementById("breedList");
+  breedList.innerHTML = "";
+
+  if (speciesBreeds[value]) {
+    speciesBreeds[value].forEach(breed => {
+      const option = document.createElement("option");
+      option.value = breed;
+      breedList.appendChild(option);
+    });
+  }
+});
+
+
+class ScrollableDropdown {
+  constructor(inputElement, options = [], maxItems = 10) {
+    this.input = inputElement;
+    this.dropdown = document.createElement("div");
+    this.dropdown.className = "custom-dropdown";
+    this.input.parentNode.appendChild(this.dropdown);
+    this.options = options;
+    this.maxItems = maxItems;
+
+    this.input.addEventListener("input", () => this.render());
+    document.addEventListener("click", (e) => {
+      if (!e.target.closest(".form-group")) this.hide();
+    });
+  }
+
+  setOptions(options) {
+    this.options = options;
+    this.render();
+  }
+
+render() {
+  const value = this.input.value.toLowerCase();
+  this.dropdown.innerHTML = "";
+
+  if (!this.options.length) return this.hide();
+
+  // Filter based on typing, but no slice limit
+  const filtered = this.options.filter(opt =>
+    opt.toLowerCase().includes(value)
+  );
+
+  if (!filtered.length) return this.hide();
+
+  filtered.forEach(opt => {
+    const div = document.createElement("div");
+    div.textContent = opt;
+    div.addEventListener("click", () => {
+      this.input.value = opt;
+      this.hide();
+    });
+    this.dropdown.appendChild(div);
+  });
+
+  this.show();
+}
+
+  show() {
+    this.dropdown.style.display = "block";
+  }
+
+  hide() {
+    this.dropdown.style.display = "none";
+  }
+}
+
+// Usage example
+const petBreedInput = document.getElementById("petBreed");
+const breedDropdown = new ScrollableDropdown(petBreedInput, [], 10);
+
+// Populate dynamically based on species
+document.getElementById("petSpecies").addEventListener("input", (e) => {
+  const species = e.target.value.toLowerCase().trim();
+  if (speciesBreeds[species]) {
+    petBreedInput.disabled = false;
+    breedDropdown.setOptions(speciesBreeds[species]);
+  } else {
+    petBreedInput.disabled = true;
+    breedDropdown.setOptions([]);
+  }
+});
+
+
 
 
 

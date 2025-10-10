@@ -666,3 +666,4 @@ document.addEventListener("DOMContentLoaded", () => {
     if (event.target === modal) closeModal();
   });
 });
+

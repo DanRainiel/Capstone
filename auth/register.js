@@ -75,7 +75,8 @@
     sessionStorage.setItem("role", "customer");
     sessionStorage.setItem("userName", data.name);
     
-    localStorage.setItem("currentUserId", docItem.id);
+    sessionStorage.setItem("currentUserId", docItem.id);
+
     
     await logActivity(docItem.id, "Logged In", `User ${data.name} logged in.`);
     sessionStorage.setItem("welcomeMessage", `Welcome back, ${data.name}!`);
@@ -170,96 +171,158 @@ Swal.fire({
 }
 });
     
-  // REGISTER
-  const signUpButton = document.getElementById("SignUpBtn");
+const signUpButton = document.getElementById("SignUpBtn");
 
-  signUpButton.addEventListener("click", async (e) => {
-    e.preventDefault();
+signUpButton.addEventListener("click", async (e) => {
+  e.preventDefault();
 
-    const name = document.getElementById("reg-name").value.trim();
-    const email = document.getElementById("reg-email").value.trim();
-    const password = document.getElementById("reg-pass").value.trim();
-    const agree = document.getElementById("agree").checked;
-    const loader = document.getElementById("loading-screen");
+  const fullName = document.getElementById("reg-fullname").value.trim();
+  const name = document.getElementById("reg-name").value.trim();
+  const email = document.getElementById("reg-email").value.trim();
+  const password = document.getElementById("reg-pass").value.trim();
+  const agree = document.getElementById("agree").checked;
+  const loader = document.getElementById("loading-screen");
 
-    if (!name || !email || !password) {
-      Swal.fire({
-        icon: "warning",
-        title: "Missing Fields",
-        text: "Please fill in all fields.",
-        iconColor:'#f8732b',
-        confirmButtonColor: '#f8732b', // your orange theme
-        backdrop: `rgba(0, 0, 0, 0.5)` // darken background a bit
-      });
+  // 🧩 Validate inputs
+  if (!fullName || !name || !email || !password) {
+    Swal.fire({
+      icon: "warning",
+      title: "Missing Fields",
+      text: "Please fill in all fields.",
+      iconColor: "#f8732b",
+      confirmButtonColor: "#f8732b",
+      backdrop: `rgba(0, 0, 0, 0.5)`
+    });
+    return;
+  }
+
+  // 🧩 Check terms and conditions
+  if (!agree) {
+    Swal.fire({
+      icon: "warning",
+      title: "Terms Required",
+      text: "You must agree to the terms and conditions before registering.",
+      iconColor: "#f8732b",
+      confirmButtonColor: "#f8732b",
+      backdrop: `rgba(0, 0, 0, 0.5)`,
+      confirmButtonText: "Got it!"
+    });
+    return;
+  }
+
+  loader.style.display = "none";
+
+  try {
+    // 🔹 Step 1: Check for existing email
+    const usersRef = collection(db, "users");
+    const snapshot = await getDocs(usersRef);
+    const existingUser = snapshot.docs.find(doc => doc.data().email === email);
+    if (existingUser) {
+      loader.style.display = "none";
+      Swal.fire("Email already registered", "Please use another email.", "error");
       return;
     }
 
-    if (!agree) {
-      Swal.fire({
-        icon: "warning",
-        title: "Terms Required",
-        text: "You must agree to the terms and conditions.",
-        iconColor:'#f8732b',
-        confirmButtonColor: '#f8732b',
-        backdrop: `rgba(0, 0, 0, 0.5)`, // darken background a bit
-        confirmButtonText: "Got it!"
-      });
+    // 🔹 Step 2: Send OTP via backend
+    const sendOtpResponse = await fetch("http://localhost:3000/send-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, userId: fullName })
+    });
+
+    const sendOtpData = await sendOtpResponse.json();
+    if (!sendOtpData.success) {
+      loader.style.display = "none";
+      Swal.fire("Error", "Failed to send OTP. Try again later.", "error");
       return;
     }
 
+    loader.style.display = "none"; // Hide loader before OTP input
+
+    // 🔹 Step 3: Ask for OTP
+    const { value: otp } = await Swal.fire({
+      title: "Verify Your Email",
+      input: "text",
+      inputLabel: `Enter the 6-digit code sent to ${email}`,
+      inputPlaceholder: "Enter OTP",
+      confirmButtonText: "Verify",
+      showCancelButton: true,
+      inputValidator: (value) => {
+        if (!value) return "Please enter the OTP.";
+      }
+    });
+
+    // Only continue if user entered OTP
+    if (!otp) return;
+
+    // ✅ Show loader ONLY after user entered OTP (now verifying)
     loader.style.display = "flex";
 
-    try {
-      const usersRef = collection(db, "users");
-      const snapshot = await getDocs(usersRef);
+    // 🔹 Step 4: Verify OTP with backend
+    const verifyResponse = await fetch("http://localhost:3000/verify-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, otp })
+    });
 
-      const existingUser = snapshot.docs.find(doc => doc.data().email === email);
-      if (existingUser) {
-    loader.style.display = "none";
-    await logActivity(existingUser.id, "Registered", `User ${name} tried to register with an existing email.`);
-    alert("Email is already registered.");
-    return;
-}
-
-    
-      let index = 1;
-      let newId;
-      const existingIds = snapshot.docs.map(doc => doc.id);
-
-      while (true) {
-        newId = `owner${index}`;
-        if (!existingIds.includes(newId)) break;
-        index++;
-      }
-
-     await setDoc(doc(usersRef, newId), {
-  name,
-  email,
-  password, // ✅ comma added
-  joinedDate: serverTimestamp(),  // ✅ will now actually save
-  status: "Active"       
-});
-
-// Save session and redirect
-sessionStorage.setItem("isLoggedIn", "true");
-sessionStorage.setItem("userId", newId);
-sessionStorage.setItem("role", "customer");
-sessionStorage.setItem("userName", name);
-sessionStorage.setItem("welcomeMessage", `Welcome, ${name}!`);
-
-localStorage.setItem("currentUserId", newId); // <-- fixed
-
-setTimeout(() => {
-  location.replace("../Dashboard/customer/customer.html");
-}, 1500);
-
-
-    } catch (error) {
-      console.error("Registration error:", error);
+    const verifyData = await verifyResponse.json();
+    if (!verifyData.success) {
       loader.style.display = "none";
-      alert("Registration failed: " + error.message);
+      Swal.fire("Error", verifyData.message || "Invalid OTP", "error");
+      return;
     }
-  });
+
+    // ✅ OTP is correct — now create account
+    let index = 1;
+    let newId;
+    const existingIds = snapshot.docs.map(doc => doc.id);
+    while (true) {
+      newId = `owner${index}`;
+      if (!existingIds.includes(newId)) break;
+      index++;
+    }
+
+    await setDoc(doc(usersRef, newId), {
+      fullName,
+      name,
+      email,
+      password,
+      joinedDate: serverTimestamp(),
+      status: "Active"
+    });
+
+    // Save session
+    sessionStorage.setItem("isLoggedIn", "true");
+    sessionStorage.setItem("userId", newId);
+    sessionStorage.setItem("role", "customer");
+    sessionStorage.setItem("userName", fullName);
+    sessionStorage.setItem("welcomeMessage", `Welcome, ${fullName}!`);
+    localStorage.setItem("currentUserId", newId);
+
+    // ✅ Keep loader visible until redirected
+    Swal.fire({
+      icon: "success",
+      title: "Account Verified!",
+      text: "Registration successful. Redirecting...",
+      showConfirmButton: false,
+      timer: 1500
+    });
+
+    // Wait for 1.5s, then redirect while loader still showing
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    loader.style.display = "flex"; // Keep visible during redirect
+
+    setTimeout(() => {
+      location.replace("../Dashboard/customer/customer.html");
+    }, 500);
+
+  } catch (error) {
+    console.error("Registration error:", error);
+    loader.style.display = "none";
+    Swal.fire("Error", "Registration failed. Please try again.", "error");
+  }
+});
 
 
   document.addEventListener("DOMContentLoaded", () => {
