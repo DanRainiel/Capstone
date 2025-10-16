@@ -376,40 +376,7 @@
         <!-- Calendar Integration Ends Here -->
     
 
-    <!-- Booking Modal -->
-
-    <div class="calendar-modal" id="bookingModal">
-        <div class="calendar-modal-content">
-            <span class="calendar-close" onclick="hideBookingModal()">&times;</span>
-            <h2>🐾 Book New Appointment</h2>
-            <form id="bookingForm">
-                <div class="calendar-form-group">
-                    <label for="petName">Pet Name</label>
-                    <input type="text" id="petName" required>
-                </div>
-                <div class="calendar-form-group">
-                    <label for="ownerName">Owner Name</label>
-                    <input type="text" id="ownerName" required>
-                </div>
-                <div class="calendar-form-group">
-                    <label for="appointmentType">Appointment Type</label>
-                    <select id="appointmentType" required>
-                        <option value="">Select type...</option>
-                        <option value="checkup">General Checkup</option>
-                        <option value="vaccination">Vaccination</option>
-                        <option value="surgery">Surgery</option>
-                        <option value="grooming">Grooming</option>
-                        <option value="dental">Dental Care</option>
-                    </select>
-                </div>
-                <div class="calendar-form-group">
-                    <label for="phone">Phone Number</label>
-                    <input type="tel" id="phone" required>
-                </div>
-                <button type="submit" class="calendar-book-btn">Confirm Booking</button>
-            </form>
-        </div>
-    </div>
+   
 
     <!--petsection-->
 
@@ -495,54 +462,91 @@
   </div>
 </div>
 
-
-    <!-- Quick Appointment Modal -->
-    <div class="petmodal" id="appointmentModal">
-        <div class="petmodal-content">
-            <div class="modal-header">
-                <h2>Book Appointment for <span id="appointmentPetName">  </span></h2>
-                <button class="close-btn" onclick="closeAppointmentModal()">&times;</button>
-            </div>
-            <form id="appointmentForm">
-                <div class="form-group">
-                    <label for="ownerName">Your Name *</label>
-                    <input type="text" id="ownerName" required>
-                </div>
-                <div class="form-group">
-                    <label for="ownerPhone">Phone Number *</label>
-                    <input type="tel" id="ownerPhone" required>
-                </div>
-                <div class="form-group">
-                    <label for="appointmentService">Service *</label>
-                    <select id="appointmentService" required>
-                        <option value="">Select service...</option>
-                        <option value="grooming">Grooming</option>
-                        <option value="vaccinations">Vaccinations</option>
-                        <option value="deworming">Deworming</option>
-                        <option value="consultation">Consultation</option>
-                        <option value="laboratory">Laboratory</option>
-                        <option value="treatment">Treatments</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="appointmentDate">Preferred Date *</label>
-                    <input type="date" id="appointmentDate" required>
-                </div>
-                <div class="form-group">
-                    <label for="appointmentTime">Preferred Time *</label>
-                    <input type="time" id="appointmentTime" required>
-                </div>
-                <div class="form-group">
-                    <label for="appointmentNotes">Additional Notes</label>
-                    <textarea id="appointmentNotes" placeholder="Any special requirements or notes..."></textarea>
-                </div>
-                <div class="form-actions">
-                    <button type="button" class="form-btn btn-secondary" onclick="closeAppointmentModal()">Cancel</button>
-                    <button type="submit" class="form-btn btn-primary">Confirm Booking </button>
-                </div>
-            </form>
+<!-- Quick Appointment Modal -->
+<div class="petmodal" id="appointmentModal">
+    <div class="petmodal-content">
+        <div class="modal-header">
+            <h2>Book Appointment for <span id="appointmentPetName"></span></h2>
+            <button class="close-btn" onclick="closeAppointmentModal()">&times;</button>
         </div>
+
+        <form id="appointmentForm">
+            <!-- Owner Info -->
+          <div class="form-group">
+    <label for="ownerName">Your Name *</label>
+    <input type="text" id="ownerName" readonly>
+</div>
+
+            <div class="form-group">
+                <label for="ownerPhone">Phone Number *</label>
+                <input type="tel" id="ownerPhone" required>
+            </div>
+
+            <!-- Pet Selection -->
+            <div class="form-group">
+                <label for="apptPetName">Pet Name *</label>
+                <select id="apptPetName" required>
+                    <option value="">Select your pet...</option>
+                    <!-- dynamically populated from Pets collection -->
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="apptSpecies">Species</label>
+                <input type="text" id="apptSpecies" readonly>
+            </div>
+            <div class="form-group">
+                <label for="apptBreed">Breed</label>
+                <input type="text" id="apptBreed" readonly>
+            </div>
+            <div class="form-group">
+                <label for="apptSex">Sex</label>
+                <input type="text" id="apptSex" readonly>
+            </div>
+            <div class="form-group">
+                <label for="apptWeight">Weight (kg)</label>
+                <input type="number" id="apptWeight" readonly>
+            </div>
+            <div class="form-group">
+                <label for="apptSize">Size</label>
+                <input type="text" id="apptSize" readonly>
+            </div>
+
+            <!-- Service Selection -->
+            <div class="form-group">
+                <label for="appointmentService">Service *</label>
+                <select id="appointmentService" required>
+                    <option value="">Select service...</option>
+                    <option value="grooming">Grooming</option>
+                    <option value="vaccinations">Vaccinations</option>
+                    <option value="deworming">Deworming</option>
+                    <option value="consultation">Consultation</option>
+                    <option value="laboratory">Laboratory</option>
+                    <option value="treatment">Treatments</option>
+                </select>
+            </div>
+
+          <!-- Date & Time -->
+<div class="form-group">
+    <label for="appointmentDate">Preferred Date *</label>
+    <input type="date" id="appointmentDate" required>
+</div>
+<div class="form-group">
+    <label for="appointmentTime">Preferred Time *</label>
+    <select id="appointmentTime" required>
+        <option value="" disabled selected>Select Time</option>
+    </select>
+</div>
+
+          
+
+            <!-- Actions -->
+            <div class="form-actions">
+                <button type="button" class="form-btn btn-secondary" onclick="closeAppointmentModal()">Cancel</button>
+                <button type="submit" class="form-btn btn-primary">Confirm Booking</button>
+            </div>
+        </form>
     </div>
+</div>
 
     <!-- Confirmation Modal -->
     <div class="confirm-modal" id="confirmModal">

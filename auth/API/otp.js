@@ -34,7 +34,7 @@ export async function sendOTPEmail(toEmail, otp) {
     });
 
     await transporter.sendMail({
-      from: `"PetStop OTP" <${process.env.SMTP_USER}>`,
+      from: `"PetStop Veterinary Clinic" <${process.env.SMTP_USER}>`,
       to: toEmail,
       subject: 'Your OTP Code',
       text: `Your OTP code is: ${otp}. It expires in 5 minutes.`

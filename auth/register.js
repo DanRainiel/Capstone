@@ -74,7 +74,7 @@
     sessionStorage.setItem("userId", docItem.id);
     sessionStorage.setItem("role", "customer");
     sessionStorage.setItem("userName", data.name);
-    
+    sessionStorage.setItem("userFullName", data.fullName); // 
     sessionStorage.setItem("currentUserId", docItem.id);
 
     
