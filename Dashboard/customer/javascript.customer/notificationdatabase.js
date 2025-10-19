@@ -1,131 +1,111 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import { 
-  getFirestore, 
-  getDocs, 
-  collection, 
-  doc, 
-  updateDoc, 
-  query, 
-  where 
+// ================================
+// 📦 IMPORT FIREBASE CONFIG
+// ================================
+import { db } from "../../db_config.js"; // adjust path as needed
+import {
+  collection,
+  query,
+  where,
+  onSnapshot,
+  orderBy,
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-// Your Firebase config
-const firebaseConfig = {
-  apiKey: "AIzaSyDtDApHuFcav9QIZaJ8CDIcyI_fxcO4Kzw",
-  authDomain: "fir-demo-66ae2.firebaseapp.com",
-  projectId: "fir-demo-66ae2",
-  storageBucket: "fir-demo-66ae2.appspot.com",
-  messagingSenderId: "505962707376",
-  appId: "1:505962707376:web:4fb32e2e4b04e9bca93e75",
-  measurementId: "G-JYDG36FQMX"
-};
+// ================================
+// 🧠 INITIAL SETUP
+// ================================
+const currentUserId =
+  sessionStorage.getItem("currentUserId") ||
+  sessionStorage.getItem("userId") ||
+  localStorage.getItem("currentUserId");
 
-// 🔹 Initialize Firebase & Firestore
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+const currentUserRole =
+  sessionStorage.getItem("role") || localStorage.getItem("role");
 
-// ✅ Mark notification as read with Swal confirmation
-async function markAsRead(notifId) {
-  const result = await Swal.fire({
-    title: 'Mark as read?',
-    text: "This will mark the notification as read.",
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonText: 'Yes, mark as read',
-    cancelButtonText: 'Cancel'
-  });
+const notifList = document.getElementById("notification-list"); // UL or DIV to display notifs
+const notifCount = document.getElementById("notification-count"); // optional badge counter
 
-  if (result.isConfirmed) {
-    try {
-      const notifRef = doc(db, "Notifications", notifId);
-      await updateDoc(notifRef, { status: "read" });
-      Swal.fire('Marked!', 'Notification has been marked as read.', 'success');
-      loadNotifications(); // refresh table
-    } catch (err) {
-      console.error("❌ Error marking notification as read:", err);
-      Swal.fire('Error', 'Failed to mark notification as read.', 'error');
-    }
-  }
+if (!notifList) {
+  console.error("❌ Notification list element not found in DOM!");
 }
 
-// ✅ Load notifications
-export async function loadNotifications() {
-  const notifTable = document.getElementById("notifications");
-  notifTable.innerHTML = "";
-
-  const currentUserId = (localStorage.getItem("currentUserId") || "").trim();
-  if (!currentUserId) {
-    notifTable.innerHTML = `<tr><td colspan="6">⚠️ No logged-in user selected.</td></tr>`;
+// ================================
+// 🔔 LOAD NOTIFICATIONS
+// ================================
+function loadNotifications() {
+  if (!currentUserId || !currentUserRole) {
+    console.warn("⚠️ No user logged in — notifications not initialized.");
     return;
   }
 
-  try {
-    const notifQuery = query(
-      collection(db, "Notifications"),
-      where("userId", "==", currentUserId)
-    );
+  const notifRef = collection(db, "Notifications");
 
-const snapshot = await getDocs(notifQuery);
+  // ✅ Admins see all notifications
+  // ✅ Staff & Customers see only theirs
+  const notifQuery =
+    currentUserRole.toLowerCase() === "admin"
+      ? query(notifRef, orderBy("timestamp", "desc"))
+      : query(
+          notifRef,
+          where("userId", "==", currentUserId),
+          orderBy("timestamp", "desc")
+        );
 
-let notifs = [];
-if (snapshot.empty) {
-  // No notifications for this user
-  notifTable.innerHTML = `<tr><td colspan="6">No notifications found.</td></tr>`;
-  return;
-} else {
-  notifs = snapshot.docs.map(doc => {
-    const data = doc.data() || {};
-    return {
-      id: doc.id,
-      message: data.message || "",
-      service: data.service || "",
-      type: data.type || "",
-      status: data.status || "unread",
-      userId: data.userId || "",
-      ts: data.createdAt?.toDate ? data.createdAt.toDate() : new Date()
-    };
+  // Real-time listener
+  onSnapshot(
+    notifQuery,
+    (snapshot) => {
+      const notifications = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      // Clear list
+      notifList.innerHTML = "";
+
+      if (notifications.length === 0) {
+        notifList.innerHTML = `<li class="text-gray-500 text-center py-2">No notifications yet.</li>`;
+        if (notifCount) notifCount.textContent = "0";
+        return;
+      }
+
+      // Populate list
+      notifications.forEach((notif) => {
+        const li = document.createElement("li");
+        li.classList.add("notif-item");
+        li.innerHTML = `
+          <div class="notif-card">
+            <p class="notif-title"><strong>${notif.title || "Notification"}</strong></p>
+            <p class="notif-msg">${notif.message || ""}</p>
+            <p class="notif-time">${formatTimestamp(notif.timestamp)}</p>
+          </div>
+        `;
+        notifList.appendChild(li);
+      });
+
+      // 🔸 Update counter badge
+      if (notifCount) notifCount.textContent = notifications.length;
+    },
+    (error) => {
+      console.error("Error fetching notifications:", error);
+    }
+  );
+}
+
+// ================================
+// ⏰ FORMAT TIMESTAMP
+// ================================
+function formatTimestamp(timestamp) {
+  if (!timestamp) return "";
+  const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+  return date.toLocaleString("en-PH", {
+    dateStyle: "medium",
+    timeStyle: "short",
   });
 }
 
-
-    // Sort newest first
-    notifs.sort((a, b) => b.ts - a.ts);
-
-    // Render table
-    if (notifs.length === 0) {
-      notifTable.innerHTML = `<tr><td colspan="6">No notifications found.</td></tr>`;
-      return;
-    }
-
-    notifs.forEach(n => {
-      const row = `
-        <tr>
-          <td>${n.type}</td>
-          <td>${n.service}</td>
-          <td>${n.message}</td>
-          <td>${n.status}</td>
-          <td>${n.ts.toLocaleString()}</td>
-          <td>
-            ${n.status === "unread"   
-              ? `<button class="mark-read" data-id="${n.id}">Mark as Read</button>` 
-              : ""}
-          </td>
-        </tr>
-      `;
-      notifTable.insertAdjacentHTML("beforeend", row);
-    });
-  } catch (err) {
-    console.error("❌ Error loading notifications:", err);
-    notifTable.innerHTML = `<tr><td colspan="6">Error loading notifications.</td></tr>`;
-  }
-}
-
-// 🔹 Attach event delegation for buttons
-document.addEventListener("click", (e) => {
-  if (e.target && e.target.classList.contains("mark-read")) {
-    markAsRead(e.target.getAttribute("data-id"));
-  }
+// ================================
+// 🚀 INIT
+// ================================
+document.addEventListener("DOMContentLoaded", () => {
+  loadNotifications();
 });
-
-window.loadNotifications = loadNotifications;
-document.addEventListener("DOMContentLoaded", loadNotifications);

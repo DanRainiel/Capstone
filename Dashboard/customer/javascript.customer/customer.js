@@ -315,29 +315,42 @@ async function loadServiceDurations() {
 }
 
 
+
 async function isTimeSlotAvailable(date, startTime, serviceDuration) {
   try {
     const startMinutes = toMinutes(startTime);
     const endMinutes = startMinutes + serviceDuration;
 
     // 🔍 Get all appointments for that date
-    const appointmentsQuery = query(collection(db, "Appointments"), where("date", "==", date));
+    const appointmentsQuery = query(
+      collection(db, "Appointments"),
+      where("date", "==", date)
+    );
     const appointmentsSnap = await getDocs(appointmentsQuery);
 
     for (const docSnap of appointmentsSnap.docs) {
       const appt = docSnap.data();
 
-      // Determine existing appointment’s duration
+      // Handle both new & old appointment formats
+      const apptStartTime = appt.startTime || appt.time;
+      const apptEndTime = appt.endTime || null;
       const apptDuration = parseInt(appt.duration) || 30;
-      const apptStartMinutes = toMinutes(appt.time);
-      const apptEndMinutes = apptStartMinutes + apptDuration;
 
-      // ⚠️ Detect ANY overlap (not just same start)
+      if (!apptStartTime) continue; // skip invalid entries
+
+      const apptStartMinutes = toMinutes(apptStartTime);
+      const apptEndMinutes = apptEndTime
+        ? toMinutes(apptEndTime)
+        : apptStartMinutes + apptDuration;
+
+      // ⚠️ Detect ANY overlap
       const overlap =
         startMinutes < apptEndMinutes && endMinutes > apptStartMinutes;
 
       if (overlap) {
-        console.warn(`⛔ Blocked overlap: ${appt.time} - ${appt.endTime || '(unknown)'}`);
+        console.warn(
+          `⛔ Blocked overlap: ${apptStartTime} - ${apptEndTime || "(unknown)"}`
+        );
         return false;
       }
     }
@@ -348,8 +361,6 @@ async function isTimeSlotAvailable(date, startTime, serviceDuration) {
     return false;
   }
 }
-
-
 
 
 //PET FORM//
@@ -677,61 +688,68 @@ document.addEventListener("DOMContentLoaded", async () => {
             await loadAvailableTimeSlots();
             return;
         }
+const appointmentData = {
+  name: apptNameInput.value.trim(),
+  ownerNumber: apptNumberInput.value ? String(apptNumberInput.value).trim() : "",
+  petName:
+    apptPetNameInput.options[apptPetNameInput.selectedIndex]?.dataset.petName ||
+    apptPetNameInput.value.trim(),
+  species: apptSpeciesInput.value.trim(),
+  breed: apptBreedInput.value.trim(),
+  weight: apptWeightInput.value.trim(),
+  petSize: apptSizeInput.value.trim() || getSizeFromWeight(parseFloat(apptWeightInput.value)),
+  sex: apptSexInput.value,
+  service: selectedService,
+  date: selectedDate,
+  
+  // 🕒 separate fields for clarity
+  startTime: selectedTime,
+  endTime: endTime,
+  startTimeFormatted: formattedTime,
+  endTimeFormatted: formattedEndTime,
+  displayTime: `${formattedTime} - ${formattedEndTime}`,
 
-        const appointmentData = {
-            name: apptNameInput.value.trim(),
-            ownerNumber: apptNumberInput.value ? String(apptNumberInput.value).trim() : "",
-            petName: apptPetNameInput.options[apptPetNameInput.selectedIndex]?.dataset.petName 
-                    || apptPetNameInput.value.trim(),
-            species: apptSpeciesInput.value.trim(),
-            breed: apptBreedInput.value.trim(),
-            weight: apptWeightInput.value.trim(),
-            petSize: apptSizeInput.value.trim() || getSizeFromWeight(parseFloat(apptWeightInput.value)),
-            sex: apptSexInput.value,
-            service: selectedService,
-            date: selectedDate,
-            time: selectedTime,
-            endTime: endTime,
-            displayTime: `${formattedTime} - ${formattedEndTime}`,
-            duration: serviceDuration,
-            serviceFee: 0,
-            totalAmount: 0,
-            selectedServices: [],
-            vaccines: []
-        };
+  duration: serviceDuration,
+  serviceFee: 0,
+  totalAmount: 0,
+  selectedServices: [],
+  vaccines: []
+};
 
-        Swal.fire({
-            title: 'Processing...',
-            text: 'Please wait while we submit your appointment.',
-            allowOutsideClick: false,
-            allowEscapeKey: false,
-            didOpen: () => Swal.showLoading()
-        });
 
-        setTimeout(() => {
-            sessionStorage.setItem("appointment", JSON.stringify(appointmentData));
-            Swal.fire({
-                title: 'Appointment Submitted!',
-                text: 'Your appointment has been saved. Redirecting to confirmation page...',
-                icon: 'success',
-                confirmButtonText: 'Continue',
-                confirmButtonColor: '#f8732b'
-            }).then(() => {
-                window.location.href = "custConfirm.html";
-            });
-        }, 1500);
+    // 🟡 Show loading and store appointment data in sessionStorage
+    Swal.fire({
+      title: "Processing...",
+      text: "Please wait while we submit your appointment.",
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      didOpen: () => Swal.showLoading()
+    });
 
-    } catch (err) {
-        console.error("Error validating clinic hours/blocked slots:", err);
-        await Swal.fire({
-            icon: "error",
-            title: "Error",
-            text: "Could not verify clinic schedule. Please try again later.",
-            confirmButtonColor: "#f8732b"
-        });
-    }
+    setTimeout(() => {
+      sessionStorage.setItem("appointment", JSON.stringify(appointmentData));
+
+      Swal.fire({
+        title: "Appointment Submitted!",
+        text: "Your appointment has been saved. Redirecting to confirmation page...",
+        icon: "success",
+        confirmButtonText: "Continue",
+        confirmButtonColor: "#f8732b"
+      }).then(() => {
+        window.location.href = "custConfirm.html";
+      });
+    }, 1500);
+
+  } catch (err) {
+    console.error("Error validating clinic hours/blocked slots:", err);
+    await Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: "Could not verify clinic schedule. Please try again later.",
+      confirmButtonColor: "#f8732b"
+    });
+  }
 });
-
 
 
 
@@ -1605,6 +1623,91 @@ speciesInput.addEventListener("input", () => {
   }
 });
 
+// ================================
+// ⏰ Generate Available Time Slots (Based on ClinicSettings)
+// ================================
+async function updateAvailableTimeSlots(date, serviceName, timeInput) {
+  if (!date || !serviceName) return;
+
+  try {
+    // 🔹 Default hours (fallback)
+    let clinicOpen = "08:00";
+    let clinicClose = "18:00";
+
+    // 🔹 Fetch clinic hours from Firestore (ClinicSettings collection)
+    const clinicQuery = query(collection(db, "ClinicSettings"));
+    const clinicSnap = await getDocs(clinicQuery);
+
+    if (!clinicSnap.empty) {
+      const data = clinicSnap.docs[0].data();
+      clinicOpen = data.openingTime || clinicOpen;
+      clinicClose = data.closingTime || clinicClose;
+    }
+
+    // 🔹 Service duration (default 30 minutes)
+    const serviceDuration = serviceDurations[serviceName?.toLowerCase()] || 30;
+
+    // 🔹 Helper functions
+    const toMinutes = (t) => {
+      const [h, m] = t.split(":").map(Number);
+      return h * 60 + m;
+    };
+    const toTimeString = (mins) => {
+      const h = String(Math.floor(mins / 60)).padStart(2, "0");
+      const m = String(mins % 60).padStart(2, "0");
+      return `${h}:${m}`;
+    };
+
+    // 🔹 Convert clinic hours to minutes
+    const start = toMinutes(clinicOpen);
+    const end = toMinutes(clinicClose);
+
+    // 🔹 Generate time slot ranges — include last slot ending at closing time
+    const slots = [];
+    for (let t = start; t < end; t += serviceDuration) {
+      const slotStart = toTimeString(t);
+      const slotEnd = toTimeString(t + serviceDuration);
+
+      // include slot if it ends on or before closing time
+      if (toMinutes(slotEnd) <= end) {
+        slots.push({ start: slotStart, end: slotEnd });
+      } else {
+        break;
+      }
+    }
+
+    // 🔹 Clear old options
+    timeInput.innerHTML = '<option value="" disabled selected>Select Time</option>';
+
+    // 🔹 Get booked slots for the date/service
+    const bookedSnap = await getDocs(
+      query(
+        collection(db, "Appointments"),
+        where("date", "==", date),
+        where("service", "==", serviceName)
+      )
+    );
+    const bookedTimes = bookedSnap.docs.map((d) => d.data().time);
+
+    // 🔹 Populate available slots
+    slots.forEach(({ start, end }) => {
+      const range = `${start}-${end}`;
+      const opt = document.createElement("option");
+      opt.value = range;
+      opt.textContent = `${formatTo12Hour(start)} - ${formatTo12Hour(end)}`;
+
+      if (bookedTimes.includes(range)) {
+        opt.disabled = true;
+        opt.textContent += " (Booked)";
+      }
+
+      timeInput.appendChild(opt);
+    });
+  } catch (err) {
+    console.error("⚠️ Error generating available time slots:", err);
+  }
+}
+  
 
 // 🐾 PETS MANAGER //
 const PetManager = {
@@ -1896,123 +1999,138 @@ editPet(id) {
 },
 
 
+// ================================
+// 📌 Book Appointment (Autofilled Pet Name & Select Time)
+// ================================
 async bookAppointment(id) {
-    const pet = this.pets.find(p => p.id === id);
-    if (!pet) return console.error("❌ Pet not found.");
+  const pet = this.pets.find(p => p.id === id);
+  if (!pet) return console.error("❌ Pet not found.");
 
-    this.currentBookingPet = pet;
-    this.currentEditAppointmentId = null;
+  this.currentBookingPet = pet;
+  this.currentEditAppointmentId = null;
 
-    // DOM elements
-    const petNameInput = document.getElementById("apptPetName");
-    const ownerNameInput = document.getElementById("ownerName");
-    const ownerPhoneInput = document.getElementById("ownerPhone");
-    const serviceSelect = document.getElementById("appointmentService");
-    const dateInput = document.getElementById("appointmentDate");
-    const timeInput = document.getElementById("appointmentTime");
-    const speciesInput = document.getElementById("apptSpecies");
-    const breedInput = document.getElementById("apptBreed");
-    const sexInput = document.getElementById("apptSex");
-    const weightInput = document.getElementById("apptWeight");
-    const sizeInput = document.getElementById("apptSize");
+  // 🔹 DOM elements
+  const petNameInput = document.getElementById("apptPetName");
+  const ownerNameInput = document.getElementById("ownerName");
+  const ownerPhoneInput = document.getElementById("ownerPhone");
+  const serviceSelect = document.getElementById("appointmentService");
+  const dateInput = document.getElementById("appointmentDate");
+  const timeInput = document.getElementById("appointmentTime");
+  const speciesInput = document.getElementById("apptSpecies");
+  const breedInput = document.getElementById("apptBreed");
+  const sexInput = document.getElementById("apptSex");
+  const weightInput = document.getElementById("apptWeight");
+  const sizeInput = document.getElementById("apptSize");
 
-    if (!petNameInput || !ownerNameInput || !ownerPhoneInput || !serviceSelect || !dateInput || !timeInput) {
-        console.error("❌ Required form elements not found");
-        return;
-    }
+  if (!petNameInput || !ownerNameInput || !ownerPhoneInput || !serviceSelect || !dateInput || !timeInput) {
+    console.error("❌ Required form elements not found");
+    return;
+  }
 
-    // 🔹 Populate Pet Name dropdown and select the current pet
-    petNameInput.innerHTML = '';
-    this.pets.forEach(p => {
-        const option = document.createElement("option");
-        option.value = p.id;
-        option.textContent = p.petName;
-        petNameInput.appendChild(option);
+  // 🔹 Populate Pet Name dropdown and select current pet
+  petNameInput.innerHTML = '';
+  this.pets.forEach(p => {
+    const option = document.createElement("option");
+    option.value = p.id;
+    option.textContent = p.petName;
+    petNameInput.appendChild(option);
+  });
+  petNameInput.value = pet.id;
+  petNameInput.disabled = true;
+  petNameInput.style.backgroundColor = "#e9ecef";
+
+  // 🔹 Autofill pet details
+  speciesInput.value = pet.species || "";
+  breedInput.value = pet.breed || "";
+  sexInput.value = pet.sex || "";
+  weightInput.value = pet.weight || "";
+  sizeInput.value = pet.size || getSizeFromWeight(pet.weight);
+
+  speciesInput.style.backgroundColor = "#e9ecef";
+  sexInput.style.backgroundColor = "#e9ecef";
+
+  // 🔹 Autofill owner name
+  const ownerFullName = sessionStorage.getItem("userFullName");
+  if (ownerFullName) ownerNameInput.value = ownerFullName;
+  ownerNameInput.style.backgroundColor = "#e9ecef";
+
+  // 🔹 Set min date to tomorrow
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  dateInput.min = tomorrow.toISOString().split("T")[0];
+  dateInput.value = dateInput.min;
+
+  // 🔹 Load services from Firestore
+  let services = {};
+  try {
+    const servicesSnap = await getDocs(collection(db, "Services"));
+    servicesSnap.forEach(doc => {
+      const data = doc.data();
+      services[data.name.toLowerCase()] = data.variants || [];
     });
-    petNameInput.value = pet.id;
-    petNameInput.disabled = true;
-    petNameInput.style.backgroundColor = "#e9ecef";
-
-    // 🔹 Autofill pet details
-    speciesInput.value = pet.species || "";
-    breedInput.value = pet.breed || "";
-    sexInput.value = pet.sex || "";
-    weightInput.value = pet.weight || "";
-    sizeInput.value = pet.size || getSizeFromWeight(pet.weight);
-
-    speciesInput.style.backgroundColor = "#e9ecef";
-    sexInput.style.backgroundColor = "#e9ecef";
-
-    // 🔹 Autofill owner name
-    const ownerFullName = sessionStorage.getItem("userFullName");
-    if (ownerFullName) ownerNameInput.value = ownerFullName;
-    ownerNameInput.style.backgroundColor = "#e9ecef";
-
-    // 🔹 Set min date to tomorrow
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    dateInput.min = tomorrow.toISOString().split("T")[0];
-    dateInput.value = dateInput.min;
-
-    // 🔹 Load services from Firestore
-    let services = {};
-    try {
-        const servicesSnap = await getDocs(collection(db, "Services"));
-        servicesSnap.forEach(doc => {
-            const data = doc.data();
-            services[data.name.toLowerCase()] = data.variants;
-        });
-        console.log("Services loaded:", services);
-    } catch (err) {
-        console.error("Failed to load services:", err);
-        return Swal.fire({ icon:"error", title:"Error", text:"Failed to load services. Refresh page.", confirmButtonColor:"#f8732b" });
-    }
-
-    // 🔹 Populate service dropdown
-    serviceSelect.innerHTML = '<option value="" disabled selected>Select Service</option>';
-    Object.keys(services).forEach(svc => {
-        const opt = document.createElement("option");
-        opt.value = svc;
-        opt.textContent = svc.charAt(0).toUpperCase() + svc.slice(1);
-        serviceSelect.appendChild(opt);
+    console.log("✅ Services loaded:", services);
+  } catch (err) {
+    console.error("❌ Failed to load services:", err);
+    return Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: "Failed to load services. Please refresh the page.",
+      confirmButtonColor: "#f8732b",
     });
+  }
 
-    // Optional: select first service by default
-    serviceSelect.value = Object.keys(services)[0] || "";
+  // 🔹 Populate service dropdown
+  serviceSelect.innerHTML = '<option value="" disabled selected>Select Service</option>';
+  Object.keys(services).forEach(svc => {
+    const opt = document.createElement("option");
+    opt.value = svc;
+    opt.textContent = svc.charAt(0).toUpperCase() + svc.slice(1);
+    serviceSelect.appendChild(opt);
+  });
 
-    // 🔹 Save appointment data to sessionStorage for custConfirm
-    const appointmentData = {
-        userId: sessionStorage.getItem("userId"),
-        petId: pet.id,
-        petName: pet.petName,
-        ownerName: ownerNameInput.value,
-        ownerPhone: ownerPhoneInput.value,
-        species: pet.species,
-        breed: pet.breed,
-        sex: pet.sex,
-        weight: pet.weight,
-        size: pet.size,
-        service: serviceSelect.value,
-        date: dateInput.value,
-        time: "",
-        selectedServices: [],
-        serviceFee: 0,
-        reservationFee: 0,
-        totalAmount: 0,
-        createdAt: new Date().toISOString()
-    };
+  // Optional: select first service by default
+  serviceSelect.value = Object.keys(services)[0] || "";
 
+  // 🔹 Create base appointment data
+  const appointmentData = {
+    userId: sessionStorage.getItem("userId"),
+    petId: pet.id,
+    petName: pet.petName,
+    ownerName: ownerNameInput.value,
+    ownerPhone: ownerPhoneInput.value,
+    species: pet.species,
+    breed: pet.breed,
+    sex: pet.sex,
+    weight: pet.weight,
+    size: pet.size || getSizeFromWeight(pet.weight),
+    service: serviceSelect.value,
+    serviceVariants: services[serviceSelect.value.toLowerCase()] || [],
+    date: dateInput.value,
+    time: "",
+    selectedServices: [],
+    serviceFee: 0,
+    reservationFee: 0,
+    totalAmount: 0,
+    createdAt: new Date().toISOString()
+  };
+
+  sessionStorage.setItem("appointment", JSON.stringify(appointmentData));
+
+  // 🔹 Show modal
+  document.getElementById("appointmentModal").style.display = "flex";
+
+  // 🔹 Generate initial time slots for default service
+  if (serviceSelect.value) {
+    await updateAvailableTimeSlots(dateInput.value, serviceSelect.value, timeInput);
+  }
+
+  // 🔹 When service changes, refresh time slots and update appointment data
+  serviceSelect.addEventListener("change", async () => {
+    await updateAvailableTimeSlots(dateInput.value, serviceSelect.value, timeInput);
+    appointmentData.service = serviceSelect.value;
+    appointmentData.serviceVariants = services[serviceSelect.value.toLowerCase()] || [];
     sessionStorage.setItem("appointment", JSON.stringify(appointmentData));
-
-    // 🔹 Show modal
-    document.getElementById("appointmentModal").style.display = "flex";
-
-    // Optional: update available time slots when service changes
-    serviceSelect.addEventListener("change", async () => {
-        await updateAvailableTimeSlots(dateInput.value, serviceSelect.value, timeInput);
-        appointmentData.service = serviceSelect.value;
-        sessionStorage.setItem("appointment", JSON.stringify(appointmentData));
-    });
+  });
 },
 
 // ================================
@@ -2021,13 +2139,16 @@ async bookAppointment(id) {
 async submitAppointmentForm(event) {
   event.preventDefault();
 
-  const form = document.getElementById("appointmentForm");
   const userId = sessionStorage.getItem("userId");
-  
   const pet = this.currentBookingPet;
 
   if (!userId || !pet) {
-    return Swal.fire({ icon:"error", title:"Missing Information", text:"Please select a pet and ensure you are logged in.", confirmButtonColor:"#f8732b"});
+    return Swal.fire({
+      icon: "error",
+      title: "Missing Information",
+      text: "Please select a pet and ensure you are logged in.",
+      confirmButtonColor: "#f8732b",
+    });
   }
 
   const ownerNameInput = document.getElementById("ownerName");
@@ -2035,36 +2156,53 @@ async submitAppointmentForm(event) {
   const serviceInput = document.getElementById("appointmentService");
   const dateInput = document.getElementById("appointmentDate");
   const timeInput = document.getElementById("appointmentTime");
-  
 
- const name = ownerNameInput.value.trim();
-
+  const name = ownerNameInput.value.trim();
   const phone = ownerPhoneInput.value.trim();
   const service = serviceInput.value;
   const date = dateInput.value;
   const time = timeInput.value;
- 
 
   if (!name || !phone || !service || !date || !time) {
-    return Swal.fire({ icon:"warning", title:"Incomplete Form", text:"Please fill in all required fields.", confirmButtonColor:"#f8732b"});
+    return Swal.fire({
+      icon: "warning",
+      title: "Incomplete Form",
+      text: "Please fill in all required fields.",
+      confirmButtonColor: "#f8732b",
+    });
   }
 
-  // Check same-day
+  // 🔹 Prevent same-day booking
   const today = new Date().toISOString().split("T")[0];
-  if (date === today) return Swal.fire({ icon:"warning", title:"Same-Day Booking Not Allowed", text:"Please select a different date.", confirmButtonColor:"#f8732b" });
+  if (date === today) {
+    return Swal.fire({
+      icon: "warning",
+      title: "Same-Day Booking Not Allowed",
+      text: "Please select a different date.",
+      confirmButtonColor: "#f8732b",
+    });
+  }
 
-  // Service duration & end time
+  // 🔹 Calculate duration & time range
   const serviceDuration = serviceDurations[service?.toLowerCase()] || 30;
   const startMinutes = toMinutes(time);
   const endMinutes = startMinutes + serviceDuration;
-  const endTime = `${String(Math.floor(endMinutes/60)).padStart(2,"0")}:${String(endMinutes%60).padStart(2,"0")}`;
+  const endTime = `${String(Math.floor(endMinutes / 60)).padStart(2, "0")}:${String(endMinutes % 60).padStart(2, "0")}`;
   const formattedStart = formatTo12Hour(time);
   const formattedEnd = formatTo12Hour(endTime);
 
-  // Check availability
+  // 🔹 Check availability
   const stillAvailable = await isTimeSlotAvailable(date, time, serviceDuration);
-  if (!stillAvailable) return Swal.fire({ icon:"error", title:"Time Slot Unavailable", text:"This time is already booked or blocked.", confirmButtonColor:"#f8732b" });
+  if (!stillAvailable) {
+    return Swal.fire({
+      icon: "error",
+      title: "Time Slot Unavailable",
+      text: "This time is already booked or blocked.",
+      confirmButtonColor: "#f8732b",
+    });
+  }
 
+  // 🔹 Prepare appointment data for custConfirm
   const appointmentData = {
     userId,
     petId: pet.id,
@@ -2077,27 +2215,38 @@ async submitAppointmentForm(event) {
     weight: pet.weight,
     size: pet.size,
     service,
+    serviceVariants: JSON.parse(sessionStorage.getItem("appointment"))?.serviceVariants || [],
     date,
     time,
     endTime,
     displayTime: `${formattedStart} - ${formattedEnd}`,
     duration: serviceDuration,
-    
-    serviceFee:0,
-    totalAmount:0,
-    selectedServices:[],
-    vaccines:[],
-    createdAt: new Date().toISOString()
+    serviceFee: 0,
+    totalAmount: 0,
+    selectedServices: [],
+    vaccines: [],
+    createdAt: new Date().toISOString(),
   };
 
-  Swal.fire({ title:"Processing...", text:"Please wait while we submit your appointment.", allowOutsideClick:false, didOpen:()=>Swal.showLoading() });
+  // 🔹 Save and redirect
+  Swal.fire({
+    title: "Processing...",
+    text: "Please wait while we submit your appointment.",
+    allowOutsideClick: false,
+    didOpen: () => Swal.showLoading(),
+  });
 
   setTimeout(() => {
     sessionStorage.setItem("appointment", JSON.stringify(appointmentData));
-    Swal.fire({ title:"Appointment Saved!", text:"Redirecting to confirmation page...", icon:"success", confirmButtonColor:"#f8732b" })
-      .then(() => window.location.href="custConfirm.html");
-  }, 1500);
+    Swal.fire({
+      title: "Appointment Saved!",
+      text: "Redirecting to confirmation page...",
+      icon: "success",
+      confirmButtonColor: "#f8732b",
+    }).then(() => (window.location.href = "custConfirm.html"));
+  }, 1200);
 },
+
 
 
   confirmDelete(id) {

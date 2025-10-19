@@ -427,6 +427,14 @@ nav .user{
   opacity: 1; /* Keep text readable */
 }
 
+.booked-slot {
+  background-color: #ccc !important;
+  color: #666 !important;
+  cursor: not-allowed;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
 
 form {
   position: relative;

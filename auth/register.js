@@ -414,7 +414,6 @@ signUpButton.addEventListener("click", async (e) => {
   });
 });
 
-
 document.getElementById('forgotPasswordLink').addEventListener('click', async (e) => {
   e.preventDefault();
 
@@ -427,9 +426,9 @@ document.getElementById('forgotPasswordLink').addEventListener('click', async (e
     `,
     focusConfirm: false,
     preConfirm: () => {
-      const email = document.getElementById('swal-email').value;
-      const currentPassword = document.getElementById('swal-current-password').value;
-      const newPassword = document.getElementById('swal-new-password').value;
+      const email = document.getElementById('swal-email').value.trim();
+      const currentPassword = document.getElementById('swal-current-password').value.trim();
+      const newPassword = document.getElementById('swal-new-password').value.trim();
 
       if (!email || !currentPassword || !newPassword) {
         Swal.showValidationMessage('Please fill in all fields');
@@ -438,7 +437,7 @@ document.getElementById('forgotPasswordLink').addEventListener('click', async (e
       return { email, currentPassword, newPassword };
     },
     showCancelButton: true,
-    confirmButtonText: 'Reset Password'
+    confirmButtonText: 'Send Verification Code'
   });
 
   if (!formValues) return;
@@ -453,26 +452,68 @@ document.getElementById('forgotPasswordLink').addEventListener('click', async (e
       return;
     }
 
-    let success = false;
-    for (const userDoc of querySnapshot.docs) {
-      const userData = userDoc.data();
+    const userDoc = querySnapshot.docs[0];
+    const userData = userDoc.data();
 
-      // compare current password
-      if (userData.password === formValues.currentPassword) {  // <-- ideally use hashed passwords
-        await updateDoc(userDoc.ref, {
-          password: formValues.newPassword,  // <-- ideally hash
-          updatedAt: serverTimestamp()
-        });
-        success = true;
-        break;
-      }
-    }
-
-    if (success) {
-      Swal.fire('Success', 'Password updated successfully.', 'success');
-    } else {
+    // Verify current password first
+    if (userData.password !== formValues.currentPassword) {
       Swal.fire('Error', 'Current password is incorrect.', 'error');
+      return;
     }
+
+    // Step 1️⃣: Send OTP
+    const sendOtpResponse = await fetch("http://localhost:3000/send-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: formValues.email, userId: userDoc.id })
+    });
+
+    const sendOtpData = await sendOtpResponse.json();
+    if (!sendOtpData.success) {
+      Swal.fire("Error", "Failed to send verification code. Try again later.", "error");
+      return;
+    }
+
+    // Step 2️⃣: Ask user for OTP
+    const { value: otp } = await Swal.fire({
+      title: "Email Verification",
+      input: "text",
+      inputLabel: `Enter the 6-digit code sent to ${formValues.email}`,
+      inputPlaceholder: "Enter OTP",
+      confirmButtonText: "Verify Code",
+      showCancelButton: true,
+      inputValidator: (value) => {
+        if (!value) return "Please enter the verification code.";
+      }
+    });
+
+    if (!otp) return;
+
+    // Step 3️⃣: Verify OTP
+    const verifyResponse = await fetch("http://localhost:3000/verify-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: formValues.email, otp })
+    });
+
+    const verifyData = await verifyResponse.json();
+    if (!verifyData.success) {
+      Swal.fire("Error", verifyData.message || "Invalid verification code.", "error");
+      return;
+    }
+
+    // Step 4️⃣: Update password after OTP success
+    await updateDoc(userDoc.ref, {
+      password: formValues.newPassword,  // ⚠️ Ideally, hash passwords on backend
+      updatedAt: serverTimestamp()
+    });
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Password Updated',
+      text: 'Your password has been successfully updated.',
+      confirmButtonColor: '#f8732b'
+    });
 
   } catch (err) {
     console.error(err);

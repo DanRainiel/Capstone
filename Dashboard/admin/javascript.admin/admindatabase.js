@@ -48,6 +48,8 @@
         console.error("Failed to log activity:", error);
       }
     }
+
+    
 document.addEventListener("DOMContentLoaded", async () => {
 
   let services = [];
@@ -255,6 +257,41 @@ function openEditModal(serviceIndex) {
     renderServices();
     editModal.style.display = "none";
   });
+
+
+  // ================================
+// 🔹 Load Services for Discount Form
+// ================================
+async function loadServiceCheckboxes() {
+  const container = document.getElementById("applicableServicesContainer");
+  if (!container) return;
+
+  // Fetch services from Firestore
+  const servicesSnapshot = await getDocs(collection(db, "Services"));
+
+  servicesSnapshot.forEach(docSnap => {
+    const service = docSnap.data();
+
+    // Create checkbox for each service
+    const label = document.createElement("label");
+    label.classList.add("applicable-checkbox");
+
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.name = "applicableServices";
+    input.value = service.name.toLowerCase().split(" ")[0]; // key for matching later
+
+    const text = document.createTextNode(" " + service.name);
+
+    label.appendChild(input);
+    label.appendChild(text);
+    container.appendChild(label);
+  });
+}
+
+// Call this when page loads
+await loadServicesFromServicesCollection();
+await loadServiceCheckboxes();
 
   document.querySelector("#editServiceModal .close").addEventListener("click", () => {
     editModal.style.display = "none";
@@ -1533,8 +1570,7 @@ document.getElementById("serviceFilter").addEventListener("change", function () 
 
       // 🔹 Built-in discounts
       const discountObj = {
-        pwdDiscount: service.pwdDiscount ?? 0,
-        seniorDiscount: service.seniorDiscount ?? 0,
+      
         loyaltyDiscount: service.loyaltyDiscount ?? 0
       };
 
