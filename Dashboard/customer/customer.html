@@ -490,14 +490,12 @@
                     <!-- dynamically populated from Pets collection -->
                 </select>
             </div>
-            <div class="form-group">
-                <label for="apptSpecies">Species</label>
-                <input type="text" id="apptSpecies" readonly>
-            </div>
-            <div class="form-group">
-                <label for="apptBreed">Breed</label>
-                <input type="text" id="apptBreed" readonly>
-            </div>
+           <input list="speciesList" id="petSpecies" oninput="PetManager.onSpeciesInputChange()" placeholder="Select or type species">
+<datalist id="speciesList"></datalist>
+
+<input list="breedList" id="petBreed" placeholder="Select or type breed">
+<datalist id="breedList"></datalist>
+
             <div class="form-group">
                 <label for="apptSex">Sex</label>
                 <input type="text" id="apptSex" readonly>

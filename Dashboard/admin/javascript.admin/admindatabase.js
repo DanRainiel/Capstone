@@ -1017,11 +1017,27 @@ document.addEventListener("click", async (e) => {
         return;
       }
 
-      // Function to render each row
       const renderRow = (data, type, docId) => {
-        const status = data.status || "Pending";
+  const status = data.status || "Pending";
+  const safe = (val) => (val === undefined || val === null ? "" : val);
 
-        const safe = (val) => (val === undefined || val === null ? "" : val);
+  // 🕒 Format time properly (start–end)
+  let formattedTime = "";
+  if (type === "walkin" && data.timestamp) {
+    // Walk-in: derive from timestamp
+    formattedTime = new Date(data.timestamp).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } else if (data.startTime && data.endTime) {
+    // Regular appointment: start–end range
+    formattedTime = `${safe(data.startTime)} - ${safe(data.endTime)}`;
+  } else if (data.startTime) {
+    formattedTime = safe(data.startTime);
+  } else if (data.time) {
+    // fallback if old data still uses `time`
+    formattedTime = safe(data.time);
+  }
 
   const displayData = {
     name:
@@ -1029,22 +1045,22 @@ document.addEventListener("click", async (e) => {
         ? `${safe(data.firstName)} ${safe(data.lastName)}`.trim()
         : safe(data.name),
     petName: safe(data.petName) || safe(data.pet?.petName),
-      service: safe(data.service),              // for regular appointments
-    walkinService: safe(data.serviceType), 
-    date: type === "walkin" && data.timestamp ? 
-          new Date(data.timestamp).toLocaleDateString() : safe(data.date),
-    time: type === "walkin" && data.timestamp ? 
-          new Date(data.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : safe(data.time),
+    service: safe(data.service),
+    walkinService: safe(data.serviceType),
+    date:
+      type === "walkin" && data.timestamp
+        ? new Date(data.timestamp).toLocaleDateString()
+        : safe(data.date),
+    time: formattedTime, // ✅ fixed
     contact: safe(data.contact),
     status: safe(status),
     mode: type === "walkin" ? "Walk-In" : "Appointment",
-      reservationType: safe(data.reservationType),
+    reservationType: safe(data.reservationType),
     reservationFee: safe(data.reservationFee),
-    userId: safe(data.userId),      // 🔹 include userId
-    appointmentId: docId,           // 🔹 include docId 
-    sourceType: type
+    userId: safe(data.userId),
+    appointmentId: docId,
+    sourceType: type,
   };
-
 
         // ✅ Count today's scheduled appointments
         if (displayData.date === today) {
@@ -3993,12 +4009,106 @@ onSnapshot(collection(db, "Pets"), () => {
       deletePet
     };
 
+
 // 🔹 DOM References
 const addSpeciesBtn = document.getElementById("addSpeciesBtn");
 const speciesTable = document.getElementById("speciesTable");
 const totalSpecies = document.getElementById("totalSpecies");
 const activeSpecies = document.getElementById("activeSpecies");
 const inactiveSpecies = document.getElementById("inactiveSpecies");
+
+// ✅ Helper: Render breed table inside Swal
+function renderBreedTableHTML(breeds = []) {
+  if (breeds.length === 0) {
+    return `<p style="color: gray; text-align:center;">No breeds added yet</p>`;
+  }
+
+  let tableHTML = `
+    <table style="width:100%; border-collapse: collapse; margin-top:10px;">
+      <thead>
+        <tr style="background:#f5f5f5;">
+          <th style="padding:5px; border:1px solid #ccc;">Breed Name</th>
+          <th style="padding:5px; border:1px solid #ccc;">Status</th>
+          <th style="padding:5px; border:1px solid #ccc;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  breeds.forEach((breed, index) => {
+    tableHTML += `
+      <tr>
+        <td style="padding:5px; border:1px solid #ccc;">${breed.name}</td>
+        <td style="padding:5px; border:1px solid #ccc;">${breed.status}</td>
+        <td style="padding:5px; border:1px solid #ccc; text-align:center;">
+          <button class="btn-delete-breed" data-index="${index}" style="color:red;">Delete</button>
+        </td>
+      </tr>
+    `;
+  });
+
+  tableHTML += `</tbody></table>`;
+  return tableHTML;
+}
+
+// ✅ Function: Add or manage breeds
+async function openAddBreedModal(speciesId, speciesName, existingBreeds = []) {
+  let breeds = [...(existingBreeds || [])];
+
+  const getSwalHTML = () => `
+    <div style="max-height:400px; overflow-y:auto;">
+      ${renderBreedTableHTML(breeds)}
+    </div>
+    <hr>
+    <input id="swal-breed-name" class="swal2-input" placeholder="New Breed Name">
+    <select id="swal-breed-status" class="swal2-input">
+      <option value="Active" selected>Active</option>
+      <option value="Inactive">Inactive</option>
+    </select>
+  `;
+
+  const swalInstance = await Swal.fire({
+    title: `Manage Breeds for ${speciesName}`,
+    html: getSwalHTML(),
+    showCancelButton: true,
+    confirmButtonText: "Save Changes",
+    didOpen: () => {
+      // Handle delete buttons dynamically
+      document.querySelectorAll(".btn-delete-breed").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          const index = parseInt(e.target.dataset.index);
+          breeds.splice(index, 1);
+          Swal.update({ html: getSwalHTML() });
+          openAddBreedModal(speciesId, speciesName, breeds); // refresh UI
+        });
+      });
+    },
+    preConfirm: () => {
+      const breedName = document.getElementById("swal-breed-name").value.trim();
+      const breedStatus = document.getElementById("swal-breed-status").value;
+
+      if (breedName) {
+        breeds.push({
+          name: breedName,
+          status: breedStatus,
+          createdAt: new Date().toISOString(),
+        });
+      }
+
+      return breeds;
+    }
+  });
+
+  if (swalInstance.isConfirmed) {
+    try {
+      await updateDoc(doc(db, "Species", speciesId), { breeds });
+      Swal.fire("✅ Updated!", "Breeds updated successfully.", "success");
+    } catch (error) {
+      console.error("Error updating breeds:", error);
+      Swal.fire("❌ Error", "Failed to update breeds.", "error");
+    }
+  }
+}
 
 // ✅ Render Species Row
 function renderSpeciesRow(docId, data) {
@@ -4014,6 +4124,7 @@ function renderSpeciesRow(docId, data) {
           : `<span style="color: gray;">Already Inactive</span>`
       }
       <button class="btn-delete" data-id="${docId}">Delete</button>
+      <button class="btn-breed" data-id="${docId}">Manage Breeds</button>
     </td>
   `;
   speciesTable.appendChild(row);
@@ -4055,9 +4166,17 @@ function renderSpeciesRow(docId, data) {
       Swal.fire("Deleted!", "Species has been deleted.", "success");
     }
   });
+
+  // 🔹 Manage Breeds button
+  const breedBtn = row.querySelector(".btn-breed");
+  if (breedBtn) {
+    breedBtn.addEventListener("click", () => {
+      openAddBreedModal(docId, data.name, data.breeds || []);
+    });
+  }
 }
 
-// ✅ Open Swal for Adding Species (auto Active)
+// ✅ Add Species (auto Active)
 addSpeciesBtn.addEventListener("click", async () => {
   const { value: formValues } = await Swal.fire({
     title: "Add New Species",
@@ -4067,12 +4186,10 @@ addSpeciesBtn.addEventListener("click", async () => {
     focusConfirm: false,
     preConfirm: () => {
       const name = document.getElementById("swal-species-name").value.trim();
-
       if (!name) {
         Swal.showValidationMessage("Species Name is required");
         return false;
       }
-
       return { name };
     }
   });
@@ -4081,8 +4198,9 @@ addSpeciesBtn.addEventListener("click", async () => {
     try {
       await addDoc(collection(db, "Species"), {
         name: formValues.name,
-        status: "Active", // ✅ auto active
-        createdAt: serverTimestamp()
+        status: "Active",
+        createdAt: serverTimestamp(),
+        breeds: [] // initialize empty breed list
       });
       Swal.fire("Success!", "Species added successfully.", "success");
     } catch (error) {
@@ -4092,15 +4210,15 @@ addSpeciesBtn.addEventListener("click", async () => {
   }
 });
 
-// ✅ Real-time Listener for Species
+// ✅ Real-time Listener
 onSnapshot(collection(db, "Species"), (snapshot) => {
-  speciesTable.innerHTML = ""; // clear old rows
+  speciesTable.innerHTML = "";
   let activeCount = 0;
   let inactiveCount = 0;
 
-  snapshot.forEach((doc) => {
-    const data = doc.data();
-    renderSpeciesRow(doc.id, data);
+  snapshot.forEach((docSnap) => {
+    const data = docSnap.data();
+    renderSpeciesRow(docSnap.id, data);
 
     if (data.status === "Active") activeCount++;
     else inactiveCount++;
@@ -4110,6 +4228,7 @@ onSnapshot(collection(db, "Species"), (snapshot) => {
   activeSpecies.textContent = activeCount;
   inactiveSpecies.textContent = inactiveCount;
 });
+
 
 
 

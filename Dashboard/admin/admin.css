@@ -994,6 +994,19 @@
   background: #b71c1c;
 }
 
+.btn-breed {
+  background: var(--background-color);
+  color: white;
+  border: none;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.btn-breed:hover {
+  background: var(--orange);
+}
+
+
 /* --- Action Buttons --- */
 #Service-Management .btn-edit,
 #Service-Management .btn-status {

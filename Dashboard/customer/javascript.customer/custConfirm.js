@@ -10,7 +10,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
 // ==============================
-// 🔹 FIREBASE CONFIG
+// FIREBASE CONFIG
 // ==============================
 const firebaseConfig = {
   apiKey: "AIzaSyDtDApHuFcav9QIZaJ8CDIcyI_fxcO4Kzw",
@@ -25,10 +25,11 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 let services = {};
+let serviceDurations = {};
 let baseServiceFee = 0;
 
 // ==============================
-// 🔹 LOG ACTIVITY
+// LOG ACTIVITY
 // ==============================
 async function logActivity(userId, action, details) {
   try {
@@ -45,7 +46,28 @@ async function logActivity(userId, action, details) {
 }
 
 // ==============================
-// 🔹 LOAD SERVICES
+// LOAD SERVICE DURATIONS
+// ==============================
+async function loadServiceDurations() {
+  try {
+    const servicesRef = collection(db, "Services");
+    const snapshot = await getDocs(servicesRef);
+
+    serviceDurations = {};
+    snapshot.forEach(docSnap => {
+      const service = docSnap.data();
+      if (service.name && service.duration) {
+        serviceDurations[service.name.toLowerCase()] = service.duration;
+      }
+    });
+    console.log("✅ Service durations loaded:", serviceDurations);
+  } catch (err) {
+    console.error("Error loading service durations:", err);
+  }
+}
+
+// ==============================
+// LOAD SERVICES
 // ==============================
 async function loadServicesFromFirestore() {
   const querySnapshot = await getDocs(collection(db, "Services"));
@@ -58,7 +80,7 @@ async function loadServicesFromFirestore() {
 }
 
 // ==============================
-// 🔹 POPULATE SERVICE VARIANTS
+// POPULATE SERVICE VARIANTS
 // ==============================
 function populateServiceOptions() {
   Object.keys(services).forEach((category) => {
@@ -100,7 +122,7 @@ function populateServiceOptions() {
 }
 
 // ========================
-// 💰 Update total amount logic (Fixed)
+// UPDATE TOTAL AMOUNT LOGIC
 // ========================
 function updateTotalAmount() {
   const serviceFeeDisplay = document.getElementById("service-fee");
@@ -115,7 +137,6 @@ function updateTotalAmount() {
   let reservationFee = 0;
   let grandTotal = serviceFee;
 
-  // 🧾 Reservation logic
   if (type === "reservation-only") {
     reservationFee = 40;
     grandTotal = Math.max(0, serviceFee - reservationFee);
@@ -130,13 +151,12 @@ function updateTotalAmount() {
     grandTotal = serviceFee;
   }
 
-  // 🧮 Prevent negative display
   reservationFeeDisplay.textContent = `₱${reservationFee.toFixed(2)}`;
   totalAmountDisplay.textContent = `₱${Math.max(0, grandTotal).toFixed(2)}`;
 }
 
 // ========================
-// ❌ Cancel Appointment Logic (Restored)
+// CANCEL APPOINTMENT LOGIC
 // ========================
 document.addEventListener("DOMContentLoaded", () => {
   const cancelBtn = document.getElementById("cancel-btn");
@@ -153,7 +173,6 @@ document.addEventListener("DOMContentLoaded", () => {
       });
 
       if (result.isConfirmed) {
-        // 🗑 Clear session and redirect
         sessionStorage.removeItem("appointment");
 
         await Swal.fire({
@@ -170,36 +189,14 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-
 // ==============================
-// 🔹 MAIN FLOW
+// FORMAT APPOINTMENT TIME
 // ==============================
-document.addEventListener("DOMContentLoaded", async () => {
-  try {
-    await loadServicesFromFirestore();
-    populateServiceOptions();
-  } catch (err) {
-    console.error("Failed to load services:", err);
-    alert("Failed to load service data. Please refresh the page.");
-    return;
-  }
-
-  const appointmentData = JSON.parse(sessionStorage.getItem("appointment"));
-  if (!appointmentData) {
-    alert("No appointment data found.");
-    window.location.href = "customer.html";
-    return;
-  }
-
-  console.log("✅ Loaded appointmentData:", appointmentData);
-
- // 🔹 Format appointment time properly (old format restored)
 function formatAppointmentTime(startTime, durationMinutes = 30) {
   if (!startTime) return "N/A";
 
-  // Parse start time as Date
   const [hour, minute] = startTime.split(":").map(Number);
-  if (isNaN(hour) || isNaN(minute)) return startTime; // fallback
+  if (isNaN(hour) || isNaN(minute)) return startTime;
 
   const start = new Date();
   start.setHours(hour, minute, 0);
@@ -217,47 +214,83 @@ function formatAppointmentTime(startTime, durationMinutes = 30) {
   return `${formatTime(start)} - ${formatTime(end)}`;
 }
 
-// Normalize keys for Pet Form or Book Appointment
-const mappedData = {
-  petName:
-    appointmentData.petName ||
-    appointmentData.pet?.name ||
-    appointmentData.petname ||
-    "",
-  petSize:
-    appointmentData.petSize ||
-    appointmentData.size ||
-    appointmentData.pet?.size ||
-    "",
-  petSpecies:
-    appointmentData.petSpecies ||
-    appointmentData.species ||
-    appointmentData.pet?.species ||
-    "",
-  ownerName:
-    appointmentData.ownerName ||
-    appointmentData.name ||
-    appointmentData.userName ||
-    "",
-  ownerNumber:
-    appointmentData.ownerNumber ||
-    appointmentData.number ||
-    appointmentData.contactNumber ||
-    "",
-  service:
-    appointmentData.service ||
-    appointmentData.selectedService ||
-    appointmentData.mainService ||
-    "",
-  date: appointmentData.date || appointmentData.appointmentDate || "",
-  time: formatAppointmentTime(
-    appointmentData.time?.split(" - ")[0] ||
-      appointmentData.startTime ||
-      appointmentData.displayTime ||
-      ""
-  ),
-  selectedServices: appointmentData.selectedServices || [],
-};
+// ==============================
+// GET SERVICE DURATION HELPER
+// ==============================
+function getServiceDuration(serviceName) {
+  if (!serviceName) return 30;
+  const normalized = serviceName.toLowerCase().trim();
+  const duration = serviceDurations[normalized];
+  console.log(`Duration for "${serviceName}" (normalized: "${normalized}") = ${duration || 30}`);
+  return duration || 30;
+}
+
+// ==============================
+// MAIN FLOW
+// ==============================
+document.addEventListener("DOMContentLoaded", async () => {
+  try {
+    // Load durations FIRST before everything else
+    await loadServiceDurations();
+    await loadServicesFromFirestore();
+    populateServiceOptions();
+  } catch (err) {
+    console.error("Failed to load services:", err);
+    alert("Failed to load service data. Please refresh the page.");
+    return;
+  }
+
+  const appointmentData = JSON.parse(sessionStorage.getItem("appointment"));
+  if (!appointmentData) {
+    alert("No appointment data found.");
+    window.location.href = "customer.html";
+    return;
+  }
+
+  console.log("✅ Loaded appointmentData:", appointmentData);
+
+  // Normalize keys for Pet Form or Book Appointment
+  const service = appointmentData.service || appointmentData.selectedService || appointmentData.mainService || "";
+  const serviceDuration = getServiceDuration(service);
+
+  const mappedData = {
+    petName:
+      appointmentData.petName ||
+      appointmentData.pet?.name ||
+      appointmentData.petname ||
+      "",
+    petSize:
+      appointmentData.petSize ||
+      appointmentData.size ||
+      appointmentData.pet?.size ||
+      "",
+    petSpecies:
+      appointmentData.petSpecies ||
+      appointmentData.species ||
+      appointmentData.pet?.species ||
+      "",
+    ownerName:
+      appointmentData.ownerName ||
+      appointmentData.name ||
+      appointmentData.userName ||
+      "",
+    ownerNumber:
+      appointmentData.ownerNumber ||
+      appointmentData.number ||
+      appointmentData.contactNumber ||
+      "",
+    service: service,
+    date: appointmentData.date || appointmentData.appointmentDate || "",
+    time: formatAppointmentTime(
+      appointmentData.time?.split(" - ")[0] ||
+        appointmentData.startTime ||
+        appointmentData.displayTime ||
+        "",
+      serviceDuration
+    ),
+    selectedServices: appointmentData.selectedServices || [],
+    duration: serviceDuration,
+  };
 
   // Fill details
   document.getElementById("pet-name").textContent = mappedData.petName;
@@ -355,265 +388,278 @@ const mappedData = {
   if (feeTypeDropdown) feeTypeDropdown.addEventListener("change", updateTotalAmount);
 });
 
+// ==============================
+// CONFIRM BUTTON LOGIC
+// ==============================
+document.addEventListener("DOMContentLoaded", () => {
+  const confirmBtn = document.getElementById('confirm-btn');
+  const modal = document.getElementById('paymentModal');
+  const closeModal = document.getElementById('clase-modal');
+  const receiptUpload = document.getElementById('receipt-upload');
+  const bookBtn = document.getElementById('book-btn');
 
+  if (confirmBtn && modal) {
+    confirmBtn.addEventListener('click', () => {
+      modal.style.display = "block";
+    });
+  }
 
-    //Confirm Button//
-    document.addEventListener("DOMContentLoaded", () => {
-        const confirmBtn = document.getElementById('confirm-btn');
-        const modal = document.getElementById('paymentModal');
-        const closeModal = document.getElementById('clase-modal');
-        const receiptUpload = document.getElementById('receipt-upload');
-        const bookBtn = document.getElementById('book-btn');
+  if (closeModal && modal) {
+    closeModal.addEventListener('click', () => {
+      modal.style.display = "none";
+    });
+  }
 
-        if (confirmBtn && modal) {
-            confirmBtn.addEventListener('click', () => {
-                modal.style.display = "block";
-            });
-        }
+  if (receiptUpload && bookBtn) {
+    receiptUpload.onchange = () => {
+      if (receiptUpload.files.length > 0) {
+        bookBtn.disabled = false;
+        bookBtn.classList.add('enabled');
+      } else {
+        bookBtn.disabled = true;
+        bookBtn.classList.remove('enabled');
+      }
+    };
 
-        if (closeModal && modal) {
-            closeModal.addEventListener('click', () => {
-                modal.style.display = "none";
-            });
-        }
-
-        if (receiptUpload && bookBtn) {
-            receiptUpload.onchange = () => {
-                if (receiptUpload.files.length > 0) {
-                    bookBtn.disabled = false;
-                    bookBtn.classList.add('enabled');
-                } else {
-                    bookBtn.disabled = true;
-                    bookBtn.classList.remove('enabled');
-                }
-            };
     bookBtn.addEventListener("click", async () => {
-        // Step 1: Show warning Swal first
-        const result = await Swal.fire({
-            title: "⚠ Warning!",
-            icon: "warning",
-            html: `
-                Your appointment will <strong>automatically be forfeited</strong>
-                if the submitted GCash receipt is not verified.
-                <br><br>
-                Do you want to proceed?
-            `,
-            showCancelButton: true,
-            confirmButtonText: "Yes, proceed",
-            cancelButtonText: "Cancel",
-            reverseButtons: true
+      const result = await Swal.fire({
+        title: "⚠ Warning!",
+        icon: "warning",
+        html: `
+            Your appointment will <strong>automatically be forfeited</strong>
+            if the submitted GCash receipt is not verified.
+            <br><br>
+            Do you want to proceed?
+        `,
+        showCancelButton: true,
+        confirmButtonText: "Yes, proceed",
+        cancelButtonText: "Cancel",
+        reverseButtons: true
+      });
+
+      if (!result.isConfirmed) return;
+
+      try {
+        let petName = document.getElementById("pet-name")?.textContent.trim() || "";
+
+        if (petName.includes("_")) {
+          const parts = petName.split("_");
+          petName = parts.length >= 2 ? parts[1] : petName;
+        }
+
+        const petSize = document.getElementById("appt-size")?.value || "";
+        const petSex = document.getElementById("pet-sex")?.value || "";
+        const petBreed = document.getElementById("pet-breed")?.value || "";
+        const petAge = document.getElementById("pet-age")?.value || "";
+        const petSpecies = document.getElementById("pet-species")?.value || "";
+        const petWeight = document.getElementById("pet-weight")?.value || "";
+
+        const name = document.getElementById("owner-name")?.textContent.trim() || "";
+        const appointment = JSON.parse(sessionStorage.getItem("appointment")) || {};
+        const ownerNumber = appointment.ownerNumber || "";
+
+        const appointmentDate = document.getElementById("appt-date")?.textContent.trim() || "";
+        const appointmentTime = document.getElementById("appt-time")?.textContent.trim() || "";
+        const mainService = document.getElementById("main-service")?.textContent.trim() || "";
+        const veterinarian = document.getElementById("veterinarian")?.textContent.trim() || "";
+        const specialInstructions = document.getElementById("special-instructions")?.textContent.trim() || "";
+        const reservationType = document.getElementById("Reservation-fee-type")?.value || "";
+        const serviceFee = document.getElementById("service-fee")?.textContent.trim() || "";
+        const reservationFee = document.getElementById("reservation-fee")?.textContent.trim() || "";
+        let totalAmount = document.getElementById("total-amount")?.textContent.trim() || "";
+
+        const serviceFeeNum = parseFloat(serviceFee.replace(/[₱,]/g, "")) || 0;
+        const reservationFeeNum = parseFloat(reservationFee.replace(/[₱,]/g, "")) || 0;
+
+        if (reservationType === "only" || reservationType === "with-downpayment") {
+          totalAmount = `₱${(serviceFeeNum - reservationFeeNum).toFixed(2)}`;
+        } else if (reservationType === "with-full-payment") {
+          totalAmount = `₱0.00`;
+        }
+
+        const selectedServices = Array.from(document.querySelectorAll("input[name='services']:checked"))
+          .map(cb => cb.getAttribute("data-service"));
+
+        let receiptBase64 = null;
+        if (receiptUpload.files.length > 0) {
+          const file = receiptUpload.files[0];
+          receiptBase64 = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
+        }
+
+        const userId = sessionStorage.getItem("userId");
+        const timestamp = new Date().toISOString();
+        const appointmentId = `${userId}_${timestamp}`.replace(/[:.]/g, '-');
+// 🔹 Split start and end times properly
+let startTime = "";
+let endTime = "";
+
+if (appointmentTime.includes(" - ")) {
+  const [start, end] = appointmentTime.split(" - ");
+  startTime = start.trim();
+  endTime = end.trim();
+} else {
+  // Fallback if only start time is stored
+  startTime = appointmentTime.trim();
+  const duration = appointment.duration || 30; // default 30 minutes
+  const [hour, minute, period] = startTime.match(/(\d+):(\d+)\s*(AM|PM)/i)?.slice(1) || [];
+  if (hour && minute && period) {
+    let hours24 = parseInt(hour);
+    if (period.toUpperCase() === "PM" && hours24 !== 12) hours24 += 12;
+    if (period.toUpperCase() === "AM" && hours24 === 12) hours24 = 0;
+    const startDate = new Date();
+    startDate.setHours(hours24, parseInt(minute));
+    const endDate = new Date(startDate.getTime() + duration * 60000);
+    const endHours = ((endDate.getHours() + 11) % 12) + 1;
+    const endMins = endDate.getMinutes().toString().padStart(2, "0");
+    const endPeriod = endDate.getHours() >= 12 ? "PM" : "AM";
+    endTime = `${endHours}:${endMins} ${endPeriod}`;
+  }
+}
+
+const appointmentData = {
+  appointmentId,
+  userId,
+  name,
+  ownerNumber,
+  service: mainService,
+  startTime,              // ✅ new
+  endTime,                // ✅ new
+  date: appointmentDate,
+  timestamp,
+  status: "pending",
+  petName,
+  petSize,
+  petId: `${name}_${petName}`.replace(/\s+/g, '_'),
+  vet: veterinarian,
+  instructions: specialInstructions,
+  reservationType,
+  serviceFee,
+  reservationFee,
+  totalAmount,
+  selectedServices,
+  receiptImage: receiptBase64 || null
+};
+
+
+
+        const appointmentRef = doc(db, "Appointment", appointmentId);
+        await setDoc(appointmentRef, appointmentData);
+
+        const petTimestamp = new Date().toISOString();
+        const petId = `${userId}_${petName}_${petTimestamp}`.replace(/[:.]/g, '-');
+        const petData = {
+          userId,
+          petId: appointmentData.petId,
+          petName,
+          species: petSpecies,
+          breed: petBreed,
+          age: petAge,
+          sex: petSex,
+          size: petSize,
+          weight: petWeight,
+          ownerId: name,
+          createdAt: petTimestamp
+        };
+        const petRef = doc(db, "Pets", petId);
+        await setDoc(petRef, petData, { merge: true });
+
+        if (window.PetManager?.loadPetsFromFirestore) {
+          await window.PetManager.loadPetsFromFirestore();
+        }
+
+        await logActivity(name, "Booked Appointment", `Booked ${mainService} for ${petName}`);
+
+        if (modal) modal.style.display = "none";
+
+        await Swal.fire({
+          icon: 'success',
+          title: 'Appointment booked!',
+          text: 'Your pet has been saved successfully.',
+          iconColor: 'var(--orange)',
+          showConfirmButton: false,
+          timer: 1500
         });
 
-        if (!result.isConfirmed) return; // Stop if user cancels
+        sessionStorage.removeItem("appointment");
+        window.location.href = "customer.html";
 
-        try {
-            // Step 2: Gather all form data
-    let petName = document.getElementById("pet-name")?.textContent.trim() || "";
-
-    // 🧹 Clean up composite pet ID if it includes user or timestamp
-    if (petName.includes("_")) {
-    // e.g. owner40_Asta_2025-10-03T06-00-39-795Z → Asta
-    const parts = petName.split("_");
-    petName = parts.length >= 2 ? parts[1] : petName; // extract the real name in the middle
-    }
-
-            const petSize = document.getElementById("appt-size")?.value || "";
-            const petSex = document.getElementById("pet-sex")?.value || "";
-            const petBreed = document.getElementById("pet-breed")?.value || "";
-            const petAge = document.getElementById("pet-age")?.value || "";
-            const petSpecies = document.getElementById("pet-species")?.value || "";
-            const petWeight = document.getElementById("pet-weight")?.value || "";
-
-            const name = document.getElementById("owner-name")?.textContent.trim() || "";
-        const appointment = JSON.parse(sessionStorage.getItem("appointment")) || {};
-    const ownerNumber = appointment.ownerNumber || "";
-
-
-            const appointmentDate = document.getElementById("appt-date")?.textContent.trim() || "";
-            const appointmentTime = document.getElementById("appt-time")?.textContent.trim() || "";
-            const mainService = document.getElementById("main-service")?.textContent.trim() || "";
-            const veterinarian = document.getElementById("veterinarian")?.textContent.trim() || "";
-            const specialInstructions = document.getElementById("special-instructions")?.textContent.trim() || "";
-            const reservationType = document.getElementById("Reservation-fee-type")?.value || "";
-            const serviceFee = document.getElementById("service-fee")?.textContent.trim() || "";
-            const reservationFee = document.getElementById("reservation-fee")?.textContent.trim() || "";
-            let totalAmount = document.getElementById("total-amount")?.textContent.trim() || "";
-
-            const serviceFeeNum = parseFloat(serviceFee.replace(/[₱,]/g, "")) || 0;
-            const reservationFeeNum = parseFloat(reservationFee.replace(/[₱,]/g, "")) || 0;
-
-            if (reservationType === "only" || reservationType === "with-downpayment") {
-                totalAmount = `₱${(serviceFeeNum - reservationFeeNum).toFixed(2)}`;
-            } else if (reservationType === "with-full-payment") {
-                totalAmount = `₱0.00`;
-            }
-
-            const selectedServices = Array.from(document.querySelectorAll("input[name='services']:checked"))
-                .map(cb => cb.getAttribute("data-service"));
-
-            // Step 3: Convert receipt to Base64 if uploaded
-            let receiptBase64 = null;
-            if (receiptUpload.files.length > 0) {
-                const file = receiptUpload.files[0];
-                receiptBase64 = await new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = () => resolve(reader.result);
-                    reader.onerror = reject;
-                    reader.readAsDataURL(file);
-                });
-            }
-
-            // Step 4: Prepare appointment data
-            const userId = sessionStorage.getItem("userId");
-            const timestamp = new Date().toISOString();
-            const appointmentId = `${userId}_${timestamp}`.replace(/[:.]/g, '-');
-
-            const appointmentData = {
-                appointmentId,
-                userId,
-                name,
-                ownerNumber,
-                service: mainService,
-                time: appointmentTime,
-                date: appointmentDate,
-                timestamp,
-                status: "pending",
-                petName,
-                petSize,
-                petId: `${name}_${petName}`.replace(/\s+/g, '_'),
-                vet: veterinarian,
-                instructions: specialInstructions,
-                reservationType,
-                serviceFee,
-                reservationFee,
-                totalAmount,
-                selectedServices,
-                receiptImage: receiptBase64 || null
-            };
-
-            // Step 5: Save appointment to Firestore
-            const appointmentRef = doc(db, "Appointment", appointmentId);
-            await setDoc(appointmentRef, appointmentData);
-
-            // Step 6: Save pet info
-            const petTimestamp = new Date().toISOString();
-            const petId = `${userId}_${petName}_${petTimestamp}`.replace(/[:.]/g, '-');
-            const petData = {
-                userId,
-                petId: appointmentData.petId,
-                petName,
-                species: petSpecies,
-                breed: petBreed,
-                age: petAge,
-                sex: petSex,
-                size: petSize,
-                weight: petWeight,
-                ownerId: name,
-                createdAt: petTimestamp
-            };
-            const petRef = doc(db, "Pets", petId);
-            await setDoc(petRef, petData, { merge: true });
-
-            if (window.PetManager?.loadPetsFromFirestore) {
-                await window.PetManager.loadPetsFromFirestore();
-            }
-
-            // Step 7: Log activity
-            await logActivity(name, "Booked Appointment", `Booked ${mainService} for ${petName}`);
-
-            if (modal) modal.style.display = "none";
-
-            // Step 8: Show success Swal
-            await Swal.fire({
-                icon: 'success',
-                title: 'Appointment booked!',
-                text: 'Your pet has been saved successfully.',
-                iconColor: 'var(--orange)',
-                showConfirmButton: false,
-                timer: 1500
-            });
-
-            // Step 9: Cleanup & redirect
-            sessionStorage.removeItem("appointment");
-            window.location.href = "customer.html";
-
-        } catch (error) {
-            console.error("Failed to book appointment:", error);
-            alert("Something went wrong. Please try again.");
-        }
+      } catch (error) {
+        console.error("Failed to book appointment:", error);
+        alert("Something went wrong. Please try again.");
+      }
     });
 
-    // Recalculate totals if needed
     if (typeof calculateServiceTotal === "function") calculateServiceTotal();
     if (typeof updateTotalAmount === "function") updateTotalAmount();
-    }
+  }
+});
+
+// ==============================
+// PRINT RECEIPT LOGIC
+// ==============================
+document.addEventListener("DOMContentLoaded", () => {
+  const printBtn = document.getElementById("print-btn");
+
+  if (printBtn) {
+    printBtn.addEventListener("click", () => {
+      try {
+        const ownerName = document.getElementById("owner-name")?.textContent || "";
+        const petName = document.getElementById("pet-name")?.textContent || "";
+        const petSize = document.getElementById("pet-size")?.value || "";
+        const service = document.getElementById("main-service")?.textContent || "";
+        const veterinarian = document.getElementById("veterinarian")?.textContent || "";
+        const apptDate = document.getElementById("appt-date")?.textContent || "";
+        const apptTime = document.getElementById("appt-time")?.textContent || "";
+        const serviceFee = document.getElementById("service-fee")?.textContent || "";
+        const reservationFee = document.getElementById("reservation-fee")?.textContent || "";
+        const totalAmount = document.getElementById("total-amount")?.textContent || "";
+
+        const receiptContent = `
+        <div style="font-family: Arial, sans-serif; padding:20px; max-width:600px; margin:auto;">
+            <h2 style="text-align:center;">Veterinary Clinic Receipt</h2>
+            <hr/>
+            <p><strong>Owner Name:</strong> ${ownerName}</p>
+            <p><strong>Pet Name:</strong> ${petName}</p>
+            <p><strong>Pet Size:</strong> ${petSize}</p>
+            <p><strong>Service:</strong> ${service}</p>
+            <p><strong>Veterinarian:</strong> ${veterinarian}</p>
+            <p><strong>Date:</strong> ${apptDate}</p>
+            <p><strong>Time:</strong> ${apptTime}</p>
+            <hr/>
+            <p><strong>Service Fee:</strong> ${serviceFee}</p>
+            <p><strong>Reservation Fee:</strong> ${reservationFee}</p>
+            <p><strong>Total Amount Due:</strong> ${totalAmount}</p>
+            <hr/>
+            <p style="text-align:center; font-size:12px; color:gray;">
+            Thank you for trusting our clinic. Get well soon, ${petName}!
+            </p>
+        </div>
+        `;
+
+        const printWindow = window.open("", "_blank");
+        printWindow.document.write(`
+        <html>
+            <head>
+            <title>Receipt - ${petName}</title>
+            </head>
+            <body>
+            ${receiptContent}
+            </body>
+        </html>
+        `);
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.print();
+        printWindow.close();
+      } catch (error) {
+        console.error("Error printing receipt:", error);
+        alert("Failed to generate receipt. Please try again.");
+      }
     });
-
-
-    // ===============================
-    // 📌 PRINT RECEIPT LOGIC
-    // ===============================
-    document.addEventListener("DOMContentLoaded", () => {
-    const printBtn = document.getElementById("print-btn");
-
-    if (printBtn) {
-        printBtn.addEventListener("click", () => {
-        try {
-            // Collect appointment details from DOM
-            const ownerName = document.getElementById("owner-name")?.textContent || "";
-            const petName = document.getElementById("pet-name")?.textContent || "";
-            const petSize = document.getElementById("pet-size")?.value || "";
-            const service = document.getElementById("main-service")?.textContent || "";
-            const veterinarian = document.getElementById("veterinarian")?.textContent || "";
-            const apptDate = document.getElementById("appt-date")?.textContent || "";
-            const apptTime = document.getElementById("appt-time")?.textContent || "";
-            const serviceFee = document.getElementById("service-fee")?.textContent || "";
-            const reservationFee = document.getElementById("reservation-fee")?.textContent || "";
-            const totalAmount = document.getElementById("total-amount")?.textContent || "";
-
-            // Build receipt HTML
-            const receiptContent = `
-            <div style="font-family: Arial, sans-serif; padding:20px; max-width:600px; margin:auto;">
-                <h2 style="text-align:center;">🐾 Veterinary Clinic Receipt</h2>
-                <hr/>
-                <p><strong>Owner Name:</strong> ${ownerName}</p>
-                <p><strong>Pet Name:</strong> ${petName}</p>
-                <p><strong>Pet Size:</strong> ${petSize}</p>
-                <p><strong>Service:</strong> ${service}</p>
-                <p><strong>Veterinarian:</strong> ${veterinarian}</p>
-                <p><strong>Date:</strong> ${apptDate}</p>
-                <p><strong>Time:</strong> ${apptTime}</p>
-                <hr/>
-                <p><strong>Service Fee:</strong> ${serviceFee}</p>
-                <p><strong>Reservation Fee:</strong> ${reservationFee}</p>
-                <p><strong>Total Amount Due:</strong> ${totalAmount}</p>
-                <hr/>
-                <p style="text-align:center; font-size:12px; color:gray;">
-                Thank you for trusting our clinic. Get well soon, ${petName}! 🐶🐱
-                </p>
-            </div>
-            `;
-
-            // Open new window for printing
-            const printWindow = window.open("", "_blank");
-            printWindow.document.write(`
-            <html>
-                <head>
-                <title>Receipt - ${petName}</title>
-                </head>
-                <body>
-                ${receiptContent}
-                </body>
-            </html>
-            `);
-            printWindow.document.close();
-            printWindow.focus();
-            printWindow.print();
-            printWindow.close();
-        } catch (error) {
-            console.error("Error printing receipt:", error);
-            alert("Failed to generate receipt. Please try again.");
-        }
-        });
-    }
-    });
+  }
+});

@@ -270,99 +270,134 @@ if (confirmLogout) {
         
 
         
-// ✅ Helper: convert "HH:MM AM/PM" or "HH:MM" into minutes since midnight
+
+// Helper: convert "HH:MM AM/PM" or "HH:MM" into minutes since midnight
 function toMinutes(timeStr) {
   if (!timeStr) return null;
+  
+  timeStr = timeStr.trim();
   let hours, minutes;
 
   if (timeStr.includes("AM") || timeStr.includes("PM")) {
-    // 12-hour format
-    let [time, modifier] = timeStr.split(" ");
-    [hours, minutes] = time.split(":").map(Number);
+    // 12-hour format: "5:00 PM" or "9:30 AM"
+    const match = timeStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+    if (!match) return null;
+    
+    [, hours, minutes] = match.map(m => m ? parseInt(m) : 0);
+    const modifier = match[3].toUpperCase();
+    
     if (modifier === "PM" && hours !== 12) hours += 12;
     if (modifier === "AM" && hours === 12) hours = 0;
   } else {
-    // 24-hour format
-    [hours, minutes] = timeStr.split(":").map(Number);
+    // 24-hour format: "17:00"
+    const parts = timeStr.split(":").map(Number);
+    if (parts.length < 2) return null;
+    [hours, minutes] = parts;
   }
 
   return hours * 60 + minutes;
 }
 
-// -----------------------------
-// 🕒 Dynamic Service Durations (Loaded from Firestore)
-// -----------------------------
-let serviceDurations = {}; // will be populated from Firestore dynamically
+// Ensure service durations are loaded and logged properly
+let serviceDurations = {};
 
 async function loadServiceDurations() {
   try {
     const servicesRef = collection(db, "Services");
     const snapshot = await getDocs(servicesRef);
 
-    serviceDurations = {}; // reset
+    serviceDurations = {};
     snapshot.forEach(docSnap => {
       const service = docSnap.data();
+      console.log("🔍 Service doc:", docSnap.id, service); // DEBUG
+      
       if (service.name && service.duration) {
-        // normalize service name (lowercase for consistency)
-        serviceDurations[service.name.toLowerCase()] = service.duration;
+        const normalizedName = service.name.toLowerCase();
+        serviceDurations[normalizedName] = service.duration;
+        console.log(`✅ Added: ${normalizedName} = ${service.duration} mins`); // DEBUG
+      } else {
+        console.warn(`⚠️ Missing name or duration for:`, service); // DEBUG
       }
     });
 
-    console.log("✅ Service durations loaded:", serviceDurations);
+    console.log("✅ Service durations final:", serviceDurations); // DEBUG
   } catch (err) {
     console.error("❌ Error loading service durations:", err);
   }
 }
 
+// Load BEFORE the appointment form tries to use it
+document.addEventListener("DOMContentLoaded", async () => {
+  await loadServiceDurations(); // This MUST complete before form loads
+  
+  // Then load the form
+  const appointmentForm = document.getElementById("appointment-form");
+  if (appointmentForm) {
+    // Form initialization here
+  }
+});
 
+// When getting duration, use this helper with better fallback
+function getServiceDuration(serviceName) {
+  if (!serviceName) return 30;
+  
+  const normalized = serviceName.toLowerCase().trim();
+  const duration = serviceDurations[normalized];
+  
+  console.log(`🕒 Getting duration for "${serviceName}" (normalized: "${normalized}") = ${duration || 30}`);
+  
+  return duration || 30;
+} 
 
 async function isTimeSlotAvailable(date, startTime, serviceDuration) {
   try {
     const startMinutes = toMinutes(startTime);
     const endMinutes = startMinutes + serviceDuration;
 
-    // 🔍 Get all appointments for that date
-    const appointmentsQuery = query(
-      collection(db, "Appointments"),
-      where("date", "==", date)
-    );
-    const appointmentsSnap = await getDocs(appointmentsQuery);
+    console.log(`🔍 Checking slot: ${startTime} (${startMinutes}-${endMinutes})`);
 
-    for (const docSnap of appointmentsSnap.docs) {
+    // ✅ Query all appointments for that date
+    const q = query(collection(db, "Appointment"), where("date", "==", date));
+    const snap = await getDocs(q);
+
+    if (snap.empty) {
+      console.log("✅ No existing appointments on this date");
+      return true;
+    }
+
+    for (const docSnap of snap.docs) {
       const appt = docSnap.data();
+      if (!appt.time || typeof appt.time !== "string") continue;
 
-      // Handle both new & old appointment formats
-      const apptStartTime = appt.startTime || appt.time;
-      const apptEndTime = appt.endTime || null;
-      const apptDuration = parseInt(appt.duration) || 30;
+      // ✅ Expect format like "10:00 AM - 12:00 PM"
+      if (!appt.time.includes(" - ")) continue;
 
-      if (!apptStartTime) continue; // skip invalid entries
+      const [apptStartStr, apptEndStr] = appt.time.split(" - ").map(s => s.trim());
+      const apptStart = toMinutes(apptStartStr);
+      const apptEnd = toMinutes(apptEndStr);
 
-      const apptStartMinutes = toMinutes(apptStartTime);
-      const apptEndMinutes = apptEndTime
-        ? toMinutes(apptEndTime)
-        : apptStartMinutes + apptDuration;
+      // ⚠️ Skip invalid entries
+      if (isNaN(apptStart) || isNaN(apptEnd)) continue;
 
-      // ⚠️ Detect ANY overlap
+      // ⛔ Overlap check
       const overlap =
-        startMinutes < apptEndMinutes && endMinutes > apptStartMinutes;
+        startMinutes < apptEnd && endMinutes > apptStart;
 
       if (overlap) {
-        console.warn(
-          `⛔ Blocked overlap: ${apptStartTime} - ${apptEndTime || "(unknown)"}`
-        );
+        console.warn(`⛔ BLOCKED: ${appt.time} overlaps with ${startTime}`);
         return false;
       }
     }
 
-    return true; // ✅ slot is available
+    console.log(`✅ Slot available: ${startTime}`);
+    return true;
+
   } catch (err) {
-    console.error("Error checking slot availability:", err);
+    console.error("❌ Error checking time slot:", err);
     return false;
   }
 }
-
-
+  
 //PET FORM//
 document.addEventListener("DOMContentLoaded", async () => {
     await loadServiceDurations();
@@ -385,63 +420,69 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!appointmentForm) return console.error("❌ appointment-form not found in DOM");
 
 
-    // -----------------------------
-    // 🕒 Populate available time slots dynamically
-    // -----------------------------
-    async function loadAvailableTimeSlots() {
-        try {
-            const clinicSnap = await getDocs(collection(db, "ClinicSettings"));
-            if (clinicSnap.empty) return console.warn("No clinic hours found!");
 
-            const clinicData = clinicSnap.docs[0].data();
-            const weekdayHours = clinicData.weekdayHours;
-            const saturdayHours = clinicData.saturdayHours;
+async function loadAvailableTimeSlots() {
+  try {
+    const clinicSnap = await getDocs(collection(db, "ClinicSettings"));
+    if (clinicSnap.empty) return console.warn("No clinic hours found!");
 
-            const selectedDate = apptDateInput.value;
-            const selectedService = apptServiceInput.value;
-            
-            if (!selectedDate) return;
+    const clinicData = clinicSnap.docs[0].data();
+    const weekdayHours = clinicData.weekdayHours;
+    const saturdayHours = clinicData.saturdayHours;
 
-            const day = new Date(selectedDate).getDay();
-            if (day === 0) {
-                apptTimeInput.innerHTML = `<option value="">Closed on Sundays</option>`;
-                return;
-            }
+    const selectedDate = apptDateInput.value;
+    const selectedService = apptServiceInput.value;
+    
+    if (!selectedDate || !selectedService) return;
 
-            const start = day === 6 ? toMinutes(saturdayHours.start) : toMinutes(weekdayHours.start);
-            const end = day === 6 ? toMinutes(saturdayHours.end) : toMinutes(weekdayHours.end);
-
-           const serviceDuration = serviceDurations[selectedService?.toLowerCase()] || 30;
-
-            apptTimeInput.innerHTML = `<option value="">-- Select Time --</option>`;
-
-            for (let t = start; t < end; t += 30) {
-                const nextT = t + serviceDuration;
-                if (nextT > end) continue;
-
-                const startHours = Math.floor(t / 60);
-                const startMinutes = t % 60;
-                const endHours = Math.floor(nextT / 60);
-                const endMinutes = nextT % 60;
-
-                const timeValue = `${String(startHours).padStart(2, "0")}:${String(startMinutes).padStart(2, "0")}`;
-                const startLabel = formatTo12Hour(timeValue);
-                const endLabel = formatTo12Hour(`${String(endHours).padStart(2, "0")}:${String(endMinutes).padStart(2, "0")}`);
-
-                const selectedServiceName = apptServiceInput.value;
-                const isAvailable = await isTimeSlotAvailable(selectedDate, timeValue, selectedServiceName);
-
-                const option = document.createElement("option");
-                option.value = timeValue;
-                option.textContent = `${startLabel} - ${endLabel}${!isAvailable ? ' (Unavailable)' : ''}`;
-                option.disabled = !isAvailable;
-                apptTimeInput.appendChild(option);
-            }
-
-        } catch (err) {
-            console.error("Error loading time slots:", err);
-        }
+    const day = new Date(selectedDate).getDay();
+    if (day === 0) {
+      apptTimeInput.innerHTML = `<option value="">Closed on Sundays</option>`;
+      return;
     }
+
+    const start = day === 6 ? toMinutes(saturdayHours.start) : toMinutes(weekdayHours.start);
+    const end = day === 6 ? toMinutes(saturdayHours.end) : toMinutes(weekdayHours.end);
+
+    // ✅ Get the correct service duration from Firestore
+    const serviceDuration = getServiceDuration(selectedService);
+    console.log(`📅 Generating slots for ${selectedService}: ${serviceDuration} mins each`);
+
+    apptTimeInput.innerHTML = `<option value="">-- Select Time --</option>`;
+
+    // ✅ Loop by service duration intervals - no hardcoded 30 mins
+    for (let t = start; t < end; t += serviceDuration) {
+      const nextT = t + serviceDuration;
+      
+      // Skip if service would extend past closing time
+      if (nextT > end) break;
+
+      const startHours = Math.floor(t / 60);
+      const startMinutes = t % 60;
+      const endHours = Math.floor(nextT / 60);
+      const endMinutes = nextT % 60;
+
+      const timeValue = `${String(startHours).padStart(2, "0")}:${String(startMinutes).padStart(2, "0")}`;
+      const startLabel = formatTo12Hour(timeValue);
+      const endLabel = formatTo12Hour(`${String(endHours).padStart(2, "0")}:${String(endMinutes).padStart(2, "0")}`);
+
+      // ✅ Pass the correct duration to availability check
+      const isAvailable = await isTimeSlotAvailable(selectedDate, timeValue, serviceDuration);
+
+      const option = document.createElement("option");
+      option.value = timeValue;
+      option.textContent = `${startLabel} - ${endLabel}${!isAvailable ? ' (Unavailable)' : ''}`;
+      option.disabled = !isAvailable;
+      apptTimeInput.appendChild(option);
+
+      console.log(`  Slot: ${startLabel} - ${endLabel} | Available: ${isAvailable}`);
+    }
+
+  } catch (err) {
+    console.error("Error loading time slots:", err);
+  }
+}
+
 
     function getSizeFromWeight(weight) {
         if (weight < 10) return "Small";
@@ -450,14 +491,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         return "Extra Large";
     }
 
-    const speciesBreeds = {
-        dog: ["Affenpinscher", "Afghan Hound", "Airedale Terrier", "Akita", "Beagle", "Boxer", "Bulldog", "Chihuahua", "Dalmatian", "Doberman"],
-        cat: ["Abyssinian", "Bengal", "Birman", "Maine Coon", "Persian", "Ragdoll", "Siamese", "Sphynx"],
-        bird: ["Budgerigar", "Cockatiel", "Canary", "Lovebird", "Parrot", "Finch"],
-        rabbit: ["Dutch", "Flemish Giant", "Lionhead", "Mini Lop", "Netherland Dwarf"],
-        hamster: ["Syrian", "Roborovski", "Djungarian", "Chinese"],
-        fish: ["Goldfish", "Betta", "Guppy", "Tetra", "Molly"]
-    };
+   
 
     const speciesListEl = document.getElementById("speciesList");
     Object.keys(speciesBreeds).forEach(specie => {
@@ -588,136 +622,216 @@ document.addEventListener("DOMContentLoaded", async () => {
     apptServiceInput.addEventListener("change", loadAvailableTimeSlots);
     await loadAvailableTimeSlots();
 
-  appointmentForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
+// Add this function before the form submit event listener
 
-    const selectedDate = apptDateInput.value;
-    const selectedTime = apptTimeInput.value;
-    const formattedTime = formatTo12Hour(selectedTime);
-    const selectedService = apptServiceInput.value;
+// ✅ Check for appointment overlap
+async function checkForOverlappingAppointments(selectedDate, selectedTime, serviceDuration) {
+  try {
+    const q = query(collection(db, "Appointment"), where("date", "==", selectedDate));
+    const snapshot = await getDocs(q);
 
-    const todayDate = new Date().toISOString().split("T")[0];
-    if (selectedDate === todayDate) {
-        await Swal.fire({
-            icon: "warning",
-            title: "Same-Day Booking Not Allowed",
-            text: "You cannot create an appointment for today. Please choose another date.",
-            confirmButtonColor: "#f8732b"
+    const selectedMinutes = toMinutes(selectedTime);
+    const selectedEndMinutes = selectedMinutes + serviceDuration;
+
+    let overlappingAppointments = [];
+
+    snapshot.forEach(docSnap => {
+      const appt = docSnap.data();
+      
+      if (!appt.startTime || !appt.endTime) return;
+
+      // Convert appointment times to 24-hour format then to minutes
+      const aptStartStr = appt.startTime.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+      const aptEndStr = appt.endTime.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+
+      if (!aptStartStr || !aptEndStr) return;
+
+      let aptStartHour = parseInt(aptStartStr[1]);
+      let aptStartMin = parseInt(aptStartStr[2]);
+      const aptStartPeriod = aptStartStr[3].toUpperCase();
+
+      if (aptStartPeriod === "PM" && aptStartHour !== 12) aptStartHour += 12;
+      if (aptStartPeriod === "AM" && aptStartHour === 12) aptStartHour = 0;
+      const aptStartMinutes = aptStartHour * 60 + aptStartMin;
+
+      let aptEndHour = parseInt(aptEndStr[1]);
+      let aptEndMin = parseInt(aptEndStr[2]);
+      const aptEndPeriod = aptEndStr[3].toUpperCase();
+
+      if (aptEndPeriod === "PM" && aptEndHour !== 12) aptEndHour += 12;
+      if (aptEndPeriod === "AM" && aptEndHour === 12) aptEndHour = 0;
+      const aptEndMinutes = aptEndHour * 60 + aptEndMin;
+
+      // Check for overlap: selected slot overlaps if it starts before apt ends AND ends after apt starts
+      const hasOverlap = selectedMinutes < aptEndMinutes && selectedEndMinutes > aptStartMinutes;
+
+      if (hasOverlap) {
+        overlappingAppointments.push({
+          petName: appt.petName || "Unknown Pet",
+          ownerName: appt.name || "Unknown Owner",
+          startTime: appt.startTime,
+          endTime: appt.endTime,
+          service: appt.service || "Unknown Service"
         });
-        return;
+      }
+    });
+
+    return overlappingAppointments;
+  } catch (err) {
+    console.error("Error checking overlapping appointments:", err);
+    return [];
+  }
+}
+
+// ✅ Update the form submit event listener to include overlap check
+
+appointmentForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const selectedDate = apptDateInput.value;
+  const selectedTime = apptTimeInput.value;
+  const formattedTime = formatTo12Hour(selectedTime);
+  const selectedService = apptServiceInput.value;
+
+  const todayDate = new Date().toISOString().split("T")[0];
+  if (selectedDate === todayDate) {
+    await Swal.fire({
+      icon: "warning",
+      title: "Same-Day Booking Not Allowed",
+      text: "You cannot create an appointment for today. Please choose another date.",
+      confirmButtonColor: "#f8732b"
+    });
+    return;
+  }
+
+  try {
+    const clinicSnap = await getDocs(collection(db, "ClinicSettings"));
+    if (clinicSnap.empty) throw new Error("Clinic hours not found");
+
+    const clinicData = clinicSnap.docs[0].data();
+    const weekdayHours = clinicData.weekdayHours;
+    const saturdayHours = clinicData.saturdayHours;
+
+    const appointmentDay = new Date(selectedDate).getDay();
+    if (appointmentDay === 0) {
+      await Swal.fire({
+        icon: "warning",
+        title: "Closed on Sundays",
+        text: "Appointments cannot be scheduled on Sundays.",
+        confirmButtonColor: "#f8732b"
+      });
+      return;
     }
 
-    try {
-        const clinicSnap = await getDocs(collection(db, "ClinicSettings"));
-        if (clinicSnap.empty) throw new Error("Clinic hours not found");
+    const clinicStart = (appointmentDay === 6) ? saturdayHours.start : weekdayHours.start;
+    const clinicEnd = (appointmentDay === 6) ? saturdayHours.end : weekdayHours.end;
 
-        const clinicData = clinicSnap.docs[0].data();
-        const weekdayHours = clinicData.weekdayHours;
-        const saturdayHours = clinicData.saturdayHours;
+    const selectedMinutes = toMinutes(selectedTime);
+    const serviceDuration = serviceDurations[selectedService?.toLowerCase?.()] || 30;
+    const endMinutes = selectedMinutes + serviceDuration;
 
-        const appointmentDay = new Date(selectedDate).getDay();
-        if (appointmentDay === 0) {
-            await Swal.fire({
-                icon: "warning",
-                title: "Closed on Sundays",
-                text: "Appointments cannot be scheduled on Sundays.",
-                confirmButtonColor: "#f8732b"
-            });
-            return;
-        }
+    const endHours = Math.floor(endMinutes / 60);
+    const endMins = endMinutes % 60;
+    const endTime = `${String(endHours).padStart(2, "0")}:${String(endMins).padStart(2, "0")}`;
+    const formattedEndTime = formatTo12Hour(endTime);
 
-        const clinicStart = (appointmentDay === 6) ? saturdayHours.start : weekdayHours.start;
-        const clinicEnd = (appointmentDay === 6) ? saturdayHours.end : weekdayHours.end;
+    if (selectedMinutes < toMinutes(clinicStart) || endMinutes > toMinutes(clinicEnd)) {
+      await Swal.fire({
+        icon: "error",
+        title: "Outside Clinic Hours",
+        text: `This service (${serviceDuration} mins) would extend beyond clinic hours.`,
+        confirmButtonColor: "#f8732b"
+      });
+      return;
+    }
 
-        const selectedMinutes = toMinutes(selectedTime);
-        const serviceDuration = serviceDurations[selectedService?.toLowerCase?.()] || 30;
-        const endMinutes = selectedMinutes + serviceDuration;
+    const blockedSnap = await getDocs(query(collection(db, "BlockedSlots"), where("date", "==", selectedDate)));
+    let isBlocked = false;
+    let reason = "";
+    
+    blockedSnap.forEach(docSnap => {
+      const block = docSnap.data();
+      const blockStart = toMinutes(block.startTime);
+      const blockEnd = toMinutes(block.endTime);
+      
+      if (
+        (selectedMinutes >= blockStart && selectedMinutes < blockEnd) ||
+        (endMinutes > blockStart && endMinutes <= blockEnd) ||
+        (selectedMinutes <= blockStart && endMinutes >= blockEnd)
+      ) {
+        isBlocked = true;
+        reason = block.reason || "Unavailable";
+      }
+    });
 
-        const endHours = Math.floor(endMinutes / 60);
-        const endMins = endMinutes % 60;
-        const endTime = `${String(endHours).padStart(2, "0")}:${String(endMins).padStart(2, "0")}`;
-        const formattedEndTime = formatTo12Hour(endTime);
+    if (isBlocked) {
+      await Swal.fire({
+        icon: "error",
+        title: "Time Slot Blocked",
+        text: `This time is unavailable (${reason}).`,
+        confirmButtonColor: "#f8732b"
+      });
+      return;
+    }
 
-        if (selectedMinutes < toMinutes(clinicStart) || endMinutes > toMinutes(clinicEnd)) {
-            await Swal.fire({
-                icon: "error",
-                title: "Outside Clinic Hours",
-                text: `This service (${serviceDuration} mins) would extend beyond clinic hours.`,
-                confirmButtonColor: "#f8732b"
-            });
-            return;
-        }
+    // ✅ NEW: Check for overlapping appointments
+    const overlappingAppointments = await checkForOverlappingAppointments(selectedDate, selectedTime, serviceDuration);
+    
+    if (overlappingAppointments.length > 0) {
+      let conflictList = overlappingAppointments.map(apt => 
+        `<div style="margin: 8px 0; padding: 8px; background: #fff3cd; border-left: 3px solid #ffc107; border-radius: 3px;">
+          <strong>${apt.petName}</strong> (${apt.ownerName})<br/>
+          <small>${apt.startTime} - ${apt.endTime}</small>
+        </div>`
+      ).join('');
 
-        const blockedSnap = await getDocs(query(collection(db, "BlockedSlots"), where("date", "==", selectedDate)));
-        let isBlocked = false;
-        let reason = "";
-        
-        blockedSnap.forEach(docSnap => {
-            const block = docSnap.data();
-            const blockStart = toMinutes(block.startTime);
-            const blockEnd = toMinutes(block.endTime);
-            
-            if (
-                (selectedMinutes >= blockStart && selectedMinutes < blockEnd) ||
-                (endMinutes > blockStart && endMinutes <= blockEnd) ||
-                (selectedMinutes <= blockStart && endMinutes >= blockEnd)
-            ) {
-                isBlocked = true;
-                reason = block.reason || "Unavailable";
-            }
-        });
+      await Swal.fire({
+        icon: "error",
+        title: "Time Slot Conflict",
+        html: `<p>This time slot overlaps with existing appointments:</p>${conflictList}`,
+        confirmButtonColor: "#f8732b",
+        confirmButtonText: "Select Another Time"
+      });
+      await loadAvailableTimeSlots();
+      return;
+    }
 
-        if (isBlocked) {
-            await Swal.fire({
-                icon: "error",
-                title: "Time Slot Blocked",
-                text: `This time is unavailable (${reason}).`,
-                confirmButtonColor: "#f8732b"
-            });
-            return;
-        }
+    const stillAvailable = await isTimeSlotAvailable(selectedDate, selectedTime, serviceDuration);
+    if (!stillAvailable) {
+      await Swal.fire({
+        icon: "error",
+        title: "Time Slot No Longer Available",
+        text: "This slot was just booked. Please select another time.",
+        confirmButtonColor: "#f8732b"
+      });
+      await loadAvailableTimeSlots();
+      return;
+    }
 
-        const stillAvailable = await isTimeSlotAvailable(selectedDate, selectedTime, selectedService);
-        if (!stillAvailable) {
-            await Swal.fire({
-                icon: "error",
-                title: "Time Slot No Longer Available",
-                text: "This slot was just booked. Please select another time.",
-                confirmButtonColor: "#f8732b"
-            });
-            await loadAvailableTimeSlots();
-            return;
-        }
-const appointmentData = {
-  name: apptNameInput.value.trim(),
-  ownerNumber: apptNumberInput.value ? String(apptNumberInput.value).trim() : "",
-  petName:
-    apptPetNameInput.options[apptPetNameInput.selectedIndex]?.dataset.petName ||
-    apptPetNameInput.value.trim(),
-  species: apptSpeciesInput.value.trim(),
-  breed: apptBreedInput.value.trim(),
-  weight: apptWeightInput.value.trim(),
-  petSize: apptSizeInput.value.trim() || getSizeFromWeight(parseFloat(apptWeightInput.value)),
-  sex: apptSexInput.value,
-  service: selectedService,
-  date: selectedDate,
-  
-  // 🕒 separate fields for clarity
-  startTime: selectedTime,
-  endTime: endTime,
-  startTimeFormatted: formattedTime,
-  endTimeFormatted: formattedEndTime,
-  displayTime: `${formattedTime} - ${formattedEndTime}`,
+    const appointmentData = {
+      userId: currentUserId || currentUserName,
+      vet: "Dr. Donna Doll Diones",
+      service: selectedService,
+      status: "pending",
+      date: selectedDate,
+      startTime: formattedTime,
+      endTime: formattedEndTime,
+      duration: serviceDuration,
+      serviceFee: `₱${(0).toFixed(2)}`,
+      totalAmount: `₱${(0).toFixed(2)}`,
+      timestamp: new Date().toISOString(),
+      name: apptNameInput.value.trim(),
+      ownerNumber: apptNumberInput.value?.trim() || "",
+      petName:
+        apptPetNameInput.options[apptPetNameInput.selectedIndex]?.dataset.petName ||
+        apptPetNameInput.value.trim(),
+      species: apptSpeciesInput.value.trim(),
+      breed: apptBreedInput.value.trim(),
+      weight: apptWeightInput.value.trim(),
+      petSize: apptSizeInput.value.trim() || getSizeFromWeight(parseFloat(apptWeightInput.value)),
+      sex: apptSexInput.value,
+    };
 
-  duration: serviceDuration,
-  serviceFee: 0,
-  totalAmount: 0,
-  selectedServices: [],
-  vaccines: []
-};
-
-
-    // 🟡 Show loading and store appointment data in sessionStorage
     Swal.fire({
       title: "Processing...",
       text: "Please wait while we submit your appointment.",
@@ -750,7 +864,6 @@ const appointmentData = {
     });
   }
 });
-
 
 
     // -----------------------------
@@ -1114,19 +1227,28 @@ while (current.getTime() < end.getTime()) {
 
 const timeSlots = generateTimeSlots(clinicOpen, clinicClose, 30);
 
-// ===== TIME HELPERS =====
+// ===== FIXED TIME HELPERS =====
 function timeToMinutes(t) {
+  if (!t) return NaN;
+  
+  // Handle 12-hour format with AM/PM (e.g., "2:00 PM" or "2:00PM")
   if (/am|pm/i.test(t)) {
-    let [hour, minute] = t.split(':');
-    const suffix = minute.split(' ')[1];
-    minute = parseInt(minute);
+    const match = t.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+    if (!match) return NaN;
+    
+    let [, hour, minute, suffix] = match;
     hour = parseInt(hour);
-    if (suffix.toLowerCase() === 'pm' && hour !== 12) hour += 12;
-    if (suffix.toLowerCase() === 'am' && hour === 12) hour = 0;
+    minute = parseInt(minute);
+    
+    if (suffix.toUpperCase() === 'PM' && hour !== 12) hour += 12;
+    if (suffix.toUpperCase() === 'AM' && hour === 12) hour = 0;
+    
     return hour * 60 + minute;
   }
+  
+  // Handle 24-hour format (e.g., "14:00")
   const [h, m] = t.split(':').map(Number);
-  return h*60 + m;
+  return h * 60 + m;
 }
 
 function minutesToTime(totalMinutes) {
@@ -1151,7 +1273,7 @@ function formatDate(date) {
   return `${y}-${m}-${d}`;
 }
 
-// ===== FIRESTORE LOAD =====
+// FIXED: loadAppointmentsFromFirestore
 async function loadAppointmentsFromFirestore() {
   appointments = {};
   selectedDate = null;
@@ -1164,16 +1286,31 @@ async function loadAppointmentsFromFirestore() {
   snapshot.forEach(docSnap => {
     const data = docSnap.data();
     const dateStr = formatDate(new Date(data.date));
+    
     if (!appointments[dateStr]) appointments[dateStr] = [];
+    
+    // ✅ Make sure we're capturing startTime and endTime correctly
     appointments[dateStr].push({
       id: docSnap.id,
-      time: data.time,
-      petName: data.petName,
-      type: data.service,
+      time: data.time || data.startTime,  // fallback to startTime if time doesn't exist
+      startTime: data.startTime || data.time || "",  // ✅ explicitly grab startTime
+      endTime: data.endTime || "",  // ✅ explicitly grab endTime
+      petName: data.petName || "Unknown Pet",
+      type: data.service || "unknown",  // use 'service' field if 'type' doesn't exist
       owner: data.name || data.ownerName || "Unknown",
-      phone: data.number || data.ownerPhone || ""
+      phone: data.ownerNumber || data.number || data.ownerPhone || ""
+    });
+
+    console.log(`✅ Loaded appointment:`, {
+      date: dateStr,
+      petName: data.petName,
+      startTime: data.startTime,
+      endTime: data.endTime,
+      service: data.service
     });
   });
+
+  console.log("📅 All appointments:", appointments);
   updateCalendar();
   updateSidebar();
 }
@@ -1358,7 +1495,7 @@ async function loadClinicSettings() {
   }
 }
 
-
+// FIXED updateSidebar function
 function updateSidebar() {
   const selectedDateDiv = document.getElementById('selectedDate');
   const timeSlotsDiv = document.getElementById('timeSlots');
@@ -1382,52 +1519,59 @@ function updateSidebar() {
   });
 
   function generateTimeSlotsForDate(date) {
-  if (!clinicSettings) {
-    console.warn("⚠️ Clinic settings not loaded yet");
-    return [];
+    if (!clinicSettings) {
+      console.warn("⚠️ Clinic settings not loaded yet");
+      return [];
+    }
+
+    const appointmentDuration = clinicSettings.appointmentDuration || 30;
+    if (!date || !appointmentDuration || isNaN(appointmentDuration)) {
+      console.warn("⚠️ Cannot generate slots: invalid date or appointmentDuration");
+      return [];
+    }
+
+    const day = date.getDay();
+    let start, end;
+
+    if (day === 0) return [];
+    else if (day === 6 && clinicSettings.saturdayHours) {
+      start = clinicSettings.saturdayHours.start || "08:00";
+      end   = clinicSettings.saturdayHours.end   || "16:00";
+    } else if (clinicSettings.weekdayHours) {
+      start = clinicSettings.weekdayHours.start || "08:00";
+      end   = clinicSettings.weekdayHours.end   || "18:00";
+    } else {
+      console.warn("⚠️ No clinic hours found for this day, using default 08:00–17:00");
+      start = "08:00";
+      end   = "17:00";
+    }
+
+    const slots = [];
+    let current = timeToMinutes(start);
+    const endMinutes = timeToMinutes(end);
+
+    while (current <= endMinutes - appointmentDuration) {
+      slots.push(minutesToTime(current));
+      current += appointmentDuration;
+    }
+
+    if (current === endMinutes) {
+      slots.push(minutesToTime(current));
+    }
+
+    return slots;
   }
 
-  const appointmentDuration = clinicSettings.appointmentDuration || 30;
-  if (!date || !appointmentDuration || isNaN(appointmentDuration)) {
-    console.warn("⚠️ Cannot generate slots: invalid date or appointmentDuration");
-    return [];
+  // Helper: Convert 24h "HH:MM" to 12h format
+  function to12Hour(time24) {
+    if (!time24 || !/^\d{2}:\d{2}$/.test(time24)) return time24;
+    const [h, m] = time24.split(":").map(Number);
+    const ampm = h >= 12 ? "PM" : "AM";
+    const h12 = h % 12 || 12;
+    return `${h12}:${String(m).padStart(2, "0")} ${ampm}`;
   }
 
-  const day = date.getDay();
-  let start, end;
-
-  if (day === 0) return []; // Sunday closed
-  else if (day === 6 && clinicSettings.saturdayHours) {
-    start = clinicSettings.saturdayHours.start || "08:00";
-    end   = clinicSettings.saturdayHours.end   || "16:00";
-  } else if (clinicSettings.weekdayHours) {
-    start = clinicSettings.weekdayHours.start || "08:00";
-    end   = clinicSettings.weekdayHours.end   || "18:00";
-  } else {
-    console.warn("⚠️ No clinic hours found for this day, using default 08:00–17:00");
-    start = "08:00";
-    end   = "17:00";
-  }
-
-  const slots = [];
-  let current = timeToMinutes(start);
-  const endMinutes = timeToMinutes(end);
-
- while (current <= endMinutes - appointmentDuration) {
-  slots.push(minutesToTime(current));
-  current += appointmentDuration;
-}
-
-// ✅ add exact closing time as a final slot (if you want it shown)
-if (current === endMinutes) {
-  slots.push(minutesToTime(current));
-}
-
-
-  return slots;
-}
-
-  // ===== Render all time slots =====
+  // Render all time slots
   timeSlotsDiv.innerHTML = '';
   const dynamicSlots = generateTimeSlotsForDate(selectedDate);
 
@@ -1437,11 +1581,32 @@ if (current === endMinutes) {
     dynamicSlots.forEach(time => {
       const timeSlot = document.createElement('div');
       timeSlot.className = 'calendar-time-slot';
-      timeSlot.textContent = formatTo12Hour(time);
+      timeSlot.textContent = to12Hour(time);
 
       const slotMinutes = timeToMinutes(time);
       const blockedEntry = dayBlocks.find(b => slotMinutes >= timeToMinutes(b.startTime) && slotMinutes < timeToMinutes(b.endTime));
-      const isBooked = dayAppointments.some(a => a.time === time);
+      
+      // Check if this time slot falls within any appointment's startTime - endTime range
+      const isBooked = dayAppointments.some(a => {
+        if (!a.startTime || !a.endTime) {
+          console.warn("⚠️ Appointment missing time:", a);
+          return false;
+        }
+        
+        const aptStartTime24 = convertTo24Hour(a.startTime);
+        const aptEndTime24 = convertTo24Hour(a.endTime);
+        
+        const aptStartMinutes = timeToMinutes(aptStartTime24);
+        const aptEndMinutes = timeToMinutes(aptEndTime24);
+        
+        console.log(`Checking slot ${time} (${slotMinutes}min) vs Apt ${a.petName} ${a.startTime}-${a.endTime} (converted: ${aptStartTime24}-${aptEndTime24} = ${aptStartMinutes}-${aptEndMinutes}min)`);
+        
+        // Block if slot time is within appointment range (>= start AND <= end)
+        // Using <= ensures the end time slot is also blocked
+        const blocked = slotMinutes >= aptStartMinutes && slotMinutes <= aptEndMinutes;
+        console.log(`  → ${blocked ? '✅ BLOCKED' : '❌ AVAILABLE'}`);
+        return blocked;
+      });
 
       if (blockedEntry) {
         timeSlot.classList.add('blocked');
@@ -1449,6 +1614,7 @@ if (current === endMinutes) {
         timeSlot.style.pointerEvents = 'none';
       } else if (isBooked) {
         timeSlot.classList.add('booked');
+        timeSlot.textContent += ' (Booked)';
         timeSlot.style.pointerEvents = 'none';
       } else {
         timeSlot.addEventListener('click', () => selectTimeSlot(time));
@@ -1459,46 +1625,88 @@ if (current === endMinutes) {
     });
   }
 
-  // ===== Render appointments for the day =====
+  // Render appointments for the day
   appointmentsListDiv.innerHTML = '';
-  let filteredAppointments = [...dayAppointments]; // default all appointments
+  let filteredAppointments = [...dayAppointments];
 
   if (selectedTimeSlot) {
-   filteredAppointments = dayAppointments.filter(
-  apt => normalizeTimeFormat(apt.time) === normalizeTimeFormat(selectedTimeSlot)
-);
-
+    filteredAppointments = dayAppointments.filter(apt => {
+      if (!apt.startTime) {
+        console.warn("⚠️ Appointment missing startTime:", apt);
+        return false;
+      }
+      const aptTime24 = convertTo24Hour(apt.startTime);
+      console.log(`Comparing: ${aptTime24} === ${selectedTimeSlot}`);
+      return aptTime24 === selectedTimeSlot;
+    });
   }
 
   if (filteredAppointments.length > 0) {
     const seen = new Set();
+
     filteredAppointments.forEach(apt => {
-      const key = `${apt.time}_${apt.petName}_${apt.owner}_${apt.type}`;
+      const key = `${apt.startTime}_${apt.petName}_${apt.owner}_${apt.type}`;
       if (seen.has(key)) return;
       seen.add(key);
 
       const div = document.createElement('div');
       div.className = 'calendar-appointment';
+
+      // Make sure startTime exists, fallback to endTime or N/A
+      const startFormatted = apt.startTime || apt.endTime || "Time Not Set";
+      const endFormatted = apt.endTime || '';
+
       div.innerHTML = `
-        <div class="calendar-appointment-time">⏰ ${formatTo12Hour(apt.time)}</div>
+        <div class="calendar-appointment-time">⏰ ${startFormatted}${endFormatted ? ` - ${endFormatted}` : ''}</div>
         <div class="calendar-appointment-details">
           <strong>🐾 ${apt.petName}</strong> <span style="color:#555">(${apt.owner})</span>
-          <div class="calendar-appointment-type calendar-type-${apt.type}">📌 ${getTypeDisplayName(apt.type)}</div>
+          <div class="calendar-appointment-type calendar-type-${apt.type}">
+            📌 ${getTypeDisplayName(apt.type)}
+          </div>
           ${apt.phone ? `<div class="calendar-appointment-phone">📞 ${apt.phone}</div>` : ''}
         </div>
       `;
+
       div.addEventListener('click', () => {
         sessionStorage.setItem('selectedAppointmentId', apt.id);
-        window.location.href = 'custConfirm.html';
       });
+
       appointmentsListDiv.appendChild(div);
     });
   } else {
-    appointmentsListDiv.innerHTML = '<p style="text-align:center;color:#6c757d;">No appointments scheduled for this day</p>';
+    appointmentsListDiv.innerHTML = '<p style="text-align:center;color:#6c757d;">No appointments scheduled for this time</p>';
   }
 
   bookBtn.disabled = !selectedTimeSlot;
 }
+
+// Helper function to convert 12-hour time to 24-hour format
+function convertTo24Hour(time12) {
+  if (!time12 || typeof time12 !== 'string') {
+    console.warn("⚠️ Invalid time input:", time12);
+    return "";
+  }
+  
+  // Handle "h:mm AM/PM" format
+  const match = time12.trim().match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+  if (!match) {
+    console.warn("⚠️ Could not parse time:", time12);
+    return time12; // return as-is if format unrecognized
+  }
+  
+  let [, hours, minutes, period] = match;
+  hours = parseInt(hours, 10);
+  minutes = parseInt(minutes, 10);
+  period = period.toUpperCase();
+  
+  if (period === "PM" && hours !== 12) hours += 12;
+  if (period === "AM" && hours === 12) hours = 0;
+  
+  const result = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+  console.log(`✅ Converted ${time12} → ${result}`);
+  return result;
+}
+
 
 
 
@@ -2293,99 +2501,67 @@ async submitAppointmentForm(event) {
   }
 };
 
-const speciesBreeds = {
-  dog: [
-    "Affenpinscher", "Afghan Hound", "Airedale Terrier", "Akita", "Alaskan Malamute",
-    "American Bulldog", "American Eskimo Dog", "American Pit Bull Terrier", 
-    "American Staffordshire Terrier", "Australian Cattle Dog", "Australian Shepherd",
-    "Basenji", "Basset Hound", "Beagle", "Bearded Collie", "Bedlington Terrier",
-    "Belgian Malinois", "Bernese Mountain Dog", "Bichon Frise", "Bloodhound",
-    "Border Collie", "Border Terrier", "Boston Terrier", "Boxer", "Brittany Spaniel",
-    "Bull Terrier", "Bulldog", "Bullmastiff", "Cairn Terrier", "Cavalier King Charles Spaniel",
-    "Chesapeake Bay Retriever", "Chihuahua", "Chow Chow", "Cocker Spaniel",
-    "Collie", "Dachshund", "Dalmatian", "Doberman Pinscher", "English Setter", "Doberman",
-    "English Springer Spaniel", "English Toy Spaniel", "Eskimo Dog", "Field Spaniel",
-    "Finnish Spitz", "Flat-Coated Retriever", "Fox Terrier", "French Bulldog",
-    "German Pinscher", "German Shepherd", "German Shorthaired Pointer", "Giant Schnauzer",
-   "Gordon Setter", "Great Dane", "Greater Swiss Mountain Dog",
-    "Greyhound", "Harrier", "Havanese", "Irish Setter", "Irish Terrier", "Irish Wolfhound",
-    "Italian Greyhound", "Jack Russell Terrier", "Japanese Chin", "Keeshond", "Kerry Blue Terrier",
-    "Komondor", "Kuvasz", "Labrador Retriever", "Lakeland Terrier", "Leonberger",
-    "Lhasa Apso", "Lowchen", "Maltese", "Manchester Terrier", "Mastiff", "Miniature Bull Terrier",
-    "Miniature Pinscher", "Miniature Poodle", "Miniature Schnauzer", "Newfoundland",
-    "Norfolk Terrier", "Norwegian Buhund", "Norwegian Elkhound", "Norwich Terrier",
-    "Old English Sheepdog", "Otterhound", "Papillon", "Pekingese", "Pembroke Welsh Corgi",
-    "Petit Basset Griffon Vendeen", "Pharaoh Hound", "Plott", "Pointer", "Pomeranian", "Poodle",
-    "Portuguese Water Dog", "Presa Canario", "Pug", "Puli", "Pumi", "Rat Terrier", "Redbone Coonhound",
-    "Rhodesian Ridgeback", "Saint Bernard", "Saluki", "Samoyed", "Schipperke",
-    "Schnauzer", "Scottish Deerhound", "Scottish Terrier", "Sealyham Terrier", "Shetland Sheepdog",
-    "Shiba Inu", "Siberian Husky", "Silky Terrier", "Skye Terrier", "Sloughi",
-    "English Springer Spaniel", "French Bulldog", "German Shepherd", "Golden Retriever",
-    "Great Dane", "Greyhound", "Irish Setter", "Irish Wolfhound", "Jack Russell Terrier",
-    "Labrador Retriever", "Maltese", "Newfoundland", "Papillon", "Pekingese",
-    "Pembroke Welsh Corgi", "Pointer", "Pomeranian", "Poodle", "Pug", "Rottweiler",
-    "Saint Bernard", "Samoyed", "Schnauzer", "Scottish Terrier", "Shar Pei",
-    "Shetland Sheepdog", "Shiba Inu", "Shih Tzu", "Siberian Husky", "Staffordshire Bull Terrier",
-    "Weimaraner", "West Highland White Terrier", "Whippet", "Yorkshire Terrier"
-  ],
-  cat: [
-    "Abyssinian", "American Bobtail", "American Curl", "American Shorthair",
-    "American Wirehair", "Balinese", "Bengal", "Birman", "Bombay", "British Shorthair",
-    "Burmese", "Burmilla", "Chartreux", "Cornish Rex", "Cymric", "Devon Rex",
-    "Egyptian Mau", "Exotic Shorthair", "Havana Brown", "Himalayan", "Japanese Bobtail",
-    "Korat", "LaPerm", "Maine Coon", "Manx", "Norwegian Forest", "Ocicat", "Oriental",
-    "Persian", "Peterbald", "Pixiebob", "Ragdoll", "Russian Blue", "Savannah", "Scottish Fold",
-    "Selkirk Rex", "Siamese", "Siberian", "Singapura", "Somali", "Sphynx", "Tonkinese",
-    "Turkish Angora", "Turkish Van"
-  ],
-  bird: [
-    "African Grey Parrot", "Amazon Parrot", "Budgerigar", "Canary", "Cockatiel", "Cockatoo",
-    "Conure", "Dove", "Eclectus Parrot", "Finch", "Lovebird", "Macaw", "Parakeet",
-    "Parrotlet", "Quaker Parrot", "Ringneck Parakeet"
-  ],
-  rabbit: [
-    "American Fuzzy Lop", "American Rabbit", "Angora", "Belgian Hare", "Beveren",
-    "Britannia Petite", "Californian", "Checkered Giant", "Dutch", "Dwarf Hotot",
-    "English Angora", "English Lop", "English Spot", "Flemish Giant", "Florida White",
-    "French Angora", "French Lop", "Harlequin", "Havana", "Himalayan", "Holland Lop",
-    "Jersey Wooly", "Lionhead", "Mini Lop", "Mini Rex", "Netherland Dwarf", "New Zealand",
-    "Polish", "Rex", "Satin", "Silver", "Silver Fox"
-  ],
-  hamster: [
-    "Syrian Hamster", "Winter White Dwarf Hamster", "Campbell’s Dwarf Hamster",
-    "Roborovski Hamster", "Chinese Hamster"
-  ],
-  fish: [
-    "Angelfish", "Archerfish", "Arowana", "Barb", "Betta", "Catfish", "Clownfish",
-    "Corydoras", "Discus", "Goby", "Goldfish", "Gourami", "Guppy", "Koi", "Molly",
-    "Oscar", "Platy", "Pleco", "Rainbowfish", "Swordtail", "Tetra", "Zebra Danio"
-  ]
-};
-
-
-// Populate species list
 const speciesList = document.getElementById("speciesList");
-Object.keys(speciesBreeds).forEach(specie => {
-  const option = document.createElement("option");
-  option.value = specie.charAt(0).toUpperCase() + specie.slice(1);
-  speciesList.appendChild(option);
-});
+const petSpeciesInput = document.getElementById("petSpecies");
+const petBreedInput = document.getElementById("petBreed");
 
-document.getElementById("petSpecies").addEventListener("input", (e) => {
-  const value = e.target.value.trim().toLowerCase();
-  const breedList = document.getElementById("breedList");
-  breedList.innerHTML = "";
+let speciesBreeds = {}; // dynamically updated
 
-  if (speciesBreeds[value]) {
-    speciesBreeds[value].forEach(breed => {
-      const option = document.createElement("option");
-      option.value = breed;
-      breedList.appendChild(option);
+// Listen for real-time updates from Firestore
+function listenSpeciesAndBreeds() {
+  const speciesCollection = collection(db, "Species");
+
+  onSnapshot(speciesCollection, (snapshot) => {
+    speciesBreeds = {}; // reset
+
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      const speciesName = data.name.toLowerCase();
+
+      if (!speciesBreeds[speciesName]) speciesBreeds[speciesName] = [];
+
+      if (Array.isArray(data.breeds)) {
+        data.breeds.forEach(b => {
+          if (b.status === "Active") speciesBreeds[speciesName].push(b.name);
+        });
+      }
     });
-  }
-});
+
+    populateSpeciesDropdown();
+
+    // Re-trigger breed dropdown if species is already selected
+    const selectedSpecies = petSpeciesInput.value.toLowerCase().trim();
+    if (speciesBreeds[selectedSpecies]) {
+      petBreedInput.disabled = false;
+      breedDropdown.setOptions(speciesBreeds[selectedSpecies]);
+    } else {
+      petBreedInput.disabled = true;
+      breedDropdown.setOptions([]);
+    }
+  });
+}
+
+function populateSpeciesDropdown() {
+  speciesList.innerHTML = ""; // clear previous options
+  const addedSpecies = new Set();
+
+  Object.keys(speciesBreeds).forEach(specie => {
+    if (speciesBreeds[specie].length > 0 && !addedSpecies.has(specie)) {
+      const option = document.createElement("option");
+      option.value = specie.charAt(0).toUpperCase() + specie.slice(1);
+      speciesList.appendChild(option);
+      addedSpecies.add(specie);
+    }
+  });
+
+  // Force the input to refresh its datalist
+  const currentValue = petSpeciesInput.value;
+  petSpeciesInput.value = "";
+  petSpeciesInput.value = currentValue;
+}
 
 
+// ScrollableDropdown class remains the same
 class ScrollableDropdown {
   constructor(inputElement, options = [], maxItems = 10) {
     this.input = inputElement;
@@ -2406,31 +2582,27 @@ class ScrollableDropdown {
     this.render();
   }
 
-render() {
-  const value = this.input.value.toLowerCase();
-  this.dropdown.innerHTML = "";
+  render() {
+    const value = this.input.value.toLowerCase();
+    this.dropdown.innerHTML = "";
 
-  if (!this.options.length) return this.hide();
+    if (!this.options.length) return this.hide();
 
-  // Filter based on typing, but no slice limit
-  const filtered = this.options.filter(opt =>
-    opt.toLowerCase().includes(value)
-  );
+    const filtered = this.options.filter(opt => opt.toLowerCase().includes(value));
+    if (!filtered.length) return this.hide();
 
-  if (!filtered.length) return this.hide();
-
-  filtered.forEach(opt => {
-    const div = document.createElement("div");
-    div.textContent = opt;
-    div.addEventListener("click", () => {
-      this.input.value = opt;
-      this.hide();
+    filtered.forEach(opt => {
+      const div = document.createElement("div");
+      div.textContent = opt;
+      div.addEventListener("click", () => {
+        this.input.value = opt;
+        this.hide();
+      });
+      this.dropdown.appendChild(div);
     });
-    this.dropdown.appendChild(div);
-  });
 
-  this.show();
-}
+    this.show();
+  }
 
   show() {
     this.dropdown.style.display = "block";
@@ -2441,12 +2613,11 @@ render() {
   }
 }
 
-// Usage example
-const petBreedInput = document.getElementById("petBreed");
+// Initialize breed dropdown
 const breedDropdown = new ScrollableDropdown(petBreedInput, [], 10);
 
-// Populate dynamically based on species
-document.getElementById("petSpecies").addEventListener("input", (e) => {
+// Update breeds dynamically when species input changes
+petSpeciesInput.addEventListener("input", (e) => {
   const species = e.target.value.toLowerCase().trim();
   if (speciesBreeds[species]) {
     petBreedInput.disabled = false;
@@ -2457,8 +2628,8 @@ document.getElementById("petSpecies").addEventListener("input", (e) => {
   }
 });
 
-
-
+// Start listening for real-time updates
+listenSpeciesAndBreeds();
 
 
 
