@@ -543,7 +543,8 @@ async function loadAvailableTimeSlots() {
             const userSnap = await getDocs(userQuery);
             if (!userSnap.empty) {
                 const userData = userSnap.docs[0].data();
-                apptNameInput.value = userData.fullName || currentUserName || "";
+              apptNameInput.value = userData.fullName || currentUserName || "";
+
             }
 
             const petsQuery = query(collection(db, "Pets"), where("ownerId", "==", currentUserId || currentUserName));
@@ -2208,16 +2209,33 @@ editPet(id) {
 
 
 // ================================
-// 📌 Book Appointment (Autofilled Pet Name & Select Time)
+// 📌 Book Appointment (Updated to match new time format)
 // ================================
 async bookAppointment(id) {
+  console.log("🔵 bookAppointment called with id:", id);
+  
   const pet = this.pets.find(p => p.id === id);
-  if (!pet) return console.error("❌ Pet not found.");
+  if (!pet) {
+    console.error("❌ Pet not found with id:", id);
+    return;
+  }
+
+  console.log("✅ Pet found:", pet);
 
   this.currentBookingPet = pet;
   this.currentEditAppointmentId = null;
 
-  // 🔹 DOM elements
+  // 🔹 Check modal exists FIRST
+  const modal = document.getElementById("appointmentModal");
+  if (!modal) {
+    console.error("❌ appointmentModal element not found in DOM!");
+    alert("Error: Appointment form not found. Please refresh the page.");
+    return;
+  }
+
+  // 🔹 Get all DOM elements with detailed logging
+  console.log("🔍 Looking for form elements...");
+  
   const petNameInput = document.getElementById("apptPetName");
   const ownerNameInput = document.getElementById("ownerName");
   const ownerPhoneInput = document.getElementById("ownerPhone");
@@ -2230,12 +2248,26 @@ async bookAppointment(id) {
   const weightInput = document.getElementById("apptWeight");
   const sizeInput = document.getElementById("apptSize");
 
-  if (!petNameInput || !ownerNameInput || !ownerPhoneInput || !serviceSelect || !dateInput || !timeInput) {
-    console.error("❌ Required form elements not found");
+  // 🔹 Check for required elements
+  const missingElements = [];
+  if (!petNameInput) missingElements.push("apptPetName");
+  if (!ownerNameInput) missingElements.push("ownerName");
+  if (!ownerPhoneInput) missingElements.push("ownerPhone");
+  if (!serviceSelect) missingElements.push("appointmentService");
+  if (!dateInput) missingElements.push("appointmentDate");
+  if (!timeInput) missingElements.push("appointmentTime");
+
+  if (missingElements.length > 0) {
+    console.error("❌ Required form elements not found:", missingElements);
+    alert(`Error: Missing form fields: ${missingElements.join(", ")}. Please refresh the page.`);
     return;
   }
 
-  // 🔹 Populate Pet Name dropdown and select current pet
+  // ✅ SHOW MODAL IMMEDIATELY
+  modal.style.display = "flex";
+  console.log("✅ Modal displayed");
+
+  // 🔹 Populate Pet Name dropdown
   petNameInput.innerHTML = '';
   this.pets.forEach(p => {
     const option = document.createElement("option");
@@ -2248,19 +2280,28 @@ async bookAppointment(id) {
   petNameInput.style.backgroundColor = "#e9ecef";
 
   // 🔹 Autofill pet details
-  speciesInput.value = pet.species || "";
-  breedInput.value = pet.breed || "";
-  sexInput.value = pet.sex || "";
-  weightInput.value = pet.weight || "";
-  sizeInput.value = pet.size || getSizeFromWeight(pet.weight);
-
-  speciesInput.style.backgroundColor = "#e9ecef";
-  sexInput.style.backgroundColor = "#e9ecef";
+  if (speciesInput) {
+    speciesInput.value = pet.species || "";
+    speciesInput.style.backgroundColor = "#e9ecef";
+    speciesInput.disabled = true;
+  }
+  if (breedInput) breedInput.value = pet.breed || "";
+  if (sexInput) {
+    sexInput.value = pet.sex || "";
+    sexInput.style.backgroundColor = "#e9ecef";
+    sexInput.disabled = true;
+  }
+  if (weightInput) weightInput.value = pet.weight || "";
+  if (sizeInput) sizeInput.value = pet.size || getSizeFromWeight(pet.weight);
 
   // 🔹 Autofill owner name
-  const ownerFullName = sessionStorage.getItem("userFullName");
-  if (ownerFullName) ownerNameInput.value = ownerFullName;
-  ownerNameInput.style.backgroundColor = "#e9ecef";
+  const ownerFullName = sessionStorage.getItem("userFullName") || 
+                        sessionStorage.getItem("userName") || 
+                        sessionStorage.getItem("username") || "";
+  if (ownerFullName) {
+    ownerNameInput.value = ownerFullName;
+    ownerNameInput.style.backgroundColor = "#e9ecef";
+  }
 
   // 🔹 Set min date to tomorrow
   const tomorrow = new Date();
@@ -2276,13 +2317,24 @@ async bookAppointment(id) {
       const data = doc.data();
       services[data.name.toLowerCase()] = data.variants || [];
     });
-    console.log("✅ Services loaded:", services);
+    console.log("✅ Services loaded:", Object.keys(services));
   } catch (err) {
     console.error("❌ Failed to load services:", err);
+    modal.style.display = "none";
     return Swal.fire({
       icon: "error",
       title: "Error",
       text: "Failed to load services. Please refresh the page.",
+      confirmButtonColor: "#f8732b",
+    });
+  }
+
+  if (Object.keys(services).length === 0) {
+    modal.style.display = "none";
+    return Swal.fire({
+      icon: "error",
+      title: "No Services Available",
+      text: "No services found. Please contact the administrator.",
       confirmButtonColor: "#f8732b",
     });
   }
@@ -2296,10 +2348,7 @@ async bookAppointment(id) {
     serviceSelect.appendChild(opt);
   });
 
-  // Optional: select first service by default
-  serviceSelect.value = Object.keys(services)[0] || "";
-
-  // 🔹 Create base appointment data
+  // 🔹 Create base appointment data with NEW FORMAT (startTime/endTime)
   const appointmentData = {
     userId: sessionStorage.getItem("userId"),
     petId: pet.id,
@@ -2311,38 +2360,54 @@ async bookAppointment(id) {
     sex: pet.sex,
     weight: pet.weight,
     size: pet.size || getSizeFromWeight(pet.weight),
-    service: serviceSelect.value,
-    serviceVariants: services[serviceSelect.value.toLowerCase()] || [],
+    service: "",
+    serviceVariants: [],
     date: dateInput.value,
-    time: "",
+    startTime: "",  // ✅ Changed from 'time'
+    endTime: "",    // ✅ Added endTime
+    displayTime: "", // ✅ For display purposes
+    duration: 0,
     selectedServices: [],
     serviceFee: 0,
     reservationFee: 0,
     totalAmount: 0,
+    status: "pending",
+    vet: "Dr. Donna Doll Diones",
     createdAt: new Date().toISOString()
   };
 
   sessionStorage.setItem("appointment", JSON.stringify(appointmentData));
 
-  // 🔹 Show modal
-  document.getElementById("appointmentModal").style.display = "flex";
-
-  // 🔹 Generate initial time slots for default service
-  if (serviceSelect.value) {
-    await updateAvailableTimeSlots(dateInput.value, serviceSelect.value, timeInput);
+  // 🔹 Set first service and generate time slots
+  const firstServiceKey = Object.keys(services)[0] || "";
+  if (firstServiceKey) {
+    serviceSelect.value = firstServiceKey;
+    appointmentData.service = firstServiceKey;
+    appointmentData.serviceVariants = services[firstServiceKey] || [];
+    sessionStorage.setItem("appointment", JSON.stringify(appointmentData));
+    
+    await updateAvailableTimeSlots(dateInput.value, firstServiceKey, timeInput);
   }
 
-  // 🔹 When service changes, refresh time slots and update appointment data
+  // 🔹 Service change event
   serviceSelect.addEventListener("change", async () => {
-    await updateAvailableTimeSlots(dateInput.value, serviceSelect.value, timeInput);
-    appointmentData.service = serviceSelect.value;
-    appointmentData.serviceVariants = services[serviceSelect.value.toLowerCase()] || [];
+    const selectedService = serviceSelect.value;
+    await updateAvailableTimeSlots(dateInput.value, selectedService, timeInput);
+    appointmentData.service = selectedService;
+    appointmentData.serviceVariants = services[selectedService.toLowerCase()] || [];
     sessionStorage.setItem("appointment", JSON.stringify(appointmentData));
+  });
+
+  // 🔹 Date change event
+  dateInput.addEventListener("change", async () => {
+    if (serviceSelect.value) {
+      await updateAvailableTimeSlots(dateInput.value, serviceSelect.value, timeInput);
+    }
   });
 },
 
 // ================================
-// 📌 Submit Appointment Form
+// 📌 Submit Appointment Form (Updated to match new format)
 // ================================
 async submitAppointmentForm(event) {
   event.preventDefault();
@@ -2410,29 +2475,32 @@ async submitAppointmentForm(event) {
     });
   }
 
-  // 🔹 Prepare appointment data for custConfirm
+  // 🔹 Prepare appointment data with NEW FORMAT
   const appointmentData = {
     userId,
     petId: pet.id,
     petName: pet.petName,
-    ownerName: name,
-    ownerPhone: phone,
+    name: name,  // ✅ Changed from ownerName to match your format
+    ownerNumber: phone,  // ✅ Changed from ownerPhone to match your format
     species: pet.species,
     breed: pet.breed,
     sex: pet.sex,
     weight: pet.weight,
-    size: pet.size,
+    petSize: pet.size,  // ✅ Changed from size to petSize
     service,
     serviceVariants: JSON.parse(sessionStorage.getItem("appointment"))?.serviceVariants || [],
     date,
-    time,
-    endTime,
-    displayTime: `${formattedStart} - ${formattedEnd}`,
+    startTime: formattedStart,  // ✅ Changed from time to startTime
+    endTime: formattedEnd,       // ✅ Added endTime
+    displayTime: `${formattedStart} - ${formattedEnd}`,  // ✅ Added for display
     duration: serviceDuration,
-    serviceFee: 0,
-    totalAmount: 0,
+    serviceFee: `₱${(0).toFixed(2)}`,  // ✅ Format as currency string
+    totalAmount: `₱${(0).toFixed(2)}`,  // ✅ Format as currency string
     selectedServices: [],
     vaccines: [],
+    status: "pending",
+    vet: "Dr. Donna Doll Diones",
+    timestamp: new Date().toISOString(),  // ✅ Added timestamp
     createdAt: new Date().toISOString(),
   };
 
