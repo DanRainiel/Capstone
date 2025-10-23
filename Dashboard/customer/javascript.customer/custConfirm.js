@@ -131,28 +131,36 @@ function updateTotalAmount() {
   if (!serviceFeeDisplay || !reservationFeeDisplay || !totalAmountDisplay) return;
 
   const type = document.getElementById("Reservation-fee-type")?.value;
-  const serviceFee = parseFloat(serviceFeeDisplay.textContent.replace(/[₱,]/g, "")) || 0;
+  
+  // Get the original service fee from a data attribute or hidden field
+  // If not set yet, use the current display value
+  let originalServiceFee = parseFloat(serviceFeeDisplay.getAttribute("data-original-fee"));
+  
+  if (isNaN(originalServiceFee)) {
+    originalServiceFee = parseFloat(serviceFeeDisplay.textContent.replace(/[₱,]/g, "")) || 0;
+    serviceFeeDisplay.setAttribute("data-original-fee", originalServiceFee);
+  }
 
   let reservationFee = 0;
-  let displayServiceFee = serviceFee;
+  let displayServiceFee = originalServiceFee;
   let grandTotal = 0;
 
   if (type === "reservation-only") {
     reservationFee = 40;
-    displayServiceFee = serviceFee;
-    grandTotal = Math.max(0, serviceFee - reservationFee);
+    displayServiceFee = originalServiceFee;
+    grandTotal = Math.max(0, originalServiceFee - reservationFee);
   } else if (type === "with-downpayment") {
-    reservationFee = serviceFee / 2;
-    displayServiceFee = serviceFee;
-    grandTotal = Math.max(0, serviceFee - reservationFee);
+    reservationFee = originalServiceFee / 2;
+    displayServiceFee = originalServiceFee;
+    grandTotal = Math.max(0, originalServiceFee - reservationFee);
   } else if (type === "with-full-payment") {
     reservationFee = 0;
     displayServiceFee = 0; // Service fee becomes 0
-    grandTotal = serviceFee; // Total amount gets the full value
+    grandTotal = originalServiceFee; // Total amount gets the full value
   } else {
     reservationFee = 0;
-    displayServiceFee = serviceFee;
-    grandTotal = serviceFee;
+    displayServiceFee = originalServiceFee;
+    grandTotal = originalServiceFee;
   }
 
   reservationFeeDisplay.textContent = `₱${reservationFee.toFixed(2)}`;
