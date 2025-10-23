@@ -120,7 +120,6 @@ function populateServiceOptions() {
     });
   });
 }
-
 // ========================
 // UPDATE TOTAL AMOUNT LOGIC
 // ========================
@@ -144,8 +143,8 @@ function updateTotalAmount() {
     reservationFee = serviceFee / 2;
     grandTotal = Math.max(0, serviceFee - reservationFee);
   } else if (type === "with-full-payment") {
-    reservationFee = 0;
-    grandTotal = serviceFee;
+    reservationFee = serviceFee; // Full payment = entire service fee
+    grandTotal = 0; // Nothing left to pay
   } else {
     reservationFee = 0;
     grandTotal = serviceFee;
