@@ -121,7 +121,7 @@ function populateServiceOptions() {
   });
 }
 // ========================
-// UPDATE TOTAL AMOUNT LOGIC
+// UPDATE TOTAL AMOUNT LOGIC (FIXED)
 // ========================
 function updateTotalAmount() {
   const serviceFeeDisplay = document.getElementById("service-fee");
@@ -131,42 +131,33 @@ function updateTotalAmount() {
   if (!serviceFeeDisplay || !reservationFeeDisplay || !totalAmountDisplay) return;
 
   const type = document.getElementById("Reservation-fee-type")?.value;
-  
-  // Get the original service fee from a data attribute or hidden field
-  // If not set yet, use the current display value
-  let originalServiceFee = parseFloat(serviceFeeDisplay.getAttribute("data-original-fee"));
-  
-  if (isNaN(originalServiceFee)) {
-    originalServiceFee = parseFloat(serviceFeeDisplay.textContent.replace(/[₱,]/g, "")) || 0;
-    serviceFeeDisplay.setAttribute("data-original-fee", originalServiceFee);
-  }
+  const serviceFee = parseFloat(serviceFeeDisplay.textContent.replace(/[₱,]/g, "")) || 0;
 
   let reservationFee = 0;
-  let displayServiceFee = originalServiceFee;
-  let grandTotal = 0;
+  let totalAmount = 0;
 
   if (type === "reservation-only") {
+    // Pay small reservation now; remaining later
     reservationFee = 40;
-    displayServiceFee = originalServiceFee;
-    grandTotal = Math.max(0, originalServiceFee - reservationFee);
+    totalAmount = reservationFee;
   } else if (type === "with-downpayment") {
-    reservationFee = originalServiceFee / 2;
-    displayServiceFee = originalServiceFee;
-    grandTotal = Math.max(0, originalServiceFee - reservationFee);
+    // Pay 50% now; remaining later
+    reservationFee = serviceFee / 2;
+    totalAmount = reservationFee;
   } else if (type === "with-full-payment") {
-    reservationFee = 0;
-    displayServiceFee = 0; // Service fee becomes 0
-    grandTotal = originalServiceFee; // Total amount gets the full value
+    // Pay everything now
+    reservationFee = serviceFee; // Full payment acts as reservation fee
+    totalAmount = serviceFee;    // Store full payment in totalAmount
   } else {
+    // Default fallback
     reservationFee = 0;
-    displayServiceFee = originalServiceFee;
-    grandTotal = originalServiceFee;
+    totalAmount = serviceFee;
   }
 
   reservationFeeDisplay.textContent = `₱${reservationFee.toFixed(2)}`;
-  serviceFeeDisplay.textContent = `₱${displayServiceFee.toFixed(2)}`;
-  totalAmountDisplay.textContent = `₱${Math.max(0, grandTotal).toFixed(2)}`;
+  totalAmountDisplay.textContent = `₱${totalAmount.toFixed(2)}`;
 }
+
 
 // ========================
 // CANCEL APPOINTMENT LOGIC
