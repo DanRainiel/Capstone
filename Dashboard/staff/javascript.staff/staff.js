@@ -1059,36 +1059,530 @@ document.addEventListener("click", async (e) => {
         }
       }
     });
-    
- 
-// 📅 Load appointments into two tables
-async function loadAllAppointments() {
-  const dashboardTable = document.getElementById("table-dashboard");
-  const appointmentTable = document.getElementById("appointmentTable");
-  const historyTable = document.getElementById("historytable");
-  const walkInTable = document.getElementById("walkinTableBody");
 
-  if (dashboardTable) dashboardTable.innerHTML = "";
-  if (appointmentTable) appointmentTable.innerHTML = "";
-  if (historyTable) historyTable.innerHTML = "";
-  if (walkInTable) walkInTable.innerHTML = "";
+    // ============================================
+// CRITICAL TIME FORMAT FIXES
+// Changed from single "time" to "startTime" and "endTime"
+// ============================================
 
-  // ✅ Counters
-  let totalAppointmentsToday = 0;
-  let finishedAppointmentsCount = 0;
-  let walkInCount = 0;
+// 🔹 FIX 1: View Appointment Modal
+document.addEventListener("click", async (e) => {
+  if (e.target.classList.contains("view")) {
+    const docId = e.target.getAttribute("data-id");
+    const type = e.target.getAttribute("data-type");
 
-  let pendingToday = 0;
-  let pendingAll = 0;
+    try {
+      const docRef = doc(db, type === "walkin" ? "WalkInAppointment" : "Appointment", docId);
+      const snap = await getDoc(docRef);
 
-  let cancelledToday = 0;
-  let cancelledAll = 0;
+      if (snap.exists()) {
+        const data = snap.data();
 
-  let todaysEarnings = 0;
+        // ✅ Fixed: Use startTime - endTime format
+        const displayTime = data.startTime && data.endTime 
+          ? `${data.startTime} - ${data.endTime}` 
+          : data.time || "N/A";
 
-  const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+        Swal.fire({
+          title: "Appointment Details",
+          html: `
+            <p><strong>Name:</strong> ${data.name || `${data.firstName || ""} ${data.lastName || ""}`}</p>
+            <p><strong>Pet:</strong> ${data.petName || data.pet?.petName || "N/A"}</p>
+            <p><strong>Service:</strong> ${data.service || data.serviceType}</p>
+            <p><strong>Date:</strong> ${data.date}</p>
+            <p><strong>Time:</strong> ${displayTime}</p>
+            <p><strong>Contact:</strong> ${
+              data.contact || 
+              data.contactNumber || 
+              data.ownerNumber || 
+              data.phone || 
+              "N/A"
+            }</p>
+            <p><strong>Status:</strong> ${data.status}</p>
+            <p><strong>Total Amount:</strong> ${data.totalAmount || "0.00"}</p>
+          `,
+          width: "600px",
+          confirmButtonText: "Close"
+        });
 
-  // --- Helpers ---
+      } else {
+        Swal.fire("Error", "Appointment not found.", "error");
+      }
+    } catch (err) {
+      console.error("Error viewing appointment:", err);
+      Swal.fire("Error", "Something went wrong while fetching appointment details.", "error");
+    }
+  }
+});
+
+// 🔹 FIX 2: Edit Appointment Modal
+document.addEventListener("click", async (e) => {
+  if (e.target.classList.contains("edit")) {
+    const docId = e.target.getAttribute("data-id");
+    const type = e.target.getAttribute("data-type");
+
+    try {
+      const docRef = doc(db, type === "walkin" ? "WalkInAppointment" : "Appointment", docId);
+      const snap = await getDoc(docRef);
+
+      if (snap.exists()) {
+        const data = snap.data();
+
+        // ✅ Fixed: Display and edit startTime & endTime
+        const displayTime = data.startTime && data.endTime 
+          ? `${data.startTime} - ${data.endTime}` 
+          : data.time || "";
+
+        const { value: formValues } = await Swal.fire({
+          title: "Edit Appointment",
+          html: `
+            <input id="swal-name" class="swal2-input" placeholder="Name" value="${data.name || `${data.firstName || ""} ${data.lastName || ""}`}">
+            <input id="swal-pet" class="swal2-input" placeholder="Pet Name" value="${data.petName || data.pet?.petName || ""}">
+            <input id="swal-service" class="swal2-input" placeholder="Service" value="${data.service || data.serviceType || ""}">
+            <input id="swal-date" type="date" class="swal2-input" value="${data.date || ""}">
+            <input id="swal-start-time" type="time" class="swal2-input" placeholder="Start Time" value="${data.startTime || ""}">
+            <input id="swal-end-time" type="time" class="swal2-input" placeholder="End Time" value="${data.endTime || ""}">
+            <input id="swal-contact" class="swal2-input" placeholder="Contact" value="${data.contact || ""}">
+          `,
+          focusConfirm: false,
+          showCancelButton: true,
+          confirmButtonText: "Save",
+          preConfirm: () => {
+            return {
+              name: document.getElementById("swal-name").value,
+              petName: document.getElementById("swal-pet").value,
+              service: document.getElementById("swal-service").value,
+              date: document.getElementById("swal-date").value,
+              startTime: document.getElementById("swal-start-time").value,
+              endTime: document.getElementById("swal-end-time").value,
+              contact: document.getElementById("swal-contact").value
+            };
+          }
+        });
+
+        if (formValues) {
+          // ✅ Save both startTime and endTime
+          await updateDoc(docRef, {
+            name: formValues.name,
+            petName: formValues.petName,
+            service: formValues.service,
+            date: formValues.date,
+            startTime: formValues.startTime,
+            endTime: formValues.endTime,
+            contact: formValues.contact
+          });
+          
+          Swal.fire("Updated!", "Appointment has been updated.", "success");
+          loadAllAppointments();
+        }
+      } else {
+        Swal.fire("Error", "Appointment not found.", "error");
+      }
+    } catch (err) {
+      console.error("Error editing appointment:", err);
+      Swal.fire("Error", "Something went wrong while editing appointment.", "error");
+    }
+  }
+});
+
+// 🔹 FIX 3: Reschedule Modal
+document.addEventListener("click", async (e) => {
+  if (e.target.classList.contains("reschedule")) {
+    const docId = e.target.getAttribute("data-id");
+    const type = e.target.getAttribute("data-type");
+
+    if (!docId) {
+      return Swal.fire("Error", "Invalid appointment.", "error");
+    }
+
+    const colName = type === "walkin" ? "WalkInAppointment" : "Appointment";
+    const docRef = doc(db, colName, docId);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists()) {
+      return Swal.fire("Error", "Appointment not found.", "error");
+    }
+
+    const appointmentData = docSnap.data();
+    const userId = appointmentData.userId;
+
+    function generateTimeSlots(startHour, endHour) {
+      const slots = [];
+      const start = new Date();
+      start.setHours(startHour, 0, 0, 0);
+
+      const end = new Date();
+      end.setHours(endHour, 30, 0, 0);
+
+      while (start < end) {
+        const endSlot = new Date(start.getTime() + 30 * 60000);
+
+        const formatTime = (date) =>
+          date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+
+        slots.push({
+          display: `${formatTime(start)} - ${formatTime(endSlot)}`,
+          start: formatTime(start),
+          end: formatTime(endSlot)
+        });
+        
+        start.setMinutes(start.getMinutes() + 30);
+      }
+
+      return slots;
+    }
+
+    const timeSlots = generateTimeSlots(9, 17);
+
+    const slotOptions = timeSlots
+      .map((slot) => `<option value="${slot.start}|${slot.end}">${slot.display}</option>`)
+      .join("");
+
+    const { value: formValues } = await Swal.fire({
+      title: "Reschedule Appointment",
+      width: 600,
+      html: `
+        <div style="text-align: left; font-size: 14px;">
+          <label for="new-date"><b>New Date</b></label>
+          <input type="date" id="new-date" class="swal2-input" style="width: 90%;" required>
+
+          <label for="new-time"><b>Time Slot</b></label>
+          <select id="new-time" class="swal2-input" style="width: 90%;" required>
+            <option value="">-- Select Time Slot --</option>
+            ${slotOptions}
+          </select>
+        </div>
+      `,
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: "Reschedule",
+      cancelButtonText: "Cancel",
+      preConfirm: () => {
+        const date = document.getElementById("new-date").value;
+        const timeValue = document.getElementById("new-time").value;
+
+        if (!date || !timeValue) {
+          Swal.showValidationMessage("Please select both date and time slot.");
+          return false;
+        }
+
+        // ✅ Split the time value to get start and end times
+        const [startTime, endTime] = timeValue.split("|");
+        return { date, startTime, endTime };
+      }
+    });
+
+    if (!formValues) return;
+
+    try {
+      // ✅ Update with both startTime and endTime
+      await updateDoc(docRef, {
+        date: formValues.date,
+        startTime: formValues.startTime,
+        endTime: formValues.endTime,
+        status: "pending",
+        updatedAt: serverTimestamp()
+      });
+
+      await addDoc(collection(db, "Notifications"), {
+        appointmentId: docId,
+        userId,
+        type: "reminder",
+        service: appointmentData.service || "Appointment",
+        status: "unread",
+        message: `Your appointment for ${appointmentData.petName || "your pet"} has been rescheduled to ${formValues.date} at ${formValues.startTime} - ${formValues.endTime}.`,
+        createdAt: serverTimestamp()
+      });
+
+      Swal.fire("Rescheduled", "The appointment has been updated with new time slot.", "success");
+    } catch (err) {
+      console.error("❌ Error during reschedule:", err);
+      Swal.fire("Error", "Something went wrong while rescheduling.", "error");
+    }
+  }
+});
+
+// 🔹 FIX 4: View Pet Details Modal
+async function viewAppointmentDetails(appointmentId) {
+  try {
+    const apptRef = doc(db, "Appointment", appointmentId);
+    const apptSnap = await getDoc(apptRef);
+
+    if (!apptSnap.exists()) {
+      return Swal.fire("Not Found", "Appointment not found in database.", "warning");
+    }
+
+    const data = apptSnap.data();
+    const safe = (val) => (val ? val : "—");
+
+    // ✅ Fixed: Display startTime - endTime
+    const displayTime = data.startTime && data.endTime 
+      ? `${data.startTime} - ${data.endTime}` 
+      : data.time || "—";
+
+    // ✅ Fixed: Get contact number from multiple possible fields
+    const contactNumber = data.contact || data.ownerNumber || data.contactNumber || "—";
+
+    let petImageHTML = "";
+    if (data.petId) {
+      try {
+        const petRef = doc(db, "Pets", data.petId);
+        const petSnap = await getDoc(petRef);
+        if (petSnap.exists()) {
+          const petData = petSnap.data();
+          if (petData.petImage) {
+            petImageHTML = `
+              <div style="text-align:center;margin-bottom:10px;">
+                <img src="${petData.petImage}" alt="${safe(data.petName)}"
+                     style="width:120px;height:120px;border-radius:10px;object-fit:cover;">
+              </div>`;
+          }
+        }
+      } catch (e) {
+        console.warn("⚠️ Could not load pet image:", e);
+      }
+    }
+
+    await Swal.fire({
+      title: `<i class="fa-solid fa-calendar-check"></i> Appointment Details`,
+      html: `
+        ${petImageHTML}
+        <div style="text-align:left;line-height:1.8;">
+          <strong>Owner Name:</strong> ${safe(data.name || data.ownerName)}<br>
+          <strong>Contact Number:</strong> ${contactNumber}<br>
+          <strong>Pet Name:</strong> ${safe(data.petName)}<br>
+          <strong>Pet Size:</strong> ${safe(data.petSize)}<br>
+          <strong>Service:</strong> ${safe(data.service)}<br>
+          <strong>Selected Services:</strong> ${safe(data.selectedServices?.join(", "))}<br>
+          <strong>Service Fee:</strong> ${safe(data.serviceFee)}<br>
+          <strong>Reservation Fee:</strong> ${safe(data.reservationFee)}<br>
+          <strong>Total Amount:</strong> ${safe(data.totalAmount)}<br>
+          <strong>Vet:</strong> ${safe(data.vet)}<br>
+          <strong>Status:</strong> ${safe(data.status)}<br>
+          <strong>Date:</strong> ${safe(data.date)}<br>
+          <strong>Time:</strong> ${displayTime}<br>
+          <strong>Reservation Type:</strong> ${safe(data.reservationType)}<br>
+          <strong>Instructions:</strong> ${safe(data.instructions)}<br>
+        </div>
+      `,
+      confirmButtonText: "Close",
+      width: 520,
+      confirmButtonColor: "#3085d6"
+    });
+
+  } catch (err) {
+    console.error("❌ Error loading appointment details:", err);
+    Swal.fire("Error", "Failed to load appointment details. Please try again.", "error");
+  }
+}
+
+// 🔹 FIX 5: View Pet Details Button Event Listener
+document.addEventListener("click", async (e) => {
+  const btn = e.target.closest(".btn.view-pet-details");
+  if (!btn) return;
+
+  const appointmentId = btn.dataset.appointmentId || btn.getAttribute("data-id");
+  const type = btn.dataset.type || "appointment";
+
+  if (!appointmentId) {
+    Swal.fire("Missing Info", "Appointment ID not found for this record.", "warning");
+    return;
+  }
+
+  console.log("🔍 Opening pet details for appointment:", appointmentId, "Type:", type);
+  await viewAppointmentDetails(appointmentId);
+});
+
+
+// 🔹 FIX 6: Walk-In View Pet Details (if needed)
+// For walk-in appointments, we need to handle them differently
+document.addEventListener("click", async (e) => {
+  if (e.target.classList.contains("view-pet-details")) {
+    const btn = e.target;
+    const docId = btn.getAttribute("data-id");
+    const appointmentId = btn.getAttribute("data-appointment-id");
+    const type = btn.getAttribute("data-type");
+
+    console.log("🔍 View Pet Details clicked:", { docId, appointmentId, type });
+
+    // Use appointmentId if available, otherwise use docId
+    const idToUse = appointmentId || docId;
+
+    if (!idToUse) {
+      return Swal.fire("Error", "Cannot find appointment information.", "error");
+    }
+
+    // Determine collection based on type
+    const collectionName = type === "walkin" ? "WalkInAppointment" : "Appointment";
+
+    try {
+      const docRef = doc(db, collectionName, idToUse);
+      const docSnap = await getDoc(docRef);
+
+      if (!docSnap.exists()) {
+        return Swal.fire("Not Found", "Appointment not found.", "error");
+      }
+
+      const data = docSnap.data();
+      const safe = (val) => (val ? val : "—");
+
+      // Format time
+      const displayTime = data.startTime && data.endTime 
+        ? `${data.startTime} - ${data.endTime}` 
+        : data.time || "—";
+
+      // Get pet name
+      const petName = data.petName || data.pet?.petName || "Unknown";
+
+      // ✅ Fixed: Get contact number from multiple possible fields
+      const contactNumber = data.contact || data.ownerNumber || data.contactNumber || "—";
+      
+      // ✅ Fixed: Get owner name from multiple possible fields
+      const ownerName = data.name || data.ownerName || `${data.firstName || ''} ${data.lastName || ''}`.trim() || "Unknown";
+
+      // Try to get pet image if petId exists
+      let petImageHTML = "";
+      if (data.petId) {
+        try {
+          const petRef = doc(db, "Pets", data.petId);
+          const petSnap = await getDoc(petRef);
+          if (petSnap.exists()) {
+            const petData = petSnap.data();
+            if (petData.petImage) {
+              petImageHTML = `
+                <div style="text-align:center;margin-bottom:10px;">
+                  <img src="${petData.petImage}" alt="${petName}"
+                       style="width:120px;height:120px;border-radius:10px;object-fit:cover;">
+                </div>`;
+            }
+          }
+        } catch (e) {
+          console.warn("⚠️ Could not load pet image:", e);
+        }
+      }
+
+      // Display modal
+      await Swal.fire({
+        title: `<i class="fa-solid fa-paw"></i> Pet & Appointment Details`,
+        html: `
+          ${petImageHTML}
+          <div style="text-align:left;line-height:1.8;">
+            <h3 style="color:#4CAF50;margin-bottom:10px;">Owner Information</h3>
+            <strong>Owner Name:</strong> ${ownerName}<br>
+            <strong>Contact Number:</strong> ${contactNumber}<br>
+            
+            <h3 style="color:#4CAF50;margin-top:15px;margin-bottom:10px;">Pet Information</h3>
+            <strong>Pet Name:</strong> ${safe(petName)}<br>
+            <strong>Species:</strong> ${safe(data.pet?.species || data.species || data.petType)}<br>
+            <strong>Breed:</strong> ${safe(data.pet?.breed || data.breed)}<br>
+            <strong>Age:</strong> ${safe(data.pet?.age || data.age)}<br>
+            <strong>Sex:</strong> ${safe(data.pet?.sex || data.sex || data.gender)}<br>
+            <strong>Weight:</strong> ${safe(data.pet?.weight || data.weight)} kg<br>
+            <strong>Size:</strong> ${safe(data.petSize || data.pet?.size || data.size)}<br>
+            <strong>Color:</strong> ${safe(data.pet?.color || data.color)}<br>
+            
+            <h3 style="color:#4CAF50;margin-top:15px;margin-bottom:10px;">Appointment Details</h3>
+            <strong>Service:</strong> ${safe(data.service || data.serviceType)}<br>
+            <strong>Variant:</strong> ${safe(data.variant)}<br>
+            <strong>Date:</strong> ${safe(data.date)}<br>
+            <strong>Time:</strong> ${displayTime}<br>
+            <strong>Status:</strong> <span class="status ${(data.status || '').toLowerCase()}">${safe(data.status)}</span><br>
+            <strong>Priority:</strong> ${safe(data.priority)}<br>
+            
+            <h3 style="color:#4CAF50;margin-top:15px;margin-bottom:10px;">Financial Details</h3>
+            <strong>Service Fee:</strong> ₱${safe(data.serviceFee || data.totalAmount)}<br>
+            <strong>Applied Discounts:</strong> ${safe(data.appliedDiscounts?.join(", ") || "None")}<br>
+            <strong>Total Amount:</strong> <strong style="color:#4CAF50;">₱${safe(data.totalAmount)}</strong><br>
+            
+            ${data.reason ? `
+              <h3 style="color:#4CAF50;margin-top:15px;margin-bottom:10px;">Additional Information</h3>
+              <strong>Reason for Visit:</strong> ${safe(data.reason)}<br>
+            ` : ''}
+            
+            ${data.pet?.medicalHistory || data.medicalHistory ? `
+              <strong>Medical History:</strong><br>
+              <div style="background:#f5f5f5;padding:10px;border-radius:5px;margin-top:5px;">
+                ${safe(data.pet?.medicalHistory || data.medicalHistory)}
+              </div>
+            ` : ''}
+          </div>
+        `,
+        confirmButtonText: "Close",
+        width: 650,
+        confirmButtonColor: "#4CAF50"
+      });
+
+    } catch (err) {
+      console.error("❌ Error loading pet details:", err);
+      Swal.fire("Error", "Failed to load pet details. Please try again.", "error");
+    }
+  }
+});
+
+console.log("✅ All time format fixes applied successfully!");
+console.log("✅ View Pet Details button listener fixed!");
+console.log("✅ Contact number field mapping fixed!");
+console.log("📌 Updated areas:");
+console.log("   - View Appointment Modal");
+console.log("   - Edit Appointment Modal");
+console.log("   - Reschedule Modal");
+console.log("   - View Pet Details Modal");
+console.log("   - View Pet Details Button (FIXED)");
+console.log("   - Contact Number Display (FIXED)");
+
+
+document.addEventListener("click", async (e) => {
+  const btn = e.target.closest(".btn.view-pet-details");
+  if (!btn) return;
+
+  // Read appointment ID from the button itself (matches innerHTML)
+  const appointmentId = btn.dataset.appointmentId;
+  const type = btn.dataset.type || "appointment"; // fallback
+
+  if (!appointmentId) {
+    Swal.fire("Missing Info", "Appointment ID not found for this record.", "warning");
+    return;
+  }
+
+  console.log("Viewing appointment:", appointmentId, "Type:", type);
+  await viewAppointmentDetails(appointmentId);
+});
+
+// ============================================
+// UPDATE renderRow FUNCTION FOR TIME FORMAT IN TABLES
+// ============================================
+
+// 🔹 FIX 6: Update renderRow function inside loadAllAppointments
+// Replace your existing renderRow function with this updated version:
+
+function renderRow(data, type, docId) {
+  const safe = (v) => (v === undefined || v === null ? "" : v);
+
+  // Normalize status
+  const statusRaw = safe(data.status) || "Pending";
+  const statusNormalized = String(statusRaw).trim().toLowerCase();
+
+  // ✅ FIX: Format time properly (start–end)
+  let formattedTime = "";
+  if (type === "walkin" && data.timestamp) {
+    // Walk-in: derive from timestamp
+    formattedTime = new Date(data.timestamp).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } else if (data.startTime && data.endTime) {
+    // Regular appointment: start–end range
+    formattedTime = `${safe(data.startTime)} - ${safe(data.endTime)}`;
+  } else if (data.startTime) {
+    formattedTime = safe(data.startTime);
+  } else if (data.time) {
+    // fallback if old data still uses `time`
+    formattedTime = safe(data.time);
+  }
+
+  // Normalize date
+  const rawDateSource = type === "walkin" && data.timestamp ? data.timestamp : data.date;
+  
   function normalizeToISODate(val) {
     if (val == null || val === "") return "";
     if (typeof val?.toDate === "function") return normalizeToISODate(val.toDate());
@@ -1117,11 +1611,187 @@ async function loadAllAppointments() {
     return val ? String(val) : "";
   }
 
-  function parsePrice(price) {
-    if (!price) return 0;
-    if (typeof price === "number") return price;
-    return Number(price.toString().replace(/[^\d.-]/g, "")) || 0;
+  const dateISO = normalizeToISODate(rawDateSource);
+  const dateDisplay = formatDisplayDate(rawDateSource) || dateISO || "";
+
+  const displayData = {
+    name: type === "walkin" ? `${safe(data.firstName)} ${safe(data.lastName)}`.trim() : safe(data.name),
+    petName: safe(data.petName) || safe(data.pet?.petName),
+    service: safe(data.service),
+    walkinService: safe(data.serviceType),
+    dateISO,
+    date: dateDisplay,
+    time: formattedTime, // ✅ Updated time format
+    contact: safe(data.contact),
+    status: statusRaw,
+    statusNormalized,
+    mode: type === "walkin" ? "Walk-In" : "Appointment",
+    reservationType: safe(data.reservationType),
+    reservationFee: safe(data.reservationFee),
+    userId: safe(data.userId),
+    appointmentId: docId,
+    sourceType: type,
+  };
+
+  // --- Render to Dashboard Table ---
+  const dashboardTable = document.getElementById("table-dashboard");
+  if (dashboardTable && type !== "walkin") {
+    const dashRow = document.createElement("tr");
+    dashRow.innerHTML = `
+      <td>${displayData.name}</td>
+      <td>${displayData.petName}</td>
+      <td>${displayData.service}</td>
+      <td>${displayData.time}</td>
+      <td>${displayData.mode}</td>
+      <td class="status ${displayData.statusNormalized}">${displayData.status}</td>
+    `;
+    dashboardTable.appendChild(dashRow);
   }
+
+// --- Render to Walk-In Table ---
+const walkInTable = document.getElementById("walkinTableBody");
+if (walkInTable && type === "walkin") {
+  let actionButtons = "";
+
+  // 🔧 Normalize the status safely
+  let s = (displayData.statusNormalized || "").trim().toLowerCase();
+  if (["in-progress", "in_progress"].includes(s)) s = "in progress";
+
+  // 🟩 Button sets by status
+  if (s === "pending") {
+    actionButtons = `
+      <button class="btn accept" data-id="${docId}" data-type="${type}">Accept</button>
+      <button class="btn decline" data-id="${docId}" data-type="${type}">Decline</button>`;
+  } else if (s === "in progress") {
+    actionButtons = `
+      <button class="btn complete" data-id="${docId}" data-type="${type}">Complete</button>
+      <button class="btn view-pet-details" data-id="${docId}" data-type="${type}">View Pet Details</button>
+      <button class="btn add-discount" data-id="${docId}" data-type="${type}" data-service="${displayData.walkinService}">
+        Apply Discount
+      </button>`;
+  } else if (s === "completed") {
+    actionButtons = `
+      <button class="btn view" data-id="${docId}" data-type="${type}">View</button>
+      <button class="btn edit" data-id="${docId}" data-type="${type}">Edit</button>
+      <button class="btn view-pet-details" data-id="${docId}" data-type="${type}">View Pet Details</button>`;
+  }
+
+  // 🟩 Render row
+  const walkRow = document.createElement("tr");
+  walkRow.innerHTML = `
+    <td>${displayData.date}</td>
+    <td>${displayData.time}</td>
+    <td>${displayData.name}</td>
+    <td>${displayData.petName}</td>
+    <td>${displayData.walkinService}</td>
+    <td class="status ${s}">${displayData.status}</td>
+    <td>${actionButtons}</td>`;
+  walkInTable.appendChild(walkRow);
+}
+
+
+  // --- Render to Appointment Table ---
+  const appointmentTable = document.getElementById("appointmentTable");
+  if (appointmentTable && type !== "walkin") {
+    let actionButtons = "";
+    const s = displayData.statusNormalized;
+    if (s === "pending") {
+      actionButtons = `
+        <button class="btn accept" data-id="${docId}" data-type="${type}">Accept</button>
+        <button class="btn decline" data-id="${docId}" data-type="${type}">Decline</button>
+        <button class="btn reschedule" data-id="${docId}" data-type="${type}">Reschedule</button>
+        <button class="btn screenshot" data-id="${docId}" data-type="Appointment">View Screenshot</button>`;
+    } else if (s === "in progress") {
+      actionButtons = `
+        <button class="btn complete" data-id="${docId}" data-type="${type}">Complete</button>
+        <button class="btn view-pet-details" data-id="${docId}" data-type="${type}">View Pet Details</button>
+        <button class="btn add-discount" data-id="${docId}" data-type="${type}" data-service="${displayData.service}">
+          Apply Discount
+        </button>`;
+    } else if (s === "completed") {
+      actionButtons = `
+        <button class="btn view" data-id="${docId}" data-type="${type}">View</button>
+        <button class="btn edit" data-id="${docId}" data-type="${type}">Edit</button>`;
+    } else if (s === "for-rescheduling") {
+      actionButtons = `
+        <button class="btn accept" data-id="${docId}" data-type="${type}">Accept</button>
+        <button class="btn decline" data-id="${docId}" data-type="${type}">Decline</button>`;
+    } else if (s === "cancelled") {
+      actionButtons = `<button class="btn viewreason" data-id="${docId}" data-type="${type}">View Reason</button>`;
+    }
+
+    const fullRow = document.createElement("tr");
+    fullRow.innerHTML = `
+      <td>${displayData.date}</td>
+      <td>${displayData.time}</td>
+      <td>${displayData.name}</td>
+      <td>${displayData.petName}</td>
+      <td>${displayData.service}</td>
+      <td class="status ${displayData.statusNormalized}">${displayData.status}</td>
+      <td>${displayData.reservationType}</td>
+      <td>${actionButtons}</td>`;
+    appointmentTable.appendChild(fullRow);
+  }
+
+  // --- Render to History Table ---
+  const historyTable = document.getElementById("historytable");
+  if (historyTable && (displayData.status || "").toLowerCase() === "completed") {
+    const totalAmount = data.totalAmount || 0;
+    const serviceDisplay = [displayData.service, data.serviceType].filter(Boolean).join(" - ");
+
+    const historyRow = document.createElement("tr");
+    historyRow.innerHTML = `
+      <td>${displayData.date}</td>
+      <td>${displayData.time}</td>
+      <td>${displayData.name}</td>
+      <td>${displayData.petName}</td>
+      <td>${serviceDisplay}</td>
+      <td>${totalAmount}</td>
+      <td class="status ${displayData.statusNormalized}">${displayData.status}</td>`;
+    historyTable.appendChild(historyRow);
+  }
+}
+
+console.log("✅ All time format fixes applied successfully!");
+console.log("✅ View Pet Details button listener fixed!");
+console.log("✅ Contact number field mapping fixed!");
+console.log("✅ Table time format updated!");
+console.log("📌 Updated areas:");
+console.log("   - View Appointment Modal");
+console.log("   - Edit Appointment Modal");
+console.log("   - Reschedule Modal");
+console.log("   - View Pet Details Modal");
+console.log("   - View Pet Details Button");
+console.log("   - Contact Number Display");
+console.log("   - All Tables (Dashboard, Walk-In, Appointment, History)");
+    
+    
+    
+// 📅 Load appointments into two tables (STAFF VERSION)
+async function loadAllAppointments() {
+  const dashboardTable = document.getElementById("table-dashboard");
+  const appointmentTable = document.getElementById("appointmentTable");
+  const historyTable = document.getElementById("historytable");
+  const walkInTable = document.getElementById("walkinTableBody");
+
+  if (dashboardTable) dashboardTable.innerHTML = "";
+  if (appointmentTable) appointmentTable.innerHTML = "";
+  if (historyTable) historyTable.innerHTML = "";
+  if (walkInTable) walkInTable.innerHTML = "";
+
+  // ✅ Counts
+  let todayScheduleCount = 0;
+  let finishedAppointmentsCount = 0;
+  let walkInCount = 0;
+
+  let totalAppointmentsToday = 0;
+  let pendingAppointmentsToday = 0;
+  let cancelledAppointmentsToday = 0;
+  let todaysEarnings = 0;
+
+  let totalUsers = 0;
+
+  const today = new Date().toISOString().split("T")[0]; // "YYYY-MM-DD"
 
   try {
     const [snapshot, walkInSnapshot] = await Promise.all([
@@ -1137,32 +1807,40 @@ async function loadAllAppointments() {
       return;
     }
 
-    // ✅ Inline renderRow so it's always defined
-    function renderRow(data, type, docId) {
-      const safe = (v) => (v === undefined || v === null ? "" : v);
+    const renderRow = (data, type, docId) => {
+      const status = data.status || "Pending";
+      const safe = (val) => (val === undefined || val === null ? "" : val);
 
-      // Normalize status
-      const statusRaw = safe(data.status) || "Pending";
-      const statusNormalized = String(statusRaw).trim().toLowerCase();
-
-      // Normalize date
-      const rawDateSource = type === "walkin" && data.timestamp ? data.timestamp : data.date;
-      const dateISO = normalizeToISODate(rawDateSource);
-      const dateDisplay = formatDisplayDate(rawDateSource) || dateISO || "";
+      // 🕒 Format time properly (start–end)
+      let formattedTime = "";
+      if (type === "walkin" && data.timestamp) {
+        formattedTime = new Date(data.timestamp).toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+      } else if (data.startTime && data.endTime) {
+        formattedTime = `${safe(data.startTime)} - ${safe(data.endTime)}`;
+      } else if (data.startTime) {
+        formattedTime = safe(data.startTime);
+      } else if (data.time) {
+        formattedTime = safe(data.time);
+      }
 
       const displayData = {
-        name: type === "walkin" ? `${safe(data.firstName)} ${safe(data.lastName)}`.trim() : safe(data.name),
+        name:
+          type === "walkin"
+            ? `${safe(data.firstName)} ${safe(data.lastName)}`.trim()
+            : safe(data.name),
         petName: safe(data.petName) || safe(data.pet?.petName),
         service: safe(data.service),
         walkinService: safe(data.serviceType),
-        dateISO,
-        date: dateDisplay,
-        time: type === "walkin" && data.timestamp
-          ? new Date(data.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-          : safe(data.time),
+        date:
+          type === "walkin" && data.timestamp
+            ? new Date(data.timestamp).toLocaleDateString()
+            : safe(data.date),
+        time: formattedTime,
         contact: safe(data.contact),
-        status: statusRaw,
-        statusNormalized,
+        status: safe(status),
         mode: type === "walkin" ? "Walk-In" : "Appointment",
         reservationType: safe(data.reservationType),
         reservationFee: safe(data.reservationFee),
@@ -1171,25 +1849,50 @@ async function loadAllAppointments() {
         sourceType: type,
       };
 
-      // --- Counters ---
-      if (displayData.dateISO === today) totalAppointmentsToday++;
-
-      if (statusNormalized === "completed") {
+      // ✅ Count finished appointments
+      if (status && status.toLowerCase().trim() === "completed") {
         finishedAppointmentsCount++;
-        if (displayData.dateISO === today) todaysEarnings += parsePrice(data.totalAmount);
+
+        // 🟢 Always derive earnings date from completedAt
+        let completionDate;
+        if (data.completedAt?.seconds) {
+          const d = new Date(data.completedAt.seconds * 1000);
+          completionDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        } else if (typeof data.completedAt === "string") {
+          completionDate = data.completedAt.split("T")[0].replace(/\//g, "-");
+        }
+
+        // 🕒 Normalize today's date
+        const today = new Date();
+        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+        // ✅ Add to today's earnings if completed today
+        if (completionDate === todayStr) {
+          let amount = data.totalAmount || data.serviceFee || 0;
+          if (typeof amount === "string") {
+            amount = amount.replace(/[^\d.-]/g, "");
+          }
+          const numAmount = Number(amount) || 0;
+          console.log(`💰 Adding to today's earnings: ₱${numAmount} (Completed at: ${completionDate})`);
+          todaysEarnings += numAmount;
+        } else {
+          console.log(`⏰ Skipping: completed at ${completionDate}, not today (${todayStr})`);
+        }
       }
 
-      if (type === "walkin") walkInCount++;
-
-      if (statusNormalized === "pending") {
-        pendingAll++;
-        if (displayData.dateISO === today) pendingToday++;
+      // ✅ Count walk-ins
+      if (type === "walkin") {
+        walkInCount++;
       }
 
-      if (statusNormalized === "cancelled") {
-        cancelledAll++;
-        if (displayData.dateISO === today) cancelledToday++;
+      // ✅ Count pending and cancelled (all time)
+      if (status.toLowerCase() === "pending") {
+        pendingAppointmentsToday++;
       }
+      if (status.toLowerCase() === "cancelled") {
+        cancelledAppointmentsToday++;
+      }
+
 
       // --- Render DOM rows ---
       if (dashboardTable && type !== "walkin") {
@@ -1215,6 +1918,7 @@ async function loadAllAppointments() {
         } else if (s === "in progress") {
           actionButtons = `
             <button class="btn complete" data-id="${docId}" data-type="${type}">Complete</button>
+                    <button class="btn view-pet-details" data-id="${docId}" data-type="${type}">View Pet Details</button>
             <button class="btn add-discount" data-id="${docId}" data-type="${type}" data-service="${displayData.walkinService}">
               Apply Discount
             </button>`;
@@ -1248,6 +1952,7 @@ async function loadAllAppointments() {
         } else if (s === "in progress") {
           actionButtons = `
             <button class="btn complete" data-id="${docId}" data-type="${type}">Complete</button>
+               <button class="btn view-pet-details" data-id="${docId}" data-type="${type}">View Pet Details</button>
             <button class="btn add-discount" data-id="${docId}" data-type="${type}" data-service="${displayData.service}">
               Apply Discount
             </button>`;
@@ -1294,6 +1999,8 @@ async function loadAllAppointments() {
 }
 
     }
+
+    
 
    // Collect appointments
 const allAppointments = [];
@@ -1445,6 +2152,8 @@ allAppointments.forEach((apt) => {
       earningsCard.querySelector(".numbers").textContent = "₱" + todaysEarnings.toLocaleString("en-PH");
     }
 
+    
+
     await logActivity("staff", "Load Appointments", `${snapshot.size + walkInSnapshot.size} appointments loaded.`);
     if (typeof loadRecentActivity === "function") await loadRecentActivity();
   } catch (err) {
@@ -1589,157 +2298,171 @@ document.addEventListener("click", async (e) => {
 
 
 
-
-
-// 🔹 Globals
-let currentDiscountDocRef = null; // Firestore doc reference
-let currentDiscountType = null;   // "Appointment" or "WalkInAppointment"
+  // 🔹 Globals
+  let currentDiscountDocRef = null; // Firestore doc reference
+  let currentDiscountType = null;   // "Appointment" or "WalkInAppointment"
 
 
 
-// ✅ Function to open Swal discount modal
-async function openDiscountModal(docRef, type) {
-  currentDiscountDocRef = docRef;
-  currentDiscountType = type;
+  // ✅ Function to open Swal discount modal
+  async function openDiscountModal(docRef, type) {
+    currentDiscountDocRef = docRef;
+    currentDiscountType = type;
 
-  try {
-    const snap = await getDoc(docRef);
-    if (!snap.exists()) return Swal.fire("Error", "Appointment not found.", "error");
+    try {
+      const snap = await getDoc(docRef);
+      if (!snap.exists()) return Swal.fire("Error", "Appointment not found.", "error");
 
-    const data = snap.data();
-    const serviceName = data.service || data.serviceType;
+      const data = snap.data();
+      const serviceName = data.service || data.serviceType;
 
-    // Fetch services from Firestore
-    const q = query(collection(db, "services"));
-    const querySnapshot = await getDocs(q);
+      // Fetch services from Firestore
+      const q = query(collection(db, "Services"));
+      const querySnapshot = await getDocs(q);
 
-    let service = null;
-    querySnapshot.forEach(docSnap => {
-      const s = docSnap.data();
-      const docId = docSnap.id;
+      let service = null;
+      querySnapshot.forEach(docSnap => {
+        const s = docSnap.data();
+        const docId = docSnap.id;
 
-      if (
-        docId.toLowerCase() === serviceName.toLowerCase() ||
-        (s.name && s.name.toLowerCase() === serviceName.toLowerCase())
-      ) {
-        service = { ...s, id: docId };
+        if (
+          docId.toLowerCase() === serviceName.toLowerCase() ||
+          (s.name && s.name.toLowerCase() === serviceName.toLowerCase())
+        ) {
+          service = { ...s, id: docId };
+        }
+      });
+
+      if (!service) {
+        return Swal.fire("Error", `Service '${serviceName}' not found.`, "error");
       }
-    });
 
-    if (!service) {
-      return Swal.fire("Error", `Service '${serviceName}' not found.`, "error");
-    }
+      // 🔹 Built-in discounts
+      const discountObj = {
+      
+        loyaltyDiscount: service.loyaltyDiscount ?? 0
+      };
 
-    // 🔹 Built-in discounts
-    const discountObj = {
-      pwdDiscount: service.pwdDiscount ?? 0,
-      seniorDiscount: service.seniorDiscount ?? 0,
-      loyaltyDiscount: service.loyaltyDiscount ?? 0
-    };
+      // 🔹 Special discounts array (from Firestore)
+      const specialDiscounts = service.discounts ?? [];
 
-    // 🔹 Special discounts array (from Firestore)
-    const specialDiscounts = service.discounts ?? [];
+      // 🔹 Build discount options
+      let discountHTML = "";
 
-    // 🔹 Build discount options
-    let discountHTML = "";
-
-    // Built-in
-    for (const [key, value] of Object.entries(discountObj)) {
-      if (value > 0) {
-        discountHTML += `
-          <div style="text-align:left;margin-bottom:5px">
-            <input type="checkbox" id="${key}" value="${key}" class="swal2-checkbox">
-            <label for="${key}">${key.replace("Discount", "")} (${value}%)</label>
-          </div>`;
-      }
-    }
-
-    // Special discounts
-    specialDiscounts.forEach((d, idx) => {
-      if (!d || !d.name) return;
-      discountHTML += `
-        <div style="text-align:left;margin-bottom:5px">
-          <input type="checkbox" id="special-${idx}" 
-                 value="special-${idx}" 
-                 class="swal2-checkbox" 
-                 data-type="${d.type}" 
-                 data-value="${d.value}">
-          <label for="special-${idx}">${d.name} (${d.type === "percentage" ? d.value + "%" : "₱" + d.value})</label>
-        </div>`;
-    });
-
-    if (!discountHTML) {
-      return Swal.fire("No Discounts", "This service has no available discounts.", "info");
-    }
-
-    // 🔹 Show SweetAlert2 modal
-    const { value: selectedDiscounts, dismiss } = await Swal.fire({
-      title: `Apply Discount for ${serviceName}`,
-      html: discountHTML,
-      focusConfirm: false,
-      preConfirm: () => {
-        const checkboxes = Swal.getPopup().querySelectorAll(".swal2-checkbox:checked");
-        return Array.from(checkboxes).map(cb => cb.value);
-      },
-      showCancelButton: true,
-      confirmButtonText: "Apply",
-      cancelButtonText: "Cancel"
-    });
-
-    if (dismiss === Swal.DismissReason.cancel) return;
-    if (!selectedDiscounts || selectedDiscounts.length === 0) {
-      return Swal.fire("No Selection", "Please select at least one discount.", "warning");
-    }
-
-    // 🔹 Calculate new total
-    let totalAmount = parsePrice(service.basePrice ?? 0);
-    let appliedDiscounts = [];
-
-    selectedDiscounts.forEach(selected => {
-      if (discountObj[selected]) {
-        // Built-in discount
-        const discountValue = parseFloat(discountObj[selected]) || 0;
-        const discountPercent = discountValue / 100;
-        totalAmount -= service.basePrice * discountPercent;
-        appliedDiscounts.push(`${selected.replace("Discount", "")}: ${discountValue}%`);
-      } else if (selected.startsWith("special-")) {
-        // Special discount
-        const idx = parseInt(selected.split("-")[1], 10);
-        const d = specialDiscounts[idx];
-        if (d) {
-          if (d.type === "percentage") {
-            totalAmount -= service.basePrice * (d.value / 100);
-            appliedDiscounts.push(`${d.name}: ${d.value}%`);
-          } else {
-            totalAmount -= d.value;
-            appliedDiscounts.push(`${d.name}: ₱${d.value}`);
-          }
+      // Built-in
+      for (const [key, value] of Object.entries(discountObj)) {
+        if (value > 0) {
+          discountHTML += `
+            <div style="text-align:left;margin-bottom:5px">
+              <input type="checkbox" id="${key}" value="${key}" class="swal2-checkbox">
+              <label for="${key}">${key.replace("Discount", "")} (${value}%)</label>
+            </div>`;
         }
       }
-    });
 
-    totalAmount = Math.max(0, Math.round(totalAmount * 100) / 100);
+      // Special discounts
+      specialDiscounts.forEach((d, idx) => {
+        if (!d || !d.name) return;
+        discountHTML += `
+          <div style="text-align:left;margin-bottom:5px">
+            <input type="checkbox" id="special-${idx}" 
+                  value="special-${idx}" 
+                  class="swal2-checkbox" 
+                  data-type="${d.type}" 
+                  data-value="${d.value}">
+            <label for="special-${idx}">${d.name} (${d.type === "percentage" ? d.value + "%" : "₱" + d.value})</label>
+          </div>`;
+      });
 
-    // ✅ Save to Firestore
-    await updateDoc(currentDiscountDocRef, {
-      totalAmount,
-      appliedDiscounts
-    });
+      if (!discountHTML) {
+        return Swal.fire("No Discounts", "This service has no available discounts.", "info");
+      }
 
-    Swal.fire(
-      "Discounts Applied ✅",
-      `Applied:\n${appliedDiscounts.join("\n")}\n\nNew Total: ₱${totalAmount}`,
-      "success"
-    );
-
-    currentDiscountDocRef = null;
-    currentDiscountType = null;
-
-  } catch (err) {
-    console.error("Discount error:", err);
-    Swal.fire("Error", "Something went wrong applying the discount.", "error");
-  }
+      // 🔹 Show SweetAlert2 modal
+      const { value: selectedDiscounts, dismiss } = await Swal.fire({
+        title: `Apply Discount for ${serviceName}`,
+        html: discountHTML,
+        focusConfirm: false,
+       preConfirm: () => {
+  const container = Swal.getHtmlContainer();
+  if (!container) return [];
+  const checkedBoxes = container.querySelectorAll(".swal2-checkbox:checked");
+  return Array.from(checkedBoxes).map(cb => cb.value);
 }
+,
+        showCancelButton: true,
+        confirmButtonText: "Apply",
+        cancelButtonText: "Cancel"
+      });
+
+      if (dismiss === Swal.DismissReason.cancel) return;
+      if (!selectedDiscounts || selectedDiscounts.length === 0) {
+        return Swal.fire("No Selection", "Please select at least one discount.", "warning");
+      }
+
+  // 🔹 Determine base price from available fields
+let basePrice = 0;
+if (service.basePrice) {
+  basePrice = parseFloat(service.basePrice.toString().replace(/[₱,]/g, "")) || 0;
+} else if (service.price) {
+  basePrice = parseFloat(service.price.toString().replace(/[₱,]/g, "")) || 0;
+} else if (service.serviceFee) {
+  basePrice = parseFloat(service.serviceFee.toString().replace(/[₱,]/g, "")) || 0;
+} else if (data.totalAmount) {
+  basePrice = parseFloat(data.totalAmount.toString().replace(/[₱,]/g, "")) || 0;
+}
+
+console.log("✅ Base Price Used:", basePrice);
+
+// 🔹 Now apply discounts correctly
+let totalAmount = basePrice;
+let appliedDiscounts = [];
+
+selectedDiscounts.forEach(selected => {
+  if (discountObj[selected]) {
+    // Built-in discount (e.g. loyalty)
+    const discountValue = parseFloat(discountObj[selected]) || 0;
+    const discountPercent = discountValue / 100;
+    totalAmount -= basePrice * discountPercent;
+    appliedDiscounts.push(`${selected.replace("Discount", "")}: ${discountValue}%`);
+  } else if (selected.startsWith("special-")) {
+    // Special discount
+    const idx = parseInt(selected.split("-")[1], 10);
+    const d = specialDiscounts[idx];
+    if (d) {
+      if (d.type === "percentage") {
+        totalAmount -= basePrice * (parseFloat(d.value) / 100);
+        appliedDiscounts.push(`${d.name}: ${d.value}%`);
+      } else {
+        totalAmount -= parseFloat(d.value);
+        appliedDiscounts.push(`${d.name}: ₱${d.value}`);
+      }
+    }
+  }
+});
+
+totalAmount = Math.max(0, Math.round(totalAmount * 100) / 100);
+
+// ✅ Save to Firestore
+await updateDoc(currentDiscountDocRef, {
+  totalAmount,
+  appliedDiscounts
+});
+
+Swal.fire(
+  "Discounts Applied ✅",
+  `Applied:\n${appliedDiscounts.join("\n")}\n\nNew Total: ₱${totalAmount}`,
+  "success"
+);
+
+      currentDiscountDocRef = null;
+      currentDiscountType = null;
+
+    } catch (err) {
+      console.error("Discount error:", err);
+      Swal.fire("Error", "Something went wrong applying the discount.", "error");
+    }
+  }
 
 
   // ================== RESCHEDULE ==================

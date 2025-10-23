@@ -1725,6 +1725,8 @@ function navigateMonth(dir){
   updateCalendar();
 }
 
+
+
 document.addEventListener('DOMContentLoaded', async () => {
   await loadClinicSettings();            // 🔹 load from Firestore
   await loadAppointmentsFromFirestore();
@@ -2105,7 +2107,7 @@ showAddPetModal() {
   this.currentEditId = null;
   document.getElementById("petForm").reset();
 
-  document.getElementById("modalTitle").textContent = "Add Pet";
+  document.getElementById("modalTitle").textContent = "Add Pet";  
   document.getElementById("submitBtn").textContent = "Add Pet";
 
   document.getElementById("petModal").style.display = "flex";
