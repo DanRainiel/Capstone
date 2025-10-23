@@ -2728,28 +2728,27 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 
-// NEWS //
-
-document.addEventListener("DOMContentLoaded", function () {
-  const cardsContainer = document.querySelector('.cards');
-  const boxesContainer = document.querySelector('#news .box-container');
+document.addEventListener("DOMContentLoaded", async function () {
+  const cardsContainer = document.querySelector(".cards");
+  const boxesContainer = document.querySelector("#news .box-container");
   const newsContainer = cardsContainer || boxesContainer;
   if (!newsContainer) return;
 
-  const MODE = cardsContainer ? 'cards' : 'boxes'; // render style
-  const PLACEHOLDER_IMAGE = "/images/news2.webp"; 
+  const MODE = cardsContainer ? "cards" : "boxes"; // Determine display type
+  const PLACEHOLDER_IMAGE = "/images/news2.webp";
   const defaultNews = {
     title: "NO NEWS AVAILABLE",
     content: "Stay tuned for updates!",
     image: PLACEHOLDER_IMAGE,
     publishDate: "",
-    priority: "normal"
+    priority: "normal",
   };
 
-  // ✅ Sort by priority first, then newest
   const priorityOrder = { urgent: 1, important: 2, normal: 3 };
+
+  // ✅ Helper: Sort and limit
   function getTop3Published(newsList) {
-    let published = (newsList || []).filter(n => n.status === 'published'); // only published
+    let published = (newsList || []).filter((n) => n.status === "published");
     published.sort((a, b) => {
       const prioDiff = priorityOrder[a.priority] - priorityOrder[b.priority];
       if (prioDiff !== 0) return prioDiff;
@@ -2760,24 +2759,42 @@ document.addEventListener("DOMContentLoaded", function () {
     return published.slice(0, 3);
   }
 
-  function renderNews() {
-    const stored = JSON.parse(localStorage.getItem('newsList')) || [];
-    let list = getTop3Published(stored);
+  // ✅ Fetch from Firestore
+  async function fetchNewsFromFirestore() {
+    const newsRef = collection(db, "NEWS");
+    const q = query(newsRef, where("status", "==", "published"));
+    const querySnapshot = await getDocs(q);
+
+    let newsList = [];
+    querySnapshot.forEach((docSnap) => {
+      newsList.push(docSnap.data());
+    });
+
+    return getTop3Published(newsList);
+  }
+
+  // ✅ Render news items
+  async function renderNews() {
+    let list = await fetchNewsFromFirestore();
 
     while (list.length < 3) {
       list.push(defaultNews);
     }
 
-    newsContainer.innerHTML = '';
+    newsContainer.innerHTML = "";
 
-    list.forEach(news => {
+    list.forEach((news) => {
       const imgSrc = news.image || PLACEHOLDER_IMAGE;
-      const dateText = news.publishDate ? new Date(news.publishDate).toLocaleDateString() : '';
-      const priorityText = news.priority ? news.priority.charAt(0).toUpperCase() + news.priority.slice(1) : '';
+      const dateText = news.publishDate
+        ? new Date(news.publishDate).toLocaleDateString()
+        : "";
+      const priorityText = news.priority
+        ? news.priority.charAt(0).toUpperCase() + news.priority.slice(1)
+        : "";
 
-      if (MODE === 'cards') {
-        const card = document.createElement('div');
-        card.classList.add('card');
+      if (MODE === "cards") {
+        const card = document.createElement("div");
+        card.classList.add("card");
         card.innerHTML = `
           <div class="image-section">
             <img src="${imgSrc}" alt="${news.title}">
@@ -2793,8 +2810,8 @@ document.addEventListener("DOMContentLoaded", function () {
         `;
         newsContainer.appendChild(card);
       } else {
-        const box = document.createElement('div');
-        box.classList.add('box');
+        const box = document.createElement("div");
+        box.classList.add("box");
         box.innerHTML = `
           <div class="image">
             <img src="${imgSrc}" alt="${news.title}">
@@ -2815,11 +2832,8 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  renderNews();
-
-  window.addEventListener('storage', (event) => {
-    if (event.key === 'newsList') renderNews();
-  });
+  // ✅ Initial render
+  await renderNews();
 });
 
 

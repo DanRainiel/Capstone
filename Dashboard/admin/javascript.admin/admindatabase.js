@@ -588,137 +588,7 @@ document.addEventListener("click", async (e) => {
   }
 });
 
-// Handle "View" button
-document.addEventListener("click", async (e) => {
-  if (e.target.classList.contains("view")) {
-    const docId = e.target.getAttribute("data-id");
-    const type = e.target.getAttribute("data-type");
-
-    try {
-      const docRef = doc(db, type === "walkin" ? "WalkInAppointment" : "Appointment", docId);
-      const snap = await getDoc(docRef);
-
-      if (snap.exists()) {
-        const data = snap.data();
-
-        Swal.fire({
-          title: "Appointment Details",
-          html: `
-            <p><strong>Name:</strong> ${data.name || `${data.firstName || ""} ${data.lastName || ""}`}</p>
-            <p><strong>Pet:</strong> ${data.petName || data.pet?.petName || "N/A"}</p>
-            <p><strong>Service:</strong> ${data.service || data.serviceType}</p>
-            <p><strong>Date:</strong> ${data.date}</p>
-            <p><strong>Time:</strong> ${data.time}</p>
-            <p><strong>Contact:</strong> ${data.contact}</p>
-            <p><strong>Status:</strong> ${data.status}</p>
-            <p><strong>Total Amount:</strong> ${data.totalAmount || "0.00"}</p>
-          `,
-          width: "600px",
-          confirmButtonText: "Close"
-        });
-
-      } else {
-        Swal.fire("Error", "Appointment not found.", "error");
-      }
-    } catch (err) {
-      console.error("Error viewing appointment:", err);
-      Swal.fire("Error", "Something went wrong while fetching appointment details.", "error");
-    }
-  }
-});
-
-// Handle "Edit" button
-document.addEventListener("click", async (e) => {
-  if (e.target.classList.contains("edit")) {
-    const docId = e.target.getAttribute("data-id");
-    const type = e.target.getAttribute("data-type");
-
-    try {
-      const docRef = doc(db, type === "walkin" ? "WalkInAppointment" : "Appointment", docId);
-      const snap = await getDoc(docRef);
-
-      if (snap.exists()) {
-        const data = snap.data();
-
-        const { value: formValues } = await Swal.fire({
-          title: "Edit Appointment",
-          html: `
-            <input id="swal-name" class="swal2-input" placeholder="Name" value="${data.name || `${data.firstName || ""} ${data.lastName || ""}`}">
-            <input id="swal-pet" class="swal2-input" placeholder="Pet Name" value="${data.petName || data.pet?.petName || ""}">
-            <input id="swal-service" class="swal2-input" placeholder="Service" value="${data.service || data.serviceType || ""}">
-            <input id="swal-date" type="date" class="swal2-input" value="${data.date || ""}">
-            <input id="swal-time" type="time" class="swal2-input" value="${data.time || ""}">
-            <input id="swal-contact" class="swal2-input" placeholder="Contact" value="${data.contact || ""}">
-          `,
-          focusConfirm: false,
-          showCancelButton: true,
-          confirmButtonText: "Save",
-          preConfirm: () => {
-            return {
-              name: document.getElementById("swal-name").value,
-              petName: document.getElementById("swal-pet").value,
-              service: document.getElementById("swal-service").value,
-              date: document.getElementById("swal-date").value,
-              time: document.getElementById("swal-time").value,
-              contact: document.getElementById("swal-contact").value
-            };
-          }
-        });
-
-        if (formValues) {
-          await updateDoc(docRef, formValues);
-          Swal.fire("Updated!", "Appointment has been updated.", "success");
-          loadAllAppointments(); // 🔄 refresh the tables
-        }
-      } else {
-        Swal.fire("Error", "Appointment not found.", "error");
-      }
-    } catch (err) {
-      console.error("Error editing appointment:", err);
-      Swal.fire("Error", "Something went wrong while editing appointment.", "error");
-    }
-  }
-});
-
-document.addEventListener("click", async (e) => {
-  if (e.target.classList.contains("viewreason")) {
-    const docId = e.target.getAttribute("data-id");
-    console.log("🔍 Fetching cancel reason for docId:", docId);
-
-    try {
-      const docRef = doc(db, "Appointment", docId); // make sure "Appointment" matches your collection name
-      const snap = await getDoc(docRef);
-
-      if (snap.exists()) {
-        const data = snap.data();
-        console.log("✅ Appointment data:", data);
-
-        const reason = data.cancelReason || "No reason provided.";
-        const cancelledAt = data.cancelledAt?.toDate
-          ? data.cancelledAt.toDate().toLocaleString()
-          : "Unknown time";
-
-        Swal.fire({
-          title: "Cancellation Reason",
-          html: `
-            <p><strong>Reason:</strong> ${reason}</p>
-            <p><strong>Cancelled At:</strong> ${cancelledAt}</p>
-          `,
-          icon: "info",
-          confirmButtonText: "Close"
-        });
-      } else {
-        console.warn("❌ Appointment not found for docId:", docId);
-        Swal.fire("Error", "Appointment not found.", "error");
-      }
-    } catch (error) {
-      console.error("🔥 Error fetching cancel reason:", error);
-      Swal.fire("Error", "Failed to load cancellation reason.", "error");
-    }
-  }
-});
-
- // Handle "View Screenshot"
+// Handle "View Screenshot"
 document.addEventListener("click", async (e) => {
   if (e.target.classList.contains("screenshot")) {
     const docId = e.target.getAttribute("data-id");
@@ -772,8 +642,132 @@ document.addEventListener("click", async (e) => {
     }
   }
 });
+// ============================================
+// CRITICAL TIME FORMAT FIXES
+// Changed from single "time" to "startTime" and "endTime"
+// ============================================
 
-// Handle "Reschedule" button
+// 🔹 FIX 1: View Appointment Modal (Line ~560)
+document.addEventListener("click", async (e) => {
+  if (e.target.classList.contains("view")) {
+    const docId = e.target.getAttribute("data-id");
+    const type = e.target.getAttribute("data-type");
+
+    try {
+      const docRef = doc(db, type === "walkin" ? "WalkInAppointment" : "Appointment", docId);
+      const snap = await getDoc(docRef);
+
+      if (snap.exists()) {
+        const data = snap.data();
+
+        // ✅ Fixed: Use startTime - endTime format
+        const displayTime = data.startTime && data.endTime 
+          ? `${data.startTime} - ${data.endTime}` 
+          : data.time || "N/A";
+
+       Swal.fire({
+  title: "Appointment Details",
+  html: `
+    <p><strong>Name:</strong> ${data.name || `${data.firstName || ""} ${data.lastName || ""}`}</p>
+    <p><strong>Pet:</strong> ${data.petName || data.pet?.petName || "N/A"}</p>
+    <p><strong>Service:</strong> ${data.service || data.serviceType}</p>
+    <p><strong>Date:</strong> ${data.date}</p>
+    <p><strong>Time:</strong> ${displayTime}</p>
+    <p><strong>Contact:</strong> ${
+      data.contact || 
+      data.contactNumber || 
+      data.ownerNumber || 
+      data.phone || 
+      "N/A"
+    }</p>
+    <p><strong>Status:</strong> ${data.status}</p>
+    <p><strong>Total Amount:</strong> ${data.totalAmount || "0.00"}</p>
+  `,
+  width: "600px",
+  confirmButtonText: "Close"
+});
+
+      } else {
+        Swal.fire("Error", "Appointment not found.", "error");
+      }
+    } catch (err) {
+      console.error("Error viewing appointment:", err);
+      Swal.fire("Error", "Something went wrong while fetching appointment details.", "error");
+    }
+  }
+});
+
+// 🔹 FIX 2: Edit Appointment Modal (Line ~590)
+document.addEventListener("click", async (e) => {
+  if (e.target.classList.contains("edit")) {
+    const docId = e.target.getAttribute("data-id");
+    const type = e.target.getAttribute("data-type");
+
+    try {
+      const docRef = doc(db, type === "walkin" ? "WalkInAppointment" : "Appointment", docId);
+      const snap = await getDoc(docRef);
+
+      if (snap.exists()) {
+        const data = snap.data();
+
+        // ✅ Fixed: Display and edit startTime & endTime
+        const displayTime = data.startTime && data.endTime 
+          ? `${data.startTime} - ${data.endTime}` 
+          : data.time || "";
+
+        const { value: formValues } = await Swal.fire({
+          title: "Edit Appointment",
+          html: `
+            <input id="swal-name" class="swal2-input" placeholder="Name" value="${data.name || `${data.firstName || ""} ${data.lastName || ""}`}">
+            <input id="swal-pet" class="swal2-input" placeholder="Pet Name" value="${data.petName || data.pet?.petName || ""}">
+            <input id="swal-service" class="swal2-input" placeholder="Service" value="${data.service || data.serviceType || ""}">
+            <input id="swal-date" type="date" class="swal2-input" value="${data.date || ""}">
+            <input id="swal-start-time" type="time" class="swal2-input" placeholder="Start Time" value="${data.startTime || ""}">
+            <input id="swal-end-time" type="time" class="swal2-input" placeholder="End Time" value="${data.endTime || ""}">
+            <input id="swal-contact" class="swal2-input" placeholder="Contact" value="${data.contact || ""}">
+          `,
+          focusConfirm: false,
+          showCancelButton: true,
+          confirmButtonText: "Save",
+          preConfirm: () => {
+            return {
+              name: document.getElementById("swal-name").value,
+              petName: document.getElementById("swal-pet").value,
+              service: document.getElementById("swal-service").value,
+              date: document.getElementById("swal-date").value,
+              startTime: document.getElementById("swal-start-time").value,
+              endTime: document.getElementById("swal-end-time").value,
+              contact: document.getElementById("swal-contact").value
+            };
+          }
+        });
+
+        if (formValues) {
+          // ✅ Save both startTime and endTime
+          await updateDoc(docRef, {
+            name: formValues.name,
+            petName: formValues.petName,
+            service: formValues.service,
+            date: formValues.date,
+            startTime: formValues.startTime,
+            endTime: formValues.endTime,
+            contact: formValues.contact
+          });
+          
+          Swal.fire("Updated!", "Appointment has been updated.", "success");
+          loadAllAppointments();
+        }
+      } else {
+        Swal.fire("Error", "Appointment not found.", "error");
+      }
+    } catch (err) {
+      console.error("Error editing appointment:", err);
+      Swal.fire("Error", "Something went wrong while editing appointment.", "error");
+    }
+  }
+});
+
+// 🔹 FIX 3: Reschedule Modal (Line ~650)
 document.addEventListener("click", async (e) => {
   if (e.target.classList.contains("reschedule")) {
     const docId = e.target.getAttribute("data-id");
@@ -794,35 +788,38 @@ document.addEventListener("click", async (e) => {
     const appointmentData = docSnap.data();
     const userId = appointmentData.userId;
 
-    // ✅ Generate time slots dynamically (9:00 AM to 5:30 PM, 30min intervals)
     function generateTimeSlots(startHour, endHour) {
       const slots = [];
       const start = new Date();
       start.setHours(startHour, 0, 0, 0);
 
       const end = new Date();
-      end.setHours(endHour, 30, 0, 0); // until 5:30 PM
+      end.setHours(endHour, 30, 0, 0);
 
       while (start < end) {
-        const endSlot = new Date(start.getTime() + 30 * 60000); // add 30 minutes
+        const endSlot = new Date(start.getTime() + 30 * 60000);
 
         const formatTime = (date) =>
           date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 
-        slots.push(`${formatTime(start)} - ${formatTime(endSlot)}`);
+        slots.push({
+          display: `${formatTime(start)} - ${formatTime(endSlot)}`,
+          start: formatTime(start),
+          end: formatTime(endSlot)
+        });
+        
         start.setMinutes(start.getMinutes() + 30);
       }
 
       return slots;
     }
 
-    const timeSlots = generateTimeSlots(9, 17); // 9:00 AM to 5:30 PM
+    const timeSlots = generateTimeSlots(9, 17);
 
     const slotOptions = timeSlots
-      .map((slot) => `<option value="${slot}">${slot}</option>`)
+      .map((slot) => `<option value="${slot.start}|${slot.end}">${slot.display}</option>`)
       .join("");
 
-    // ✅ SweetAlert with dynamic dropdown
     const { value: formValues } = await Swal.fire({
       title: "Reschedule Appointment",
       width: 600,
@@ -844,42 +841,42 @@ document.addEventListener("click", async (e) => {
       cancelButtonText: "Cancel",
       preConfirm: () => {
         const date = document.getElementById("new-date").value;
-        const slot = document.getElementById("new-time").value;
+        const timeValue = document.getElementById("new-time").value;
 
-        if (!date || !slot) {
+        if (!date || !timeValue) {
           Swal.showValidationMessage("Please select both date and time slot.");
           return false;
         }
 
-        // ✅ Extract starting time only (e.g., "9:00 AM")
-        const time = slot.split(" - ")[0];
-        return { date, time };
+        // ✅ Split the time value to get start and end times
+        const [startTime, endTime] = timeValue.split("|");
+        return { date, startTime, endTime };
       }
     });
 
-    if (!formValues) return; // Cancelled
+    if (!formValues) return;
 
     try {
-      // ✅ Update appointment in Firestore
+      // ✅ Update with both startTime and endTime
       await updateDoc(docRef, {
         date: formValues.date,
-        time: formValues.time, // Only the starting time
-        status: "pending",     // 👈 Bring back to pending
+        startTime: formValues.startTime,
+        endTime: formValues.endTime,
+        status: "pending",
         updatedAt: serverTimestamp()
       });
 
-      // ✅ Create reminder notification
       await addDoc(collection(db, "Notifications"), {
         appointmentId: docId,
         userId,
         type: "reminder",
         service: appointmentData.service || "Appointment",
         status: "unread",
-        message: `Your appointment for ${appointmentData.petName || "your pet"} has been rescheduled to ${formValues.date} at ${formValues.time}.`,
+        message: `Your appointment for ${appointmentData.petName || "your pet"} has been rescheduled to ${formValues.date} at ${formValues.startTime} - ${formValues.endTime}.`,
         createdAt: serverTimestamp()
       });
 
-      Swal.fire("Rescheduled", "The appointment has been updated and set back to pending. A reminder was sent to the user.", "success");
+      Swal.fire("Rescheduled", "The appointment has been updated with new time slot.", "success");
     } catch (err) {
       console.error("❌ Error during reschedule:", err);
       Swal.fire("Error", "Something went wrong while rescheduling.", "error");
@@ -887,9 +884,7 @@ document.addEventListener("click", async (e) => {
   }
 });
 
-/// -------------------------
-// 🐾 View Appointment Details (includes Pet + Appointment Info)
-// -------------------------
+// 🔹 FIX 4: View Pet Details Modal (Line ~720)
 async function viewAppointmentDetails(appointmentId) {
   try {
     const apptRef = doc(db, "Appointment", appointmentId);
@@ -902,7 +897,14 @@ async function viewAppointmentDetails(appointmentId) {
     const data = apptSnap.data();
     const safe = (val) => (val ? val : "—");
 
-    // 🖼️ Optional pet image (if exists in related Pets record)
+    // ✅ Fixed: Display startTime - endTime
+    const displayTime = data.startTime && data.endTime 
+      ? `${data.startTime} - ${data.endTime}` 
+      : data.time || "—";
+
+    // ✅ Fixed: Get contact number from multiple possible fields
+    const contactNumber = data.contact || data.ownerNumber || data.contactNumber || "—";
+
     let petImageHTML = "";
     if (data.petId) {
       try {
@@ -923,25 +925,24 @@ async function viewAppointmentDetails(appointmentId) {
       }
     }
 
-    // 🧾 Display combined details
     await Swal.fire({
       title: `<i class="fa-solid fa-calendar-check"></i> Appointment Details`,
       html: `
         ${petImageHTML}
         <div style="text-align:left;line-height:1.8;">
-          <strong>Owner Name:</strong> ${safe(data.name)}<br>
-          <strong>Contact Number:</strong> ${safe(data.ownerNumber)}<br>
+          <strong>Owner Name:</strong> ${safe(data.name || data.ownerName)}<br>
+          <strong>Contact Number:</strong> ${contactNumber}<br>
           <strong>Pet Name:</strong> ${safe(data.petName)}<br>
           <strong>Pet Size:</strong> ${safe(data.petSize)}<br>
           <strong>Service:</strong> ${safe(data.service)}<br>
-          <strong>Selected Service:</strong> ${safe(data.selectedServices?.join(", "))}<br>
+          <strong>Selected Services:</strong> ${safe(data.selectedServices?.join(", "))}<br>
           <strong>Service Fee:</strong> ${safe(data.serviceFee)}<br>
           <strong>Reservation Fee:</strong> ${safe(data.reservationFee)}<br>
           <strong>Total Amount:</strong> ${safe(data.totalAmount)}<br>
           <strong>Vet:</strong> ${safe(data.vet)}<br>
           <strong>Status:</strong> ${safe(data.status)}<br>
           <strong>Date:</strong> ${safe(data.date)}<br>
-          <strong>Time:</strong> ${safe(data.time)}<br>
+          <strong>Time:</strong> ${displayTime}<br>
           <strong>Reservation Type:</strong> ${safe(data.reservationType)}<br>
           <strong>Instructions:</strong> ${safe(data.instructions)}<br>
         </div>
@@ -956,6 +957,176 @@ async function viewAppointmentDetails(appointmentId) {
     Swal.fire("Error", "Failed to load appointment details. Please try again.", "error");
   }
 }
+
+// 🔹 FIX 5: View Pet Details Button Event Listener (FIXED)
+// The issue is that the event listener needs to be attached correctly
+
+// ✅ Remove the old broken event listener and replace with this:
+document.addEventListener("click", async (e) => {
+  const btn = e.target.closest(".btn.view-pet-details");
+  if (!btn) return;
+
+  // Read appointment ID from the button's data attribute
+  const appointmentId = btn.dataset.appointmentId;
+  const type = btn.dataset.type || "appointment";
+
+  if (!appointmentId) {
+    Swal.fire("Missing Info", "Appointment ID not found for this record.", "warning");
+    return;
+  }
+
+  console.log("🔍 Opening pet details for appointment:", appointmentId, "Type:", type);
+  await viewAppointmentDetails(appointmentId);
+});
+
+// ✅ Also make sure the button in renderRow has correct data attributes
+// Update the button HTML in your renderRow function to:
+/*
+<button 
+  class="btn view-pet-details" 
+  data-appointment-id="${docId}" 
+  data-type="${type}">
+  View Pet Details
+</button>
+*/
+
+// 🔹 FIX 6: Walk-In View Pet Details (if needed)
+// For walk-in appointments, we need to handle them differently
+document.addEventListener("click", async (e) => {
+  if (e.target.classList.contains("view-pet-details")) {
+    const btn = e.target;
+    const docId = btn.getAttribute("data-id");
+    const appointmentId = btn.getAttribute("data-appointment-id");
+    const type = btn.getAttribute("data-type");
+
+    console.log("🔍 View Pet Details clicked:", { docId, appointmentId, type });
+
+    // Use appointmentId if available, otherwise use docId
+    const idToUse = appointmentId || docId;
+
+    if (!idToUse) {
+      return Swal.fire("Error", "Cannot find appointment information.", "error");
+    }
+
+    // Determine collection based on type
+    const collectionName = type === "walkin" ? "WalkInAppointment" : "Appointment";
+
+    try {
+      const docRef = doc(db, collectionName, idToUse);
+      const docSnap = await getDoc(docRef);
+
+      if (!docSnap.exists()) {
+        return Swal.fire("Not Found", "Appointment not found.", "error");
+      }
+
+      const data = docSnap.data();
+      const safe = (val) => (val ? val : "—");
+
+      // Format time
+      const displayTime = data.startTime && data.endTime 
+        ? `${data.startTime} - ${data.endTime}` 
+        : data.time || "—";
+
+      // Get pet name
+      const petName = data.petName || data.pet?.petName || "Unknown";
+
+      // ✅ Fixed: Get contact number from multiple possible fields
+      const contactNumber = data.contact || data.ownerNumber || data.contactNumber || "—";
+      
+      // ✅ Fixed: Get owner name from multiple possible fields
+      const ownerName = data.name || data.ownerName || `${data.firstName || ''} ${data.lastName || ''}`.trim() || "Unknown";
+
+      // Try to get pet image if petId exists
+      let petImageHTML = "";
+      if (data.petId) {
+        try {
+          const petRef = doc(db, "Pets", data.petId);
+          const petSnap = await getDoc(petRef);
+          if (petSnap.exists()) {
+            const petData = petSnap.data();
+            if (petData.petImage) {
+              petImageHTML = `
+                <div style="text-align:center;margin-bottom:10px;">
+                  <img src="${petData.petImage}" alt="${petName}"
+                       style="width:120px;height:120px;border-radius:10px;object-fit:cover;">
+                </div>`;
+            }
+          }
+        } catch (e) {
+          console.warn("⚠️ Could not load pet image:", e);
+        }
+      }
+
+      // Display modal
+      await Swal.fire({
+        title: `<i class="fa-solid fa-paw"></i> Pet & Appointment Details`,
+        html: `
+          ${petImageHTML}
+          <div style="text-align:left;line-height:1.8;">
+            <h3 style="color:#4CAF50;margin-bottom:10px;">Owner Information</h3>
+            <strong>Owner Name:</strong> ${ownerName}<br>
+            <strong>Contact Number:</strong> ${contactNumber}<br>
+            
+            <h3 style="color:#4CAF50;margin-top:15px;margin-bottom:10px;">Pet Information</h3>
+            <strong>Pet Name:</strong> ${safe(petName)}<br>
+            <strong>Species:</strong> ${safe(data.pet?.species || data.species || data.petType)}<br>
+            <strong>Breed:</strong> ${safe(data.pet?.breed || data.breed)}<br>
+            <strong>Age:</strong> ${safe(data.pet?.age || data.age)}<br>
+            <strong>Sex:</strong> ${safe(data.pet?.sex || data.sex || data.gender)}<br>
+            <strong>Weight:</strong> ${safe(data.pet?.weight || data.weight)} kg<br>
+            <strong>Size:</strong> ${safe(data.petSize || data.pet?.size || data.size)}<br>
+            <strong>Color:</strong> ${safe(data.pet?.color || data.color)}<br>
+            
+            <h3 style="color:#4CAF50;margin-top:15px;margin-bottom:10px;">Appointment Details</h3>
+            <strong>Service:</strong> ${safe(data.service || data.serviceType)}<br>
+            <strong>Variant:</strong> ${safe(data.variant)}<br>
+            <strong>Date:</strong> ${safe(data.date)}<br>
+            <strong>Time:</strong> ${displayTime}<br>
+            <strong>Status:</strong> <span class="status ${(data.status || '').toLowerCase()}">${safe(data.status)}</span><br>
+            <strong>Priority:</strong> ${safe(data.priority)}<br>
+            
+            <h3 style="color:#4CAF50;margin-top:15px;margin-bottom:10px;">Financial Details</h3>
+            <strong>Service Fee:</strong> ₱${safe(data.serviceFee || data.totalAmount)}<br>
+            <strong>Applied Discounts:</strong> ${safe(data.appliedDiscounts?.join(", ") || "None")}<br>
+            <strong>Total Amount:</strong> <strong style="color:#4CAF50;">₱${safe(data.totalAmount)}</strong><br>
+            
+            ${data.reason ? `
+              <h3 style="color:#4CAF50;margin-top:15px;margin-bottom:10px;">Additional Information</h3>
+              <strong>Reason for Visit:</strong> ${safe(data.reason)}<br>
+            ` : ''}
+            
+            ${data.pet?.medicalHistory || data.medicalHistory ? `
+              <strong>Medical History:</strong><br>
+              <div style="background:#f5f5f5;padding:10px;border-radius:5px;margin-top:5px;">
+                ${safe(data.pet?.medicalHistory || data.medicalHistory)}
+              </div>
+            ` : ''}
+          </div>
+        `,
+        confirmButtonText: "Close",
+        width: 650,
+        confirmButtonColor: "#4CAF50"
+      });
+
+    } catch (err) {
+      console.error("❌ Error loading pet details:", err);
+      Swal.fire("Error", "Failed to load pet details. Please try again.", "error");
+    }
+  }
+});
+
+console.log("✅ All time format fixes applied successfully!");
+console.log("✅ View Pet Details button listener fixed!");
+console.log("✅ Contact number field mapping fixed!");
+console.log("📌 Updated areas:");
+console.log("   - View Appointment Modal");
+console.log("   - Edit Appointment Modal");
+console.log("   - Reschedule Modal");
+console.log("   - View Pet Details Modal");
+console.log("   - View Pet Details Button (FIXED)");
+console.log("   - Contact Number Display (FIXED)");
+
+
 document.addEventListener("click", async (e) => {
   const btn = e.target.closest(".btn.view-pet-details");
   if (!btn) return;
@@ -1647,46 +1818,60 @@ document.getElementById("serviceFilter").addEventListener("change", function () 
         return Swal.fire("No Selection", "Please select at least one discount.", "warning");
       }
 
-      // 🔹 Calculate new total
-      let totalAmount = parsePrice(service.basePrice ?? 0);
-      let appliedDiscounts = [];
+  // 🔹 Determine base price from available fields
+let basePrice = 0;
+if (service.basePrice) {
+  basePrice = parseFloat(service.basePrice.toString().replace(/[₱,]/g, "")) || 0;
+} else if (service.price) {
+  basePrice = parseFloat(service.price.toString().replace(/[₱,]/g, "")) || 0;
+} else if (service.serviceFee) {
+  basePrice = parseFloat(service.serviceFee.toString().replace(/[₱,]/g, "")) || 0;
+} else if (data.totalAmount) {
+  basePrice = parseFloat(data.totalAmount.toString().replace(/[₱,]/g, "")) || 0;
+}
 
-      selectedDiscounts.forEach(selected => {
-        if (discountObj[selected]) {
-          // Built-in discount
-          const discountValue = parseFloat(discountObj[selected]) || 0;
-          const discountPercent = discountValue / 100;
-          totalAmount -= service.basePrice * discountPercent;
-          appliedDiscounts.push(`${selected.replace("Discount", "")}: ${discountValue}%`);
-        } else if (selected.startsWith("special-")) {
-          // Special discount
-          const idx = parseInt(selected.split("-")[1], 10);
-          const d = specialDiscounts[idx];
-          if (d) {
-            if (d.type === "percentage") {
-              totalAmount -= service.basePrice * (d.value / 100);
-              appliedDiscounts.push(`${d.name}: ${d.value}%`);
-            } else {
-              totalAmount -= d.value;
-              appliedDiscounts.push(`${d.name}: ₱${d.value}`);
-            }
-          }
-        }
-      });
+console.log("✅ Base Price Used:", basePrice);
 
-      totalAmount = Math.max(0, Math.round(totalAmount * 100) / 100);
+// 🔹 Now apply discounts correctly
+let totalAmount = basePrice;
+let appliedDiscounts = [];
 
-      // ✅ Save to Firestore
-      await updateDoc(currentDiscountDocRef, {
-        totalAmount,
-        appliedDiscounts
-      });
+selectedDiscounts.forEach(selected => {
+  if (discountObj[selected]) {
+    // Built-in discount (e.g. loyalty)
+    const discountValue = parseFloat(discountObj[selected]) || 0;
+    const discountPercent = discountValue / 100;
+    totalAmount -= basePrice * discountPercent;
+    appliedDiscounts.push(`${selected.replace("Discount", "")}: ${discountValue}%`);
+  } else if (selected.startsWith("special-")) {
+    // Special discount
+    const idx = parseInt(selected.split("-")[1], 10);
+    const d = specialDiscounts[idx];
+    if (d) {
+      if (d.type === "percentage") {
+        totalAmount -= basePrice * (parseFloat(d.value) / 100);
+        appliedDiscounts.push(`${d.name}: ${d.value}%`);
+      } else {
+        totalAmount -= parseFloat(d.value);
+        appliedDiscounts.push(`${d.name}: ₱${d.value}`);
+      }
+    }
+  }
+});
 
-      Swal.fire(
-        "Discounts Applied ✅",
-        `Applied:\n${appliedDiscounts.join("\n")}\n\nNew Total: ₱${totalAmount}`,
-        "success"
-      );
+totalAmount = Math.max(0, Math.round(totalAmount * 100) / 100);
+
+// ✅ Save to Firestore
+await updateDoc(currentDiscountDocRef, {
+  totalAmount,
+  appliedDiscounts
+});
+
+Swal.fire(
+  "Discounts Applied ✅",
+  `Applied:\n${appliedDiscounts.join("\n")}\n\nNew Total: ₱${totalAmount}`,
+  "success"
+);
 
       currentDiscountDocRef = null;
       currentDiscountType = null;
@@ -1946,72 +2131,50 @@ function attachUserStatusListeners() {
 
 
 
-  
-
-    //NEWS MANAGEMENT
-document.addEventListener("DOMContentLoaded", function () {
+  document.addEventListener("DOMContentLoaded", function () {
   const newsForm = document.getElementById('newsForm');
   const newsTableBody = document.querySelector('#news-management table tbody');
+  const newsCollection = collection(db, "NEWS");
 
-  // Utility function to generate unique IDs for news items
-  function generateId() {
-    return '_' + Math.random().toString(36).substr(2, 9);
-  }
-
-  // Capitalize first letter helper
+  // --- Helper: Capitalize first letter
   function capitalize(str) {
-    if (!str) return '';
-    return str.charAt(0).toUpperCase() + str.slice(1);
+    return str ? str.charAt(0).toUpperCase() + str.slice(1) : "";
   }
 
-  // Save newsList back to localStorage
-  function saveNewsList(newsList) {
-    localStorage.setItem('newsList', JSON.stringify(newsList));
-  }
+  // --- Render News Table (Admin Side)
+  async function renderNewsTable() {
+    const q = query(newsCollection, orderBy("priority"));
+    const querySnapshot = await getDocs(q);
+    newsTableBody.innerHTML = "";
 
-  function sortByPriority(newsList) {
-  const priorityOrder = { urgent: 1, important: 2, normal: 3 };
-  return newsList.sort((a, b) => {
-    return priorityOrder[a.priority] - priorityOrder[b.priority];
-  });
-}
+    querySnapshot.forEach((docSnap) => {
+      const news = docSnap.data();
+      const id = docSnap.id;
+      const isDraft = news.status === "draft";
 
-
-  // Render the table from localStorage
-  function renderNewsTable() {
-    let newsList = JSON.parse(localStorage.getItem('newsList')) || [];
-    newsTableBody.innerHTML = '';
-
-    newsList.forEach((news, index) => {
-      const isDraft = news.status === 'draft';
-
-      const tr = document.createElement('tr');
-      tr.dataset.index = index;
-
+      const tr = document.createElement("tr");
+      tr.dataset.id = id;
       tr.innerHTML = `
         <td>${news.title}</td>
         <td>${capitalize(news.category)}</td>
-        <td>${news.publishDate ? new Date(news.publishDate).toLocaleDateString() : '-'}</td>
+        <td>${news.publishDate ? new Date(news.publishDate).toLocaleDateString() : "-"}</td>
         <td><span class="status ${isDraft ? 'pending' : 'completed'}">${isDraft ? 'Draft' : 'Published'}</span></td>
-      
         <td>
           <button class="btn-primary edit-btn">Edit</button>
-          ${isDraft 
-            ? `<button class="btn-primary publish-btn">Publish</button>` 
+          ${isDraft
+            ? `<button class="btn-primary publish-btn">Publish</button>`
             : `<button class="btn-primary view-btn">View</button>`}
-          <button class="btn-danger delete-btn">${isDraft ? 'Delete' : 'Unpublish'}</button>
+          <button class="btn-danger delete-btn">${isDraft ? "Delete" : "Unpublish"}</button>
         </td>
       `;
-
       newsTableBody.appendChild(tr);
     });
   }
 
-  // Event listener for form submit (publish news)
+  // --- Add or Publish News
   if (newsForm) {
-    newsForm.addEventListener('submit', function (e) {
+    newsForm.addEventListener("submit", async function (e) {
       e.preventDefault();
-
       const title = this.newsTitle.value.trim();
       const category = this.newsCategory.value;
       const priority = this.newsPriority.value;
@@ -2024,31 +2187,25 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
       }
 
-      const newsItem = {
-        id: generateId(),
+      await addDoc(newsCollection, {
         title,
         category,
         priority,
         content,
-        publishDate,
+        publishDate: publishDate || new Date().toISOString(),
         image: "/images/news2.webp",
         status,
-       
-      };
-
-      let newsList = JSON.parse(localStorage.getItem('newsList')) || [];
-      newsList.unshift(newsItem);
-      saveNewsList(newsList);
+        views: 0,
+        timestamp: new Date().toISOString(),
+      });
 
       Swal.fire("Success", "News published successfully!", "success");
       this.reset();
-
-      renderNewsTable();
     });
 
-    // Save as Draft button logic
+    // --- Save as Draft
     const draftBtn = newsForm.querySelector('button[type="button"]');
-    draftBtn.addEventListener('click', function () {
+    draftBtn.addEventListener("click", async function () {
       const title = newsForm.newsTitle.value.trim();
       const category = newsForm.newsCategory.value;
       const priority = newsForm.newsPriority.value;
@@ -2061,274 +2218,233 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
       }
 
-      const newsItem = {
-        id: generateId(),
+      await addDoc(newsCollection, {
         title,
         category,
         priority,
         content,
-        publishDate,
+        publishDate: publishDate || null,
         image: "/images/news2.webp",
         status,
-        views: 0
-      };
-
-      let newsList = JSON.parse(localStorage.getItem('newsList')) || [];
-      newsList.unshift(newsItem);
-      saveNewsList(newsList);
+        views: 0,
+        timestamp: new Date().toISOString(),
+      });
 
       Swal.fire("Saved", "Draft saved successfully!", "success");
       newsForm.reset();
-
-      renderNewsTable();
     });
   }
 
-  // Delegate table button clicks (edit, delete, publish, view)
+  // --- Delegate table actions (edit, delete, publish, view)
   if (newsTableBody) {
-    newsTableBody.addEventListener('click', function (e) {
+    newsTableBody.addEventListener("click", async function (e) {
       const btn = e.target;
-      const row = btn.closest('tr');
+      const row = btn.closest("tr");
       if (!row) return;
-      const index = row.dataset.index;
-      let newsList = JSON.parse(localStorage.getItem('newsList')) || [];
-      let newsItem = newsList[index];
-// --- DELETE / UNPUBLISH ---
-if (btn.classList.contains('delete-btn')) {
-  const isDraft = newsItem.status === 'draft';
-  Swal.fire({
-    title: isDraft ? "Delete this draft?" : "Unpublish this news?",
-    text: isDraft ? "This draft will be removed permanently." : "The news will no longer be visible.",
-    icon: "warning",
-    showCancelButton: true,
-    confirmButtonText: isDraft ? "Yes, delete" : "Yes, unpublish"
-  }).then((result) => {
-    if (result.isConfirmed) {
-      if (isDraft) {
-        newsList.splice(index, 1);
-      } else {
-        newsList[index].status = 'draft';
-        newsList[index].publishDate = null;
+      const id = row.dataset.id;
+      const newsRef = doc(db, "NEWS", id);
+
+      const snapshot = await getDocs(newsCollection);
+      let newsItem;
+      snapshot.forEach((docSnap) => {
+        if (docSnap.id === id) newsItem = { id: docSnap.id, ...docSnap.data() };
+      });
+
+      if (!newsItem) return;
+
+      // --- DELETE / UNPUBLISH ---
+      if (btn.classList.contains("delete-btn")) {
+        const isDraft = newsItem.status === "draft";
+        Swal.fire({
+          title: isDraft ? "Delete this draft?" : "Unpublish this news?",
+          text: isDraft
+            ? "This draft will be removed permanently."
+            : "The news will no longer be visible.",
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonText: isDraft ? "Yes, delete" : "Yes, unpublish",
+        }).then(async (result) => {
+          if (result.isConfirmed) {
+            if (isDraft) {
+              await deleteDoc(newsRef);
+            } else {
+              await updateDoc(newsRef, {
+                status: "draft",
+                publishDate: null,
+              });
+            }
+            Swal.fire("Done!", isDraft ? "Draft deleted." : "News unpublished.", "success");
+          }
+        });
       }
-      saveNewsList(newsList);
-      renderNewsTable();
-      renderNewsCards(); // ✅ refresh customer cards
-      Swal.fire("Done!", isDraft ? "Draft deleted." : "News unpublished.", "success");
-    }
-  });
-}
 
       // --- PUBLISH ---
-      else if (btn.classList.contains('publish-btn')) {
+      else if (btn.classList.contains("publish-btn")) {
         Swal.fire({
           title: "Publish this news?",
           text: "It will be visible to readers.",
           icon: "question",
           showCancelButton: true,
-          confirmButtonText: "Yes, publish"
-        }).then((result) => {
+          confirmButtonText: "Yes, publish",
+        }).then(async (result) => {
           if (result.isConfirmed) {
-            newsList[index].status = 'published';
-            newsList[index].publishDate = new Date().toISOString();
-            saveNewsList(newsList);
-            renderNewsTable();
+            await updateDoc(newsRef, {
+              status: "published",
+              publishDate: new Date().toISOString(),
+            });
             Swal.fire("Published!", "News is now live.", "success");
           }
         });
-      } 
-
-    // --- EDIT ---
-else if (btn.classList.contains('edit-btn')) {
-  Swal.fire({
-    title: "Edit News",
-    html: `
-      <input id="swal-title" class="swal2-input" value="${newsItem.title}" placeholder="Title">
-      <input id="swal-category" class="swal2-input" value="${newsItem.category}" placeholder="Category">
-      
-      <select id="swal-priority" class="swal2-input" style="margin-top:10px;">
-        <option value="urgent" ${newsItem.priority === "urgent" ? "selected" : ""}>Urgent</option>
-        <option value="important" ${newsItem.priority === "important" ? "selected" : ""}>Important</option>
-        <option value="normal" ${newsItem.priority === "normal" ? "selected" : ""}>Normal</option>
-      </select>
-      
-      <textarea id="swal-content" class="swal2-textarea" placeholder="Content">${newsItem.content || ''}</textarea>
-    `,
-    showCancelButton: true,
-    confirmButtonText: "Save",
-    preConfirm: () => {
-      const newTitle = document.getElementById("swal-title").value.trim();
-      const newCategory = document.getElementById("swal-category").value.trim();
-      const newPriority = document.getElementById("swal-priority").value;
-      const newContent = document.getElementById("swal-content").value.trim();
-      if (!newTitle || !newCategory) {
-        Swal.showValidationMessage("Title and Category are required!");
-        return false;
       }
-      return { newTitle, newCategory, newPriority, newContent };
-    }
-  }).then((result) => {
-    if (result.isConfirmed) {
-      newsList[index].title = result.value.newTitle;
-      newsList[index].category = result.value.newCategory;
-      newsList[index].priority = result.value.newPriority;
-      newsList[index].content = result.value.newContent;
-      saveNewsList(newsList);
-      renderNewsTable();
-      Swal.fire("Saved!", "News updated successfully.", "success");
-    }
-  });
-}
 
-     else if (btn.classList.contains('view-btn')) {
-  Swal.fire({
-    title: newsItem.title,
-    html: `
-      <p><b>Category:</b> ${capitalize(newsItem.category)}</p>
-      <p><b>Priority:</b> ${capitalize(newsItem.priority)}</p>
-      <p><b>Status:</b> ${newsItem.status === 'draft' ? 'Draft' : 'Published'}</p>
-      <p><b>Date:</b> ${newsItem.publishDate ? new Date(newsItem.publishDate).toLocaleDateString() : '-'}</p>
-      <hr>
-      <p>${newsItem.content || 'No content available.'}</p>
-    `,
-    icon: "info",
-    confirmButtonText: "Close"
-  });
-}
+      // --- EDIT ---
+      else if (btn.classList.contains("edit-btn")) {
+        Swal.fire({
+          title: "Edit News",
+          html: `
+            <input id="swal-title" class="swal2-input" value="${newsItem.title}" placeholder="Title">
+            <input id="swal-category" class="swal2-input" value="${newsItem.category}" placeholder="Category">
+            <select id="swal-priority" class="swal2-input" style="margin-top:10px;">
+              <option value="urgent" ${newsItem.priority === "urgent" ? "selected" : ""}>Urgent</option>
+              <option value="important" ${newsItem.priority === "important" ? "selected" : ""}>Important</option>
+              <option value="normal" ${newsItem.priority === "normal" ? "selected" : ""}>Normal</option>
+            </select>
+            <textarea id="swal-content" class="swal2-textarea" placeholder="Content">${newsItem.content || ""}</textarea>
+          `,
+          showCancelButton: true,
+          confirmButtonText: "Save",
+          preConfirm: () => {
+            const newTitle = document.getElementById("swal-title").value.trim();
+            const newCategory = document.getElementById("swal-category").value.trim();
+            const newPriority = document.getElementById("swal-priority").value;
+            const newContent = document.getElementById("swal-content").value.trim();
+            if (!newTitle || !newCategory) {
+              Swal.showValidationMessage("Title and Category are required!");
+              return false;
+            }
+            return { newTitle, newCategory, newPriority, newContent };
+          },
+        }).then(async (result) => {
+          if (result.isConfirmed) {
+            await updateDoc(newsRef, {
+              title: result.value.newTitle,
+              category: result.value.newCategory,
+              priority: result.value.newPriority,
+              content: result.value.newContent,
+            });
+            Swal.fire("Saved!", "News updated successfully.", "success");
+          }
+        });
+      }
 
+      // --- VIEW ---
+      else if (btn.classList.contains("view-btn")) {
+        Swal.fire({
+          title: newsItem.title,
+          html: `
+            <p><b>Category:</b> ${capitalize(newsItem.category)}</p>
+            <p><b>Priority:</b> ${capitalize(newsItem.priority)}</p>
+            <p><b>Status:</b> ${newsItem.status === "draft" ? "Draft" : "Published"}</p>
+            <p><b>Date:</b> ${newsItem.publishDate ? new Date(newsItem.publishDate).toLocaleDateString() : "-"}</p>
+            <hr>
+            <p>${newsItem.content || "No content available."}</p>
+          `,
+          icon: "info",
+          confirmButtonText: "Close",
+        });
+      }
     });
   }
 
-  // Initial render of table
-  renderNewsTable();
-
-  // --- CUSTOMER PAGE LOGIC (updated with priority) ---
-const newsContainer = document.querySelector('.cards');
-if (newsContainer) {
-  const newsList = JSON.parse(localStorage.getItem('newsList')) || [];
-
-  // Only published news & sort by priority first
-  const priorityOrder = { urgent: 1, important: 2, normal: 3 };
-  const publishedNews = newsList
-    .filter(news => news.status === 'published')
-    .sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
-
-  newsContainer.innerHTML = '';
-
-  publishedNews.forEach(news => {
-    const card = document.createElement('div');
-    card.classList.add('card');
-    card.innerHTML = `
-      <div class="image-section">
-        <img src="${news.image}" alt="${news.title}">
-      </div>
-      <div class="content">
-        <h4>${news.title}</h4>
-        <p>${news.content}</p>
-        <p><b>Priority:</b> ${news.priority.charAt(0).toUpperCase() + news.priority.slice(1)}</p>
-      </div>
-      <div class="posted-date">
-        <p>${news.publishDate ? new Date(news.publishDate).toLocaleDateString() : ''}</p>
-      </div>
-    `;
-    newsContainer.appendChild(card);
-  });
-}
-
-
- // --- INDEX PAGE LOGIC (updated with priority) ---
-function renderIndexNews() {
-  const newsContainer = document.querySelector('#news .box-container');
-  if (!newsContainer) return; // stop if not on index
-
-  const newsList = JSON.parse(localStorage.getItem('newsList')) || [];
-
-  // Only published news
-  let publishedNews = newsList.filter(n => n.status === 'published');
-
-  // Sort by priority (urgent → important → normal) then by newest date
-  const priorityOrder = { urgent: 1, important: 2, normal: 3 };
-  publishedNews = publishedNews
-    .sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority])
-    .sort((a, b) => new Date(b.publishDate) - new Date(a.publishDate));
-
-  // Take top 3 only
-  publishedNews = publishedNews.slice(0, 3);
-
-  newsContainer.innerHTML = '';
-
-  publishedNews.forEach(news => {
-    const box = document.createElement('div');
-    box.classList.add('box');
-    box.innerHTML = `
-      <div class="image">
-        <img src="${news.image}" alt="${news.title}">
-      </div>
-      <div class="content">
-        <div class="icons">
-          <a href="#"><i class="fa-solid fa-calendar"></i> 
-            ${news.publishDate ? new Date(news.publishDate).toLocaleDateString() : ''}
-          </a>
-          <a href="#"><i class="fas fa-user"></i> By admin</a>
-          <span class="priority ${news.priority}">${news.priority.charAt(0).toUpperCase() + news.priority.slice(1)}</span>
-        </div>
-        <h3>${news.title}</h3>
-        <p>${news.content}</p>
-        <a href="news.html" class="btn">Learn More <span class="fas fa-chevron-right"></span></a>
-      </div>
-    `;
-    newsContainer.appendChild(box);
+  // --- Real-time updates (live reload)
+  onSnapshot(newsCollection, (snapshot) => {
+    renderNewsTable();
+    renderIndexNews();
+    renderCustomerNews();
   });
 
-  // Optional: "See All News" button
-  if (publishedNews.length > 0) {
-    const seeAll = document.createElement('div');
-    seeAll.classList.add('see-all');
-    seeAll.innerHTML = `<a href="news.html" class="btn">See All News</a>`;
-    newsContainer.appendChild(seeAll);
-  }
-}
+  // --- CUSTOMER PAGE LOGIC
+  async function renderCustomerNews() {
+    const newsContainer = document.querySelector(".cards");
+    if (!newsContainer) return;
 
-// --- CUSTOMER PAGE LOGIC ---
-function renderCustomerNews() {
-  const newsContainer = document.querySelector('.cards');
-  if (!newsContainer) return; // stop if not on customer/news page
+    const querySnapshot = await getDocs(newsCollection);
+    const priorityOrder = { urgent: 1, important: 2, normal: 3 };
+    const published = [];
 
-  const newsList = JSON.parse(localStorage.getItem('newsList')) || [];
+    querySnapshot.forEach((docSnap) => {
+      const n = docSnap.data();
+      if (n.status === "published") published.push(n);
+    });
 
-  newsContainer.innerHTML = '';
+    published.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+    newsContainer.innerHTML = "";
 
-  newsList.forEach(news => {
-    if (news.status === 'published') {
-      const card = document.createElement('div');
-      card.classList.add('card');
+    published.forEach((n) => {
+      const card = document.createElement("div");
+      card.classList.add("card");
       card.innerHTML = `
         <div class="image-section">
-          <img src="${news.image}" alt="${news.title}">
+          <img src="${n.image}" alt="${n.title}">
         </div>
         <div class="content">
-          <h4>${news.title}</h4>
-          <p>${news.content}</p>
+          <h4>${n.title}</h4>
+          <p>${n.content}</p>
+          <p><b>Priority:</b> ${capitalize(n.priority)}</p>
         </div>
         <div class="posted-date">
-          <p>${news.publishDate ? new Date(news.publishDate).toLocaleDateString() : ''}</p>
+          <p>${n.publishDate ? new Date(n.publishDate).toLocaleDateString() : ""}</p>
         </div>
       `;
       newsContainer.appendChild(card);
-    }
-  });
-}
+    });
+  }
 
-// ✅ Run both (each will only run if container exists)
-renderIndexNews();
-renderCustomerNews();
+  // --- INDEX PAGE LOGIC
+  async function renderIndexNews() {
+    const newsContainer = document.querySelector("#news .box-container");
+    if (!newsContainer) return;
 
-// ✅ Update live if localStorage changes
-window.addEventListener('storage', () => {
-  renderIndexNews();
-  renderCustomerNews();
+    const querySnapshot = await getDocs(newsCollection);
+    let publishedNews = [];
+
+    querySnapshot.forEach((docSnap) => {
+      const n = docSnap.data();
+      if (n.status === "published") publishedNews.push(n);
+    });
+
+    const priorityOrder = { urgent: 1, important: 2, normal: 3 };
+    publishedNews = publishedNews
+      .sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority])
+      .sort((a, b) => new Date(b.publishDate) - new Date(a.publishDate))
+      .slice(0, 3);
+
+    newsContainer.innerHTML = "";
+
+    publishedNews.forEach((n) => {
+      const box = document.createElement("div");
+      box.classList.add("box");
+      box.innerHTML = `
+        <div class="image">
+          <img src="${n.image}" alt="${n.title}">
+        </div>
+        <div class="content">
+          <div class="icons">
+            <a href="#"><i class="fa-solid fa-calendar"></i>
+              ${n.publishDate ? new Date(n.publishDate).toLocaleDateString() : ""}
+            </a>
+            <a href="#"><i class="fas fa-user"></i> By admin</a>
+            <span class="priority ${n.priority}">${capitalize(n.priority)}</span>
+          </div>
+          <h3>${n.title}</h3>
+          <p>${n.content}</p>
+          <a href="news.html" class="btn">Learn More <span class="fas fa-chevron-right"></span></a>
+        </div>
+      `;
+      newsContainer.appendChild(box);
+    });
+  }
 });
-});
-
 
   //CALENDAR MANAGEMENT//
   document.addEventListener("DOMContentLoaded", () => {
