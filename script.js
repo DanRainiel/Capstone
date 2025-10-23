@@ -153,8 +153,49 @@ document.addEventListener("DOMContentLoaded", async function () {
     }
   }
 
-  // Initialize
-  await fetchAndRenderNews();
+  // ✅ REAL-TIME UPDATES - Automatically reload when news changes
+  function setupRealtimeListener() {
+    const newsCollection = collection(db, 'NEWS');
+    const newsQuery = query(newsCollection);
+
+    console.log('🔄 Setting up real-time listener for news updates...');
+
+    onSnapshot(newsQuery, (snapshot) => {
+      const newsList = [];
+      
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        
+        let dateValue = data.publishDate;
+        if (data.publishDate?.toDate) {
+          dateValue = data.publishDate.toDate().toISOString();
+        } else if (data.timestamp?.toDate) {
+          dateValue = data.timestamp.toDate().toISOString();
+        }
+        
+        newsList.push({
+          id: doc.id,
+          title: data.title || 'Untitled',
+          content: data.content || '',
+          image: data.image || PLACEHOLDER_IMAGE,
+          publishDate: dateValue,
+          priority: data.priority || 'normal',
+          status: data.status
+        });
+      });
+
+      console.log('🔄 Real-time update - News refreshed:', newsList.length, 'items');
+      
+      const top3 = getTop3Published(newsList);
+      renderNews(top3);
+    }, (error) => {
+      console.error("❌ Error listening to news updates:", error);
+      console.error("Error details:", error.message);
+    });
+  }
+
+  // Initialize with real-time listener instead of one-time fetch
+  setupRealtimeListener();
 });
 
 document.addEventListener('DOMContentLoaded', () => {

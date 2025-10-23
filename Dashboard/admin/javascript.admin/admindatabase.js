@@ -1233,25 +1233,39 @@ document.addEventListener("click", async (e) => {
     sourceType: type,
   };
 
-        // ✅ Count today's scheduled appointments
-        if (displayData.date === today) {
-          totalAppointmentsToday++;
-        }
+      // ✅ Count finished appointments
+if (status && status.toLowerCase().trim() === "completed") {
+  finishedAppointmentsCount++;
 
-        // ✅ Count finished appointments
-        if (status.toLowerCase() === "completed") {
-          finishedAppointmentsCount++;
-        
-          // 🟢 Add to today's earnings only if completed today
-  if (displayData.date === today) {
-    let amount = data.totalAmount || 0;
-    if (typeof amount === "string") {
-      amount = amount.replace(/[^\d.-]/g, ""); // remove ₱ and commas
-    }
-    todaysEarnings += Number(amount) || 0;
+  // 🟢 Always derive earnings date from completedAt
+  let completionDate;
+  if (data.completedAt?.seconds) {
+    // Firestore Timestamp object
+    const d = new Date(data.completedAt.seconds * 1000);
+    completionDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  } else if (typeof data.completedAt === "string") {
+    // If stored as a string
+    completionDate = data.completedAt.split("T")[0].replace(/\//g, "-");
   }
 
-        }
+  // 🕒 Normalize today's date
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+  // ✅ Add to today's earnings if completed today
+  if (completionDate === todayStr) {
+    let amount = data.totalAmount || data.serviceFee || 0;
+    if (typeof amount === "string") {
+      amount = amount.replace(/[^\d.-]/g, "");
+    }
+    const numAmount = Number(amount) || 0;
+    console.log(`💰 Adding to today's earnings: ₱${numAmount} (Completed at: ${completionDate})`);
+    todaysEarnings += numAmount;
+  } else {
+    console.log(`⏰ Skipping: completed at ${completionDate}, not today (${todayStr})`);
+  }
+}
+
 
         // ✅ Count walk-ins
         if (type === "walkin") {

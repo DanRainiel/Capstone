@@ -2727,8 +2727,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initCalendar();
 });
 
-
-document.addEventListener("DOMContentLoaded", async function () {
+document.addEventListener("DOMContentLoaded", function () {
   const cardsContainer = document.querySelector(".cards");
   const boxesContainer = document.querySelector("#news .box-container");
   const newsContainer = cardsContainer || boxesContainer;
@@ -2759,24 +2758,9 @@ document.addEventListener("DOMContentLoaded", async function () {
     return published.slice(0, 3);
   }
 
-  // ✅ Fetch from Firestore
-  async function fetchNewsFromFirestore() {
-    const newsRef = collection(db, "NEWS");
-    const q = query(newsRef, where("status", "==", "published"));
-    const querySnapshot = await getDocs(q);
-
-    let newsList = [];
-    querySnapshot.forEach((docSnap) => {
-      newsList.push(docSnap.data());
-    });
-
-    return getTop3Published(newsList);
-  }
-
   // ✅ Render news items
-  async function renderNews() {
-    let list = await fetchNewsFromFirestore();
-
+  function renderNews(list) {
+    // Ensure we always have 3 slots
     while (list.length < 3) {
       list.push(defaultNews);
     }
@@ -2832,8 +2816,52 @@ document.addEventListener("DOMContentLoaded", async function () {
     });
   }
 
-  // ✅ Initial render
-  await renderNews();
+  // ✅ REAL-TIME LISTENER - Auto-updates when news changes
+  function setupRealtimeListener() {
+    const newsRef = collection(db, "NEWS");
+    const q = query(newsRef, where("status", "==", "published"));
+
+    console.log("🔄 Setting up real-time listener for news updates...");
+
+    // Listen for real-time changes
+    onSnapshot(
+      q,
+      (snapshot) => {
+        let newsList = [];
+        
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          
+          // Handle Firestore Timestamp conversion
+          let dateValue = data.publishDate;
+          if (data.publishDate?.toDate) {
+            dateValue = data.publishDate.toDate().toISOString();
+          } else if (data.timestamp?.toDate) {
+            dateValue = data.timestamp.toDate().toISOString();
+          }
+          
+          newsList.push({
+            ...data,
+            publishDate: dateValue
+          });
+        });
+
+        console.log("🔄 Real-time update - News refreshed:", newsList.length, "items");
+
+        const top3 = getTop3Published(newsList);
+        renderNews(top3);
+      },
+      (error) => {
+        console.error("❌ Error listening to news updates:", error);
+        console.error("Error details:", error.message);
+        // Render default news on error
+        renderNews([]);
+      }
+    );
+  }
+
+  // ✅ Initialize real-time listener
+  setupRealtimeListener();
 });
 
 
