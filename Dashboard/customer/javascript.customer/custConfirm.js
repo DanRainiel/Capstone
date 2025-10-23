@@ -134,23 +134,29 @@ function updateTotalAmount() {
   const serviceFee = parseFloat(serviceFeeDisplay.textContent.replace(/[₱,]/g, "")) || 0;
 
   let reservationFee = 0;
-  let grandTotal = serviceFee;
+  let displayServiceFee = serviceFee;
+  let grandTotal = 0;
 
   if (type === "reservation-only") {
     reservationFee = 40;
+    displayServiceFee = serviceFee;
     grandTotal = Math.max(0, serviceFee - reservationFee);
   } else if (type === "with-downpayment") {
     reservationFee = serviceFee / 2;
+    displayServiceFee = serviceFee;
     grandTotal = Math.max(0, serviceFee - reservationFee);
   } else if (type === "with-full-payment") {
-    reservationFee = 0; // No separate reservation fee
-    grandTotal = serviceFee; // Total amount = full service fee
+    reservationFee = 0;
+    displayServiceFee = 0; // Service fee becomes 0
+    grandTotal = serviceFee; // Total amount gets the full value
   } else {
     reservationFee = 0;
+    displayServiceFee = serviceFee;
     grandTotal = serviceFee;
   }
 
   reservationFeeDisplay.textContent = `₱${reservationFee.toFixed(2)}`;
+  serviceFeeDisplay.textContent = `₱${displayServiceFee.toFixed(2)}`;
   totalAmountDisplay.textContent = `₱${Math.max(0, grandTotal).toFixed(2)}`;
 }
 
