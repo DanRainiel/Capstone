@@ -194,23 +194,49 @@ async function fillPetForm(petId) {
     console.error("Error filling pet form:", error);
   }
 }
-
 // ==============================
-// User Update Section (unchanged)
+// User Update Section
 // ==============================
 document.addEventListener("DOMContentLoaded", () => {
   const userId = sessionStorage.getItem("userId");
-  if (!userId) return;
+  console.log("🔍 User Update Section - userId:", userId);
+  
+  if (!userId) {
+    console.warn("⚠️ No userId found in sessionStorage");
+    return;
+  }
 
-  const saveBtn = document.querySelector(".btn-save-user");
-  const cancelBtn = document.querySelector(".btn-cancel-user");
-  if (!saveBtn || !cancelBtn) return;
+  // Target the first form in .container (user account form)
+  const userForm = document.querySelector(".container form.account");
+  if (!userForm) {
+    console.warn("⚠️ User account form not found");
+    return;
+  }
+
+  const saveBtn = userForm.querySelector(".btn-save");
+  const cancelBtn = userForm.querySelector(".btn-cancel");
+  
+  console.log("🔍 Save button found:", !!saveBtn);
+  console.log("🔍 Cancel button found:", !!cancelBtn);
+  
+  if (!saveBtn || !cancelBtn) {
+    console.warn("⚠️ Save or Cancel button not found");
+    return;
+  }
 
   saveBtn.addEventListener("click", async (e) => {
     e.preventDefault();
+    console.log("💾 Save button clicked");
+    
     const newName = document.getElementById("input-username")?.value.trim();
     const newEmail = document.getElementById("input-email")?.value.trim();
     const newPassword = document.getElementById("input-password")?.value.trim();
+
+    console.log("📝 Form values:", {
+      name: newName,
+      email: newEmail,
+      hasPassword: !!newPassword
+    });
 
     if (!newName || !newEmail) {
       alert("Both name and email are required!");
@@ -219,34 +245,51 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try {
       const userRef = doc(db, "users", userId);
-      await updateDoc(userRef, {
+      console.log("📄 Document reference created for:", userId);
+      
+      const updateData = {
         name: newName,
-        email: newEmail,
-        ...(newPassword ? { password: newPassword } : {}),
-        updatedAt: new Date()
-      });
+        email: newEmail
+      };
 
+      // Only update password if provided
+      if (newPassword) {
+        updateData.password = newPassword;
+      }
+
+      console.log("📤 Attempting to update with data:", updateData);
+      await updateDoc(userRef, updateData);
+      console.log("✅ Update successful!");
+
+      // Update display elements
       const nameEl = document.getElementById("account-username");
       const emailEl = document.getElementById("account-email");
       if (nameEl) nameEl.textContent = newName;
       if (emailEl) emailEl.textContent = newEmail;
 
+      // Update session storage
       sessionStorage.setItem("username", newName);
       sessionStorage.setItem("email", newEmail);
       if (newPassword) sessionStorage.setItem("password", newPassword);
 
       alert("User details updated successfully!");
     } catch (error) {
-      console.error("Error updating user:", error);
-      alert("Failed to update user. Try again.");
+      console.error("❌ Error updating user:", error);
+      console.error("Error code:", error.code);
+      console.error("Error message:", error.message);
+      console.error("Full error:", error);
+      alert("Failed to update user: " + error.message);
     }
   });
 
   cancelBtn.addEventListener("click", (e) => {
     e.preventDefault();
+    console.log("🔄 Cancel button clicked - resetting form");
+    
     const usernameInput = document.getElementById("input-username");
     const emailInput = document.getElementById("input-email");
     const passwordInput = document.getElementById("input-password");
+    
     if (usernameInput) usernameInput.value = sessionStorage.getItem("username") || "";
     if (emailInput) emailInput.value = sessionStorage.getItem("email") || "";
     if (passwordInput) passwordInput.value = sessionStorage.getItem("password") || "";
