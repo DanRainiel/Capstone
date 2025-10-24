@@ -2570,38 +2570,66 @@ async submitAppointmentForm(event) {
     document.getElementById("appointmentForm").addEventListener("submit", (e) => this.submitAppointmentForm(e));
   }
 };
-
 const speciesList = document.getElementById("speciesList");
 const petSpeciesInput = document.getElementById("petSpecies");
 const petBreedInput = document.getElementById("petBreed");
 
 let speciesBreeds = {}; // dynamically updated
 
+// ✅ Store the unsubscribe function globally to prevent multiple listeners
+let unsubscribeSpeciesListener = null;
+
 // Listen for real-time updates from Firestore
 function listenSpeciesAndBreeds() {
+  // ✅ Unsubscribe from previous listener if it exists
+  if (unsubscribeSpeciesListener) {
+    console.log("🔄 Cleaning up previous species listener...");
+    unsubscribeSpeciesListener();
+  }
+
   const speciesCollection = collection(db, "Species");
 
-  onSnapshot(speciesCollection, (snapshot) => {
-    speciesBreeds = {}; // reset
+  // ✅ Store the unsubscribe function
+  unsubscribeSpeciesListener = onSnapshot(speciesCollection, (snapshot) => {
+    const tempSpeciesBreeds = {}; // ✅ Use temporary object
+    const processedSpecies = new Set(); // ✅ Track processed species to prevent duplicates
+
+    console.log(`📥 Received ${snapshot.docs.length} species documents from Firestore`);
 
     snapshot.forEach(doc => {
       const data = doc.data();
-      const speciesName = data.name.toLowerCase();
+      const speciesName = data.name.toLowerCase().trim();
 
-      if (!speciesBreeds[speciesName]) speciesBreeds[speciesName] = [];
+      // ✅ Skip if already processed (PREVENTS DUPLICATES)
+      if (processedSpecies.has(speciesName)) {
+        console.warn(`⚠️ Duplicate species detected: ${speciesName} (doc ID: ${doc.id}) - skipping`);
+        return;
+      }
+      
+      processedSpecies.add(speciesName);
+
+      // Initialize breeds array for this species
+      tempSpeciesBreeds[speciesName] = [];
 
       if (Array.isArray(data.breeds)) {
         data.breeds.forEach(b => {
-          if (b.status === "Active") speciesBreeds[speciesName].push(b.name);
+          if (b.status === "Active") {
+            tempSpeciesBreeds[speciesName].push(b.name);
+          }
         });
       }
     });
 
+    // ✅ COMPLETELY REPLACE the global object (don't merge)
+    speciesBreeds = tempSpeciesBreeds;
+
+    console.log(`✅ Loaded ${Object.keys(speciesBreeds).length} unique species with breeds`);
+
     populateSpeciesDropdown();
 
     // Re-trigger breed dropdown if species is already selected
-    const selectedSpecies = petSpeciesInput.value.toLowerCase().trim();
-    if (speciesBreeds[selectedSpecies]) {
+    const selectedSpecies = petSpeciesInput?.value?.toLowerCase()?.trim() || "";
+    if (selectedSpecies && speciesBreeds[selectedSpecies]) {
       petBreedInput.disabled = false;
       breedDropdown.setOptions(speciesBreeds[selectedSpecies]);
     } else {
@@ -2624,10 +2652,8 @@ function populateSpeciesDropdown() {
     }
   });
 
-  // Force the input to refresh its datalist
-  const currentValue = petSpeciesInput.value;
-  petSpeciesInput.value = "";
-  petSpeciesInput.value = currentValue;
+  // ✅ Remove autocomplete to prevent browser from showing past entries
+  petSpeciesInput.setAttribute("autocomplete", "off");
 }
 
 
@@ -2699,7 +2725,7 @@ petSpeciesInput.addEventListener("input", (e) => {
 });
 
 // Start listening for real-time updates
-listenSpeciesAndBreeds();
+
 
 
 
@@ -2965,3 +2991,18 @@ document.addEventListener("DOMContentLoaded", applyClinicSchedule);
   window.closeAppointmentModal = () => PetManager.closeAppointmentModal();
   window.closeConfirmModal = () => PetManager.closeConfirmModal();
 
+document.addEventListener("DOMContentLoaded", () => {
+  // Make sure elements exist before setting up listener
+  if (petSpeciesInput && speciesList && petBreedInput) {
+    listenSpeciesAndBreeds();  // ✅ CALL IT ONLY HERE
+  } else {
+    console.warn("⚠️ Species dropdown elements not found in DOM");
+  }
+});
+
+// ✅ Clean up listener when page unloads
+window.addEventListener('beforeunload', () => {
+  if (unsubscribeSpeciesListener) {
+    unsubscribeSpeciesListener();
+  }
+});

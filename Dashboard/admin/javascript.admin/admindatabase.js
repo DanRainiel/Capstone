@@ -1148,123 +1148,123 @@ document.addEventListener("click", async (e) => {
 
 
 
-  // 📅 Load appointments into two tables
-  async function loadAllAppointments() {
-    const dashboardTable = document.getElementById("table-dashboard");
-    const appointmentTable = document.getElementById("appointmentTable");
-    const historyTable = document.getElementById("historytable");
-    const walkInTable = document.getElementById("walkinTableBody");
+    // 📅 Load appointments into two tables
+    async function loadAllAppointments() {
+      const dashboardTable = document.getElementById("table-dashboard");
+      const appointmentTable = document.getElementById("appointmentTable");
+      const historyTable = document.getElementById("historytable");
+      const walkInTable = document.getElementById("walkinTableBody");
 
-    if (dashboardTable) dashboardTable.innerHTML = "";
-    if (appointmentTable) appointmentTable.innerHTML = "";
-    if (historyTable) historyTable.innerHTML = "";
-    if (walkInTable) walkInTable.innerHTML = "";
-      
-    // ✅ Counts
-    let todayScheduleCount = 0;
-    let finishedAppointmentsCount = 0;
-    let walkInCount = 0;
+      if (dashboardTable) dashboardTable.innerHTML = "";
+      if (appointmentTable) appointmentTable.innerHTML = "";
+      if (historyTable) historyTable.innerHTML = "";
+      if (walkInTable) walkInTable.innerHTML = "";
+        
+      // ✅ Counts
+      let todayScheduleCount = 0;
+      let finishedAppointmentsCount = 0;
+      let walkInCount = 0;
 
-    let totalAppointmentsToday = 0;
-    let pendingAppointmentsToday = 0;
-    let cancelledAppointmentsToday = 0;
-    let todaysEarnings = 0;
+      let totalAppointmentsToday = 0;
+      let pendingAppointmentsToday = 0;
+      let cancelledAppointmentsToday = 0;
+      let todaysEarnings = 0;
 
-    let totalUsers = 0;
+      let totalUsers = 0;
 
-    const today = new Date().toISOString().split("T")[0]; // "YYYY-MM-DD"
+      const today = new Date().toISOString().split("T")[0]; // "YYYY-MM-DD"
 
-    try {
-      const [snapshot, walkInSnapshot] = await Promise.all([
-        getDocs(collection(db, "Appointment")),
-        getDocs(collection(db, "WalkInAppointment")),
-      ]);
+      try {
+        const [snapshot, walkInSnapshot] = await Promise.all([
+          getDocs(collection(db, "Appointment")),
+          getDocs(collection(db, "WalkInAppointment")),
+        ]);
 
-      if (snapshot.empty && walkInSnapshot.empty) {
-        const emptyRow = "<tr><td colspan='8'>No appointments found.</td></tr>";
-        if (dashboardTable) dashboardTable.innerHTML = emptyRow;
-        if (appointmentTable) appointmentTable.innerHTML = emptyRow;
-        await logActivity("admin", "Load Appointments", "No appointments found.");
-        return;
-      }
+        if (snapshot.empty && walkInSnapshot.empty) {
+          const emptyRow = "<tr><td colspan='8'>No appointments found.</td></tr>";
+          if (dashboardTable) dashboardTable.innerHTML = emptyRow;
+          if (appointmentTable) appointmentTable.innerHTML = emptyRow;
+          await logActivity("admin", "Load Appointments", "No appointments found.");
+          return;
+        }
 
-      const renderRow = (data, type, docId) => {
-  const status = data.status || "Pending";
-  const safe = (val) => (val === undefined || val === null ? "" : val);
+        const renderRow = (data, type, docId) => {
+    const status = data.status || "Pending";
+    const safe = (val) => (val === undefined || val === null ? "" : val);
 
-  // 🕒 Format time properly (start–end)
-  let formattedTime = "";
-  if (type === "walkin" && data.timestamp) {
-    // Walk-in: derive from timestamp
-    formattedTime = new Date(data.timestamp).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } else if (data.startTime && data.endTime) {
-    // Regular appointment: start–end range
-    formattedTime = `${safe(data.startTime)} - ${safe(data.endTime)}`;
-  } else if (data.startTime) {
-    formattedTime = safe(data.startTime);
-  } else if (data.time) {
-    // fallback if old data still uses `time`
-    formattedTime = safe(data.time);
-  }
-
-  const displayData = {
-    name:
-      type === "walkin"
-        ? `${safe(data.firstName)} ${safe(data.lastName)}`.trim()
-        : safe(data.name),
-    petName: safe(data.petName) || safe(data.pet?.petName),
-    service: safe(data.service),
-    walkinService: safe(data.serviceType),
-    date:
-      type === "walkin" && data.timestamp
-        ? new Date(data.timestamp).toLocaleDateString()
-        : safe(data.date),
-    time: formattedTime, // ✅ fixed
-    contact: safe(data.contact),
-    status: safe(status),
-    mode: type === "walkin" ? "Walk-In" : "Appointment",
-    reservationType: safe(data.reservationType),
-    reservationFee: safe(data.reservationFee),
-    userId: safe(data.userId),
-    appointmentId: docId,
-    sourceType: type,
-  };
-
-      // ✅ Count finished appointments
-if (status && status.toLowerCase().trim() === "completed") {
-  finishedAppointmentsCount++;
-
-  // 🟢 Always derive earnings date from completedAt
-  let completionDate;
-  if (data.completedAt?.seconds) {
-    // Firestore Timestamp object
-    const d = new Date(data.completedAt.seconds * 1000);
-    completionDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  } else if (typeof data.completedAt === "string") {
-    // If stored as a string
-    completionDate = data.completedAt.split("T")[0].replace(/\//g, "-");
-  }
-
-  // 🕒 Normalize today's date
-  const today = new Date();
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-
-  // ✅ Add to today's earnings if completed today
-  if (completionDate === todayStr) {
-    let amount = data.totalAmount || data.serviceFee || 0;
-    if (typeof amount === "string") {
-      amount = amount.replace(/[^\d.-]/g, "");
+    // 🕒 Format time properly (start–end)
+    let formattedTime = "";
+    if (type === "walkin" && data.timestamp) {
+      // Walk-in: derive from timestamp
+      formattedTime = new Date(data.timestamp).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } else if (data.startTime && data.endTime) {
+      // Regular appointment: start–end range
+      formattedTime = `${safe(data.startTime)} - ${safe(data.endTime)}`;
+    } else if (data.startTime) {
+      formattedTime = safe(data.startTime);
+    } else if (data.time) {
+      // fallback if old data still uses `time`
+      formattedTime = safe(data.time);
     }
-    const numAmount = Number(amount) || 0;
-    console.log(`💰 Adding to today's earnings: ₱${numAmount} (Completed at: ${completionDate})`);
-    todaysEarnings += numAmount;
-  } else {
-    console.log(`⏰ Skipping: completed at ${completionDate}, not today (${todayStr})`);
+
+    const displayData = {
+      name:
+        type === "walkin"
+          ? `${safe(data.firstName)} ${safe(data.lastName)}`.trim()
+          : safe(data.name),
+      petName: safe(data.petName) || safe(data.pet?.petName),
+      service: safe(data.service),
+      walkinService: safe(data.serviceType),
+      date:
+        type === "walkin" && data.timestamp
+          ? new Date(data.timestamp).toLocaleDateString()
+          : safe(data.date),
+      time: formattedTime, // ✅ fixed
+      contact: safe(data.contact),
+      status: safe(status),
+      mode: type === "walkin" ? "Walk-In" : "Appointment",
+      reservationType: safe(data.reservationType),
+      reservationFee: safe(data.reservationFee),
+      userId: safe(data.userId),
+      appointmentId: docId,
+      sourceType: type,
+    };
+
+        // ✅ Count finished appointments
+  if (status && status.toLowerCase().trim() === "completed") {
+    finishedAppointmentsCount++;
+
+    // 🟢 Always derive earnings date from completedAt
+    let completionDate;
+    if (data.completedAt?.seconds) {
+      // Firestore Timestamp object
+      const d = new Date(data.completedAt.seconds * 1000);
+      completionDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    } else if (typeof data.completedAt === "string") {
+      // If stored as a string
+      completionDate = data.completedAt.split("T")[0].replace(/\//g, "-");
+    }
+
+    // 🕒 Normalize today's date
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+    // ✅ Add to today's earnings if completed today
+    if (completionDate === todayStr) {
+      let amount = data.totalAmount || data.serviceFee || 0;
+      if (typeof amount === "string") {
+        amount = amount.replace(/[^\d.-]/g, "");
+      }
+      const numAmount = Number(amount) || 0;
+      console.log(`💰 Adding to today's earnings: ₱${numAmount} (Completed at: ${completionDate})`);
+      todaysEarnings += numAmount;
+    } else {
+      console.log(`⏰ Skipping: completed at ${completionDate}, not today (${todayStr})`);
+    }
   }
-}
 
 
         // ✅ Count walk-ins
