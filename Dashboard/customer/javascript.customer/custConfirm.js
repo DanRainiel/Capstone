@@ -153,6 +153,9 @@ function updateTotalAmount() {
   
   totalAmountDisplay.setAttribute('data-total', totalAmount);
 }
+
+
+
 // ========================
 // CANCEL APPOINTMENT LOGIC
 // ========================
@@ -661,3 +664,137 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 });
+
+
+
+document.addEventListener("DOMContentLoaded", () => {
+  const appointmentContainer = document.querySelector(".dashboard");
+
+  // Get all appointments (added pets) from sessionStorage
+  const appointments = JSON.parse(sessionStorage.getItem("multiAppointments") || "[]");
+
+  if (!appointments.length) {
+    appointmentContainer.innerHTML = `<p style="text-align:center;color:gray;">No appointments found.</p>`;
+    return;
+  }
+
+  // Find the billing info card (if exists)
+  const billingCard = document.querySelector(".billing-card"); // must exist in HTML
+
+  // Remove sample appointment card if present
+  const sampleCard = document.querySelector(".appointment-card");
+  if (sampleCard) sampleCard.remove();
+
+
+
+
+  // Render one card per appointment
+  appointments.forEach((appt, index) => {
+    const card = document.createElement("div");
+    card.classList.add("card", "appointment-card");
+    card.innerHTML = `
+      <h2><i class="fa-solid fa-calendar-check"></i> Appointment #${index + 1}</h2>
+      <div class="appointment-info">
+        <p><span>Pet Name:</span> <span id="pet-name">${appt.petName || "N/A"}</span></p>
+        <p>
+          <span>Pet Size:</span>
+          <input type="text" id="appt-size-${index}" readonly value="${appt.petSize || ""}" />
+        </p>
+        <p><span>Owner Name:</span> <span id="owner-name">${appt.name || "N/A"}</span></p>
+        <p><span>Appointment Date:</span> <span id="appt-date">${appt.date || "N/A"}</span></p>
+        <p><span>Appointment Time:</span> <span id="appt-time">${appt.startTime || "N/A"} - ${appt.endTime || ""}</span></p>
+
+        <div class="service-selection">
+          <p><span>Main Service:</span> <span id="main-service">${appt.service || "N/A"}</span></p>
+
+          <div class="service-options-container">
+            <div class="service-category">
+              <div class="service-options" data-service="grooming" style="display:none">
+                <h4>Grooming Options</h4>
+                <div class="options-list"></div>
+              </div>
+              <div class="service-options" data-service="vaccination" style="display:none">
+                <h4>Vaccination Options</h4>
+                <div class="options-list"></div>
+              </div>
+              <div class="service-options" data-service="consultation" style="display:none">
+                <h4>Consultation Options</h4>
+                <div class="options-list"></div>
+              </div>
+              <div class="service-options" data-service="treatment" style="display:none">
+                <h4>Treatment Options</h4>
+                <div class="options-list"></div>
+              </div>
+              <div class="service-options" data-service="deworming" style="display:none">
+                <h4>Deworming Options</h4>
+                <div class="options-list"></div>
+              </div>
+              <div class="service-options" data-service="laboratory" style="display:none">
+                <h4>Laboratory Tests</h4>
+                <div class="options-list"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+ // Insert before billing card
+if (billingCard) {
+  appointmentContainer.insertBefore(card, billingCard);
+} else {
+  appointmentContainer.appendChild(card);
+}
+
+// === Reflect selected service and its variants ===
+const selectedService = (appt.service || "").toLowerCase();
+const activeSection = card.querySelector(`.service-options[data-service="${selectedService}"]`);
+
+// ✅ Show variant beside main service if available
+if (appt.variant) {
+  const mainServiceEl = card.querySelector("#main-service");
+  if (mainServiceEl) mainServiceEl.textContent = `${appt.service} - ${appt.variant}`;
+}
+
+// ✅ Populate matching service variants dynamically (like populateServiceOptions)
+if (activeSection) {
+  activeSection.style.display = "block";
+
+  const optionsList = activeSection.querySelector(".options-list");
+  optionsList.innerHTML = "";
+
+  const variants = services[selectedService];
+  if (variants) {
+    Object.keys(variants).forEach((variantKey) => {
+      const variant = variants[variantKey];
+      if (typeof variant === "object") {
+        Object.keys(variant).forEach((size) => {
+          const price = variant[size];
+          const label = document.createElement("label");
+          label.innerHTML = `
+            <input type="checkbox" checked disabled>
+            ${variantKey} (${size}): ₱${price}
+          `;
+          optionsList.appendChild(label);
+          optionsList.appendChild(document.createElement("br"));
+        });
+      } else {
+        const label = document.createElement("label");
+        label.innerHTML = `
+          <input type="checkbox" checked disabled>
+          ${variantKey}: ₱${variant}
+        `;
+        optionsList.appendChild(label);
+        optionsList.appendChild(document.createElement("br"));
+      }
+    });
+  } else {
+    optionsList.innerHTML = "<p style='color:gray;font-size:14px;'>No available options for this service.</p>";
+  }
+}
+
+
+  });
+});
+
+

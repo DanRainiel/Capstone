@@ -398,6 +398,20 @@ async function isTimeSlotAvailable(date, startTime, serviceDuration) {
   }
 }
   
+
+// ==============================
+// Prevent booking if slot is taken globally
+// ==============================
+async function isSlotTaken(date, time) {
+  const q = query(
+    collection(db, "Appointments"),
+    where("date", "==", date),
+    where("time", "==", time)
+  );
+  const querySnapshot = await getDocs(q);
+  return !querySnapshot.empty; // true if already booked
+}
+ 
 //PET FORM//
 document.addEventListener("DOMContentLoaded", async () => {
     await loadServiceDurations();
@@ -694,6 +708,8 @@ appointmentForm.addEventListener("submit", async (e) => {
   const formattedTime = formatTo12Hour(selectedTime);
   const selectedService = apptServiceInput.value;
 
+
+  
   const todayDate = new Date().toISOString().split("T")[0];
   if (selectedDate === todayDate) {
     await Swal.fire({
@@ -723,6 +739,102 @@ appointmentForm.addEventListener("submit", async (e) => {
       });
       return;
     }
+
+     let isSubmitting = false; // 🛑 Submission Lock
+
+  appointmentForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    if (isSubmitting) {
+      await Swal.fire({
+        icon: "info",
+        title: "Booking in Progress",
+        text: "Please wait while we process your appointment.",
+        confirmButtonColor: "#f8732b"
+      });
+      return;
+    }
+
+    isSubmitting = true; // 🔒 Lock Submission
+    const bookBtn = appointmentForm.querySelector('button[type="submit"]');
+    if (bookBtn) bookBtn.disabled = true;
+
+    try {
+      const userId = localStorage.getItem("userId") || "guest"; // replace with your auth
+      const name = apptNameInput.value.trim();
+      const number = apptNumberInput.value.trim();
+      const pet = apptPetInput.value.trim();
+      const date = apptDateInput.value;
+      const time = apptTimeInput.value;
+      const service = apptServiceInput.value;
+
+      if (!name || !number || !pet || !date || !time || !service) {
+        await Swal.fire({
+          icon: "warning",
+          title: "Missing Fields",
+          text: "Please fill in all appointment details.",
+          confirmButtonColor: "#f8732b"
+        });
+        return;
+      }
+
+      // 🚫 Check if slot already taken globally
+      const slotTaken = await isSlotTaken(date, time);
+      if (slotTaken) {
+        await Swal.fire({
+          icon: "warning",
+          title: "Time Slot Unavailable",
+          text: "This time slot has just been booked by another user. Please pick another one.",
+          confirmButtonColor: "#f8732b"
+        });
+        return;
+      }
+
+      // ✅ Save Appointment
+      const appointmentId = `${date}_${time}`; // unique per slot
+      await setDoc(doc(db, "Appointments", appointmentId), {
+        userId,
+        name,
+        number,
+        pet,
+        date,
+        time,
+        service,
+        status: "Pending",
+        createdAt: serverTimestamp()
+      });
+
+      // 🎉 Success Swal
+      await Swal.fire({
+        title: "Appointment Submitted!",
+        text: "Do you want to add another pet for this booking?",
+        icon: "question",
+        showCancelButton: true,
+        confirmButtonText: "Yes, Add Another Pet",
+        cancelButtonText: "No, Proceed to Confirmation",
+        confirmButtonColor: "#28a745",
+        cancelButtonColor: "#f8732b"
+      }).then((result) => {
+        if (result.isConfirmed) {
+          appointmentForm.reset();
+        } else {
+          window.location.href = "custConfirm.html";
+        }
+      });
+
+    } catch (err) {
+      console.error("❌ Booking error:", err);
+      await Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Something went wrong while booking. Please try again.",
+        confirmButtonColor: "#f8732b"
+      });
+    } finally {
+      isSubmitting = false; // 🔓 Unlock
+      if (bookBtn) bookBtn.disabled = false;
+    }
+  });
 
     const clinicStart = (appointmentDay === 6) ? saturdayHours.start : weekdayHours.start;
     const clinicEnd = (appointmentDay === 6) ? saturdayHours.end : weekdayHours.end;
@@ -844,15 +956,481 @@ appointmentForm.addEventListener("submit", async (e) => {
     setTimeout(() => {
       sessionStorage.setItem("appointment", JSON.stringify(appointmentData));
 
-      Swal.fire({
-        title: "Appointment Submitted!",
-        text: "Your appointment has been saved. Redirecting to confirmation page...",
-        icon: "success",
-        confirmButtonText: "Continue",
-        confirmButtonColor: "#f8732b"
-      }).then(() => {
-        window.location.href = "custConfirm.html";
-      });
+    Swal.fire({
+  title: "Appointment Submitted!",
+  text: "Do you want to add another pet for this booking?",
+  icon: "question",
+  showCancelButton: true,
+  confirmButtonText: "Yes, Add Another Pet",
+  cancelButtonText: "No, Proceed to Confirmation",
+  confirmButtonColor: "#28a745",
+  cancelButtonColor: "#f8732b"
+}).then(async (result) => {
+  if (result.isConfirmed) {
+   // 🐾 Show another pet form inside Swal
+const { value: newPetData } = await Swal.fire({
+  title: "Add Another Pet",
+  html: `
+<form id="swal-pet-form" style="
+  text-align: left;
+  padding: 20px;
+  border-radius: 12px;
+  background-color: #ffffff;
+  max-width: 500px;
+  margin: 0 auto;
+">
+  <div style="display: flex; flex-direction: column; gap: 16px;">
+    
+    <!-- Owner Full Name -->
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <label style="
+        font-weight: 600;
+        font-size: 14px;
+        color: #374151;
+      ">Owner Full Name</label>
+      <input 
+        id="swal-owner" 
+        readonly 
+        style="
+          width: 100%;
+          padding: 10px 14px;
+          border: 1px solid #d1d5db;
+          border-radius: 8px;
+          font-size: 14px;
+          background-color: #f9fafb;
+          color: #6b7280;
+          cursor: not-allowed;
+          box-sizing: border-box;
+        "
+      >
+    </div>
+
+    <!-- Pet Name -->
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <label style="
+        font-weight: 600;
+        font-size: 14px;
+        color: #374151;
+      ">Pet Name</label>
+      <select 
+        id="swal-petname" 
+        style="
+          width: 100%;
+          padding: 10px 14px;
+          border: 1px solid #d1d5db;
+          border-radius: 8px;
+          font-size: 14px;
+          background-color: #ffffff;
+          color: #374151;
+          cursor: pointer;
+          box-sizing: border-box;
+          transition: border-color 0.2s, box-shadow 0.2s;
+        "
+        onfocus="this.style.borderColor='#14b8a6'; this.style.boxShadow='0 0 0 3px rgba(20, 184, 166, 0.1)';"
+        onblur="this.style.borderColor='#d1d5db'; this.style.boxShadow='none';"
+      >
+        <option value="">-- Select Pet --</option>
+      </select>
+    </div>
+
+    <!-- Species -->
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <label style="
+        font-weight: 600;
+        font-size: 14px;
+        color: #374151;
+      ">Species</label>
+      <input 
+        id="swal-species" 
+        list="speciesList" 
+        placeholder="Enter species (e.g., dog, cat)" 
+        style="
+          width: 100%;
+          padding: 10px 14px;
+          border: 1px solid #d1d5db;
+          border-radius: 8px;
+          font-size: 14px;
+          background-color: #ffffff;
+          color: #374151;
+          box-sizing: border-box;
+          transition: border-color 0.2s, box-shadow 0.2s;
+        "
+        onfocus="this.style.borderColor='#14b8a6'; this.style.boxShadow='0 0 0 3px rgba(20, 184, 166, 0.1)';"
+        onblur="this.style.borderColor='#d1d5db'; this.style.boxShadow='none';"
+      >
+    </div>
+
+    <!-- Breed -->
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <label style="
+        font-weight: 600;
+        font-size: 14px;
+        color: #374151;
+      ">Breed</label>
+      <input 
+        id="swal-breed" 
+        placeholder="Enter breed (e.g., Doberman)" 
+        style="
+          width: 100%;
+          padding: 10px 14px;
+          border: 1px solid #d1d5db;
+          border-radius: 8px;
+          font-size: 14px;
+          background-color: #ffffff;
+          color: #374151;
+          box-sizing: border-box;
+          transition: border-color 0.2s, box-shadow 0.2s;
+        "
+        onfocus="this.style.borderColor='#14b8a6'; this.style.boxShadow='0 0 0 3px rgba(20, 184, 166, 0.1)';"
+        onblur="this.style.borderColor='#d1d5db'; this.style.boxShadow='none';"
+      >
+    </div>
+
+    <!-- Weight and Sex Row -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+      
+      <!-- Weight -->
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <label style="
+          font-weight: 600;
+          font-size: 14px;
+          color: #374151;
+        ">Weight (kg)</label>
+        <input 
+          id="swal-weight" 
+          type="number" 
+          placeholder="Enter weight" 
+          min="0"
+          step="0.1"
+          style="
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+            background-color: #ffffff;
+            color: #374151;
+            box-sizing: border-box;
+            transition: border-color 0.2s, box-shadow 0.2s;
+          "
+          onfocus="this.style.borderColor='#14b8a6'; this.style.boxShadow='0 0 0 3px rgba(20, 184, 166, 0.1)';"
+          onblur="this.style.borderColor='#d1d5db'; this.style.boxShadow='none';"
+        >
+      </div>
+
+      <!-- Sex -->
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <label style="
+          font-weight: 600;
+          font-size: 14px;
+          color: #374151;
+        ">Sex</label>
+        <select 
+          id="swal-sex" 
+          style="
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+            background-color: #ffffff;
+            color: #374151;
+            cursor: pointer;
+            box-sizing: border-box;
+            transition: border-color 0.2s, box-shadow 0.2s;
+          "
+          onfocus="this.style.borderColor='#14b8a6'; this.style.boxShadow='0 0 0 3px rgba(20, 184, 166, 0.1)';"
+          onblur="this.style.borderColor='#d1d5db'; this.style.boxShadow='none';"
+        >
+          <option value="">-- Select Sex --</option>
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+        </select>
+      </div>
+
+    </div>
+    <!-- Service -->
+<div style="display: flex; flex-direction: column; gap: 6px;">
+  <label style="
+    font-weight: 600;
+    font-size: 14px;
+    color: #374151;
+  ">Service</label>
+  <select 
+    id="swal-service" 
+    style="
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 14px;
+      background-color: #ffffff;
+      color: #374151;
+      cursor: pointer;
+      box-sizing: border-box;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    "
+    onfocus="this.style.borderColor='#14b8a6'; this.style.boxShadow='0 0 0 3px rgba(20, 184, 166, 0.1)';"
+    onblur="this.style.borderColor='#d1d5db'; this.style.boxShadow='none';"
+  >
+    <option value="">-- Select Service --</option>
+  </select>
+</div>
+
+
+    <!-- Size -->
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <label style="
+        font-weight: 600;
+        font-size: 14px;
+        color: #374151;
+      ">Size</label>
+      <input 
+        id="swal-size" 
+        readonly 
+        placeholder="Auto-calculated based on weight" 
+        style="
+          width: 100%;
+          padding: 10px 14px;
+          border: 1px solid #d1d5db;
+          border-radius: 8px;
+          font-size: 14px;
+          background-color: #f9fafb;
+          color: #6b7280;
+          cursor: not-allowed;
+          box-sizing: border-box;
+        "
+      >
+    </div>
+
+  </div>
+</form>
+`,
+
+  focusConfirm: false,
+  showCancelButton: true,
+  confirmButtonText: "Add Pet",
+  cancelButtonText: "Cancel",
+  confirmButtonColor: "#28a745",
+ // Inside your Swal.fire({ ... })
+didOpen: async () => {
+  // 🔹 Fetch current user
+  let user = null;
+  try {
+    const storedUser = sessionStorage.getItem("currentUser");
+    if (storedUser) user = JSON.parse(storedUser);
+  } catch (e) {
+    console.warn("⚠️ Could not parse currentUser:", e);
+  }
+
+  const userId = user?.uid || sessionStorage.getItem("currentUserId");
+  const userFullname = user?.fullname || sessionStorage.getItem("userName") || "Current User";
+
+  document.getElementById("swal-owner").value = userFullname;
+
+  // 🔹 Populate existing pets
+  if (userId) {
+    const petsQuery = query(collection(db, "Pets"), where("ownerId", "==", userId));
+    const petsSnap = await getDocs(petsQuery);
+    const petSelect = document.getElementById("swal-petname");
+    petsSnap.forEach((docSnap) => {
+      const pet = docSnap.data();
+      const opt = document.createElement("option");
+      opt.value = docSnap.id;
+      opt.textContent = pet.petName || "Unnamed Pet";
+      petSelect.appendChild(opt);
+    });
+
+    petSelect.addEventListener("change", async (e) => {
+      const petId = e.target.value;
+      const speciesInput = document.getElementById("swal-species");
+      const breedInput = document.getElementById("swal-breed");
+      const sexInput = document.getElementById("swal-sex");
+      const weightInput = document.getElementById("swal-weight");
+      const sizeInput = document.getElementById("swal-size");
+
+      if (!petId) {
+        speciesInput.value = "";
+        breedInput.value = "";
+        sexInput.value = "";
+        weightInput.value = "";
+        sizeInput.value = "";
+        speciesInput.disabled = false;
+        sexInput.disabled = false;
+        speciesInput.style.backgroundColor = "#ffffff";
+        sexInput.style.backgroundColor = "#ffffff";
+        return;
+      }
+
+      const petDoc = await getDoc(doc(db, "Pets", petId));
+      if (petDoc.exists()) {
+        const pet = petDoc.data();
+        speciesInput.value = pet.species || "";
+        breedInput.value = pet.breed || "";
+        weightInput.value = pet.weight || "";
+        sizeInput.value = pet.size || getSizeFromWeight(pet.weight);
+        sexInput.value = pet.sex || "";
+        if (pet.sex) {
+          [...sexInput.options].forEach(opt => {
+            opt.selected = (opt.value.toLowerCase() === pet.sex.toLowerCase());
+          });
+        }
+        speciesInput.disabled = true;
+        sexInput.disabled = true;
+        speciesInput.style.backgroundColor = "#e9ecef";
+        sexInput.style.backgroundColor = "#e9ecef";
+      }
+    });
+  }
+
+  // 🔹 Populate Services dropdown
+  const serviceSelect = document.getElementById("swal-service");
+  try {
+    const servicesSnap = await getDocs(collection(db, "Services"));
+servicesSnap.forEach(docSnap => {
+    const serviceData = docSnap.data();
+    const opt = document.createElement("option");
+    opt.value = serviceData.name || docSnap.id;
+    opt.textContent = serviceData.name || docSnap.id;
+    serviceSelect.appendChild(opt);
+});
+
+  } catch (err) {
+    console.error("Error loading services:", err);
+  }
+
+  // 🔹 Populate Time Slot dropdown
+  const timeSelect = document.createElement("select");
+  timeSelect.id = "swal-time";
+  timeSelect.style = "width:100%; padding:10px 14px; border:1px solid #d1d5db; border-radius:8px; font-size:14px; background:#fff; color:#374151; cursor:pointer; box-sizing:border-box; margin-top:6px;";
+  const timeContainer = document.createElement("div");
+  timeContainer.innerHTML = `<label style="font-weight:600; font-size:14px; color:#374151;">Time Slot</label>`;
+  timeContainer.appendChild(timeSelect);
+  document.querySelector("#swal-pet-form > div").appendChild(timeContainer);
+
+  // 🔹 Function to load available times dynamically
+  async function loadSwalTimeSlots() {
+    const dateInput = document.getElementById("swal-date")?.value || new Date().toISOString().split("T")[0];
+    const serviceName = serviceSelect.value;
+    if (!dateInput || !serviceName) return;
+
+    timeSelect.innerHTML = `<option value="">-- Select Time --</option>`;
+    
+    const serviceDuration = serviceDurations[serviceName.toLowerCase()] || 30;
+
+    const clinicSnap = await getDocs(collection(db, "ClinicSettings"));
+    if (clinicSnap.empty) return;
+
+    const clinicData = clinicSnap.docs[0].data();
+    const weekdayHours = clinicData.weekdayHours;
+    const saturdayHours = clinicData.saturdayHours;
+    
+    const day = new Date(dateInput).getDay();
+    if (day === 0) {
+      timeSelect.innerHTML = `<option value="">Closed on Sundays</option>`;
+      return;
+    }
+
+    const start = day === 6 ? toMinutes(saturdayHours.start) : toMinutes(weekdayHours.start);
+    const end = day === 6 ? toMinutes(saturdayHours.end) : toMinutes(weekdayHours.end);
+
+    for (let t = start; t + serviceDuration <= end; t += serviceDuration) {
+      const startHours = Math.floor(t / 60);
+      const startMinutes = t % 60;
+      const endHours = Math.floor((t + serviceDuration) / 60);
+      const endMinutes = (t + serviceDuration) % 60;
+
+      const startVal = `${String(startHours).padStart(2,"0")}:${String(startMinutes).padStart(2,"0")}`;
+      const endVal = `${String(endHours).padStart(2,"0")}:${String(endMinutes).padStart(2,"0")}`;
+      const option = document.createElement("option");
+      option.value = startVal;
+      option.textContent = `${formatTo12Hour(startVal)} - ${formatTo12Hour(endVal)}`;
+      timeSelect.appendChild(option);
+    }
+  }
+
+  serviceSelect.addEventListener("change", loadSwalTimeSlots);
+
+  // 🔹 Add date input inside Swal
+  const dateInputEl = document.createElement("input");
+  dateInputEl.type = "date";
+  dateInputEl.id = "swal-date";
+  dateInputEl.min = new Date().toISOString().split("T")[0];
+  dateInputEl.style = "width:100%; padding:10px 14px; border:1px solid #d1d5db; border-radius:8px; font-size:14px; margin-top:6px; box-sizing:border-box;";
+  const dateContainer = document.createElement("div");
+  dateContainer.innerHTML = `<label style="font-weight:600; font-size:14px; color:#374151;">Select Date</label>`;
+  dateContainer.appendChild(dateInputEl);
+  document.querySelector("#swal-pet-form > div").prepend(dateContainer);
+
+  dateInputEl.addEventListener("change", loadSwalTimeSlots);
+
+  // Load times initially
+  loadSwalTimeSlots();
+
+  // 🔹 Auto-update size when weight changes
+  document.getElementById("swal-weight").addEventListener("input", () => {
+    const w = parseFloat(document.getElementById("swal-weight").value);
+    document.getElementById("swal-size").value = !isNaN(w) ? getSizeFromWeight(w) : "";
+  });
+},
+
+
+  preConfirm: () => {
+    const petSelect = document.getElementById("swal-petname");
+    const petId = petSelect.value;
+    const petName = petSelect.options[petSelect.selectedIndex]?.text || "";
+    const species = document.getElementById("swal-species").value.trim();
+    const breed = document.getElementById("swal-breed").value.trim();
+    const weight = parseFloat(document.getElementById("swal-weight").value.trim());
+    const sex = document.getElementById("swal-sex").value;
+    const size = document.getElementById("swal-size").value;
+
+    if (!petName || !species || !breed || isNaN(weight) || !sex) {
+      Swal.showValidationMessage("⚠️ Please fill in all fields.");
+      return false;
+    }
+
+    return { petId, petName, species, breed, weight, sex, size };
+  }
+});
+
+// ✅ Save new pet data or add to existing appointments
+if (newPetData) {
+  const existingAppointments = JSON.parse(sessionStorage.getItem("multiAppointments") || "[]");
+  existingAppointments.push({
+    ...appointmentData,
+    ...newPetData,
+    timestamp: new Date().toISOString()
+  });
+  sessionStorage.setItem("multiAppointments", JSON.stringify(existingAppointments));
+
+  const addMore = await Swal.fire({
+    icon: "question",
+    title: "Add Another Pet?",
+    text: "Do you want to add one more pet?",
+    showCancelButton: true,
+    confirmButtonText: "Yes, Add Again",
+    cancelButtonText: "No, Proceed",
+    confirmButtonColor: "#28a745",
+    cancelButtonColor: "#f8732b"
+  });
+
+  if (addMore.isConfirmed) {
+    document.querySelector("#appointment-form").dispatchEvent(new Event("submit"));
+  } else {
+    window.location.href = "custConfirm.html";
+  }
+} else {
+  // 🟠 Proceed normally to confirmation
+  const existingAppointments = JSON.parse(sessionStorage.getItem("multiAppointments") || "[]");
+  existingAppointments.push(appointmentData);
+  sessionStorage.setItem("multiAppointments", JSON.stringify(existingAppointments));
+  window.location.href = "custConfirm.html";
+}
+
+  }
+});
+
     }, 1500);
 
   } catch (err) {
