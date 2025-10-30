@@ -202,6 +202,7 @@
 
                 </tbody>
               </table>
+              <div id="pagination-dashboard"></div>
             </div>
           </div>
 
@@ -262,6 +263,8 @@
             
             </tbody>
           </table>
+          <div id="pagination-appointment"></div>
+
         </div>
       </div>
 
@@ -418,6 +421,7 @@
               <!-- Rows will be added dynamically with JS -->
             </tbody>
           </table>
+        
         </div>
       </div>
 
@@ -990,6 +994,7 @@
 
             </tbody>
           </table>
+          
         </div>
 
         <div class="form-container">
@@ -1184,108 +1189,76 @@
       </div>
 
       <!-- Edit Pet Modal -->
-      <div id="editPetModal" class="modal">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h2>Edit Pet Information</h2>
-            <span class="close">&times;</span>
+<div id="editPetModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Edit Pet Information</h2>
+      <span class="close">&times;</span>
+    </div>
+    <div class="modal-body">
+      <form id="editPetForm">
+        <input type="hidden" id="editPetId">
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label>Pet Name *</label>
+            <input type="text" id="editPetName" required>
           </div>
-          <div class="modal-body">
-            <form id="editPetForm">
-              <input type="hidden" id="editPetId">
-              
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Owner Name *</label>
-                  <input type="text" id="editOwnerName" required>
-                </div>
-                <div class="form-group">
-                  <label>Owner Contact</label>
-                  <input type="tel" id="editOwnerContact">
-                </div>
-              </div>
-              
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Pet Name *</label>
-                  <input type="text" id="editPetName" required>
-                </div>
-                <div class="form-group">
-                  <label>Species *</label>
-                  <select id="editSpecies" required>
-                    <option value="">Select Species</option>
-                    <option value="Dog">Dog</option>
-                    <option value="Cat">Cat</option>
-                    <option value="Bird">Bird</option>
-                    <option value="Rabbit">Rabbit</option>
-                    <option value="Hamster">Hamster</option>
-                    <option value="Guinea Pig">Guinea Pig</option>
-                    <option value="Fish">Fish</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-              </div>
-              
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Breed</label>
-                  <input type="text" id="editBreed">
-                </div>
-                <div class="form-group">
-                  <label>Age</label>
-                  <input type="text" id="editAge">
-                </div>
-              </div>
-              
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Sex</label>
-                  <select id="editSex">
-                    <option value="">Select Sex</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label>Weight (kg)</label>
-                  <input type="number" id="editWeight" step="0.1" min="0">
-                </div>
-              </div>
-              
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Size</label>
-                  <select id="editSize">
-                    <option value="">Select Size</option>
-                    <option value="Small">Small</option>
-                    <option value="Medium">Medium</option>
-                    <option value="Large">Large</option>
-                    <option value="Extra Large">Extra Large</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label>Color</label>
-                  <input type="text" id="editColor">
-                </div>
-              </div>
-              
-              <div class="form-group">
-                <label>Medical History</label>
-                <textarea id="editMedicalHistory"></textarea>
-              </div>
-              
-              <div class="form-group">
-                <label>Special Notes</label>
-                <textarea id="editSpecialNotes"></textarea>
-              </div>
-            </form>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn-secondary" id="cancelEditPet">Cancel</button>
-            <button type="button" class="btn-success" id="savePetChanges">Save Changes</button>
+          <div class="form-group">
+            <label>Species *</label>
+            <select id="editSpecies" required>
+              <option value="">Select Species</option>
+              <option value="dog">Dog</option>
+              <option value="cat">Cat</option>
+              <option value="bird">Bird</option>
+              <option value="rabbit">Rabbit</option>
+              <option value="hamster">Hamster</option>
+              <option value="guinea pig">Guinea Pig</option>
+              <option value="fish">Fish</option>
+              <option value="other">Other</option>
+            </select>
           </div>
         </div>
-      </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label>Breed</label>
+            <input type="text" id="editBreed">
+          </div>
+          <div class="form-group">
+            <label>Sex</label>
+            <select id="editSex">
+              <option value="">Select Sex</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label>Weight (kg)</label>
+            <input type="number" id="editWeight" step="0.1" min="0">
+          </div>
+          <div class="form-group">
+            <label>Size</label>
+            <select id="editSize">
+              <option value="">Select Size</option>
+              <option value="Small">Small</option>
+              <option value="Medium">Medium</option>
+              <option value="Large">Large</option>
+              <option value="Extra Large">Extra Large</option>
+            </select>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn-secondary" id="cancelEditPet">Cancel</button>
+      <button type="button" class="btn-success" id="savePetChanges">Save Changes</button>
+    </div>
+  </div>
+</div>
 
       <!-- View Pet Details Modal -->
       <div id="viewPetModal" class="modal">
@@ -1387,6 +1360,7 @@
         <!-- Rendered dynamically -->
       </tbody>
     </table>
+    
   </div>
 </div>
 

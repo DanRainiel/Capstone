@@ -979,19 +979,7 @@ document.addEventListener("click", async (e) => {
   await viewAppointmentDetails(appointmentId);
 });
 
-// ✅ Also make sure the button in renderRow has correct data attributes
-// Update the button HTML in your renderRow function to:
-/*
-<button 
-  class="btn view-pet-details" 
-  data-appointment-id="${docId}" 
-  data-type="${type}">
-  View Pet Details
-</button>
-*/
 
-// 🔹 FIX 6: Walk-In View Pet Details (if needed)
-// For walk-in appointments, we need to handle them differently
 document.addEventListener("click", async (e) => {
   if (e.target.classList.contains("view-pet-details")) {
     const btn = e.target;
@@ -1337,63 +1325,60 @@ document.addEventListener("click", async (e) => {
     walkInTable.appendChild(dashRow);
   }
 
-            // Appointment table
-          if (appointmentTable && type !== "walkin") {
-              const normalizedStatus = (status || "Pending").toLowerCase();
-              let actionButtons = "";
+       // In your renderRow function, update the actionButtons section for regular appointments:
+if (appointmentTable && type !== "walkin") {
+  const normalizedStatus = (status || "Pending").toLowerCase();
+  let actionButtons = "";
 
-              if (normalizedStatus === "pending") {
-                actionButtons = `
-                  <button class="btn accept" data-id="${docId}" data-type="${type}">Accept</button>
-                  <button class="btn decline" data-id="${docId}" data-type="${type}">Decline</button>
-                  <button class="btn reschedule" data-id="${docId}" data-type="${type}">Reschedule</button>
-                <button class="btn screenshot" data-id="${docId}" data-type="Appointment">View Screenshot</button>
-                `;
-      } else if (normalizedStatus === "in progress") {
-        actionButtons = `
-          <button class="btn complete" data-id="${docId}" data-type="${type}">Complete</button>
-      <button 
-  class="btn view-pet-details" 
-  data-appointment-id="${docId}" 
-  data-type="${type}">
-  View Pet Details
-</button>
+  if (normalizedStatus === "pending") {
+    actionButtons = `
+      <button class="btn accept" data-id="${docId}" data-type="${type}">Accept</button>
+      <button class="btn decline" data-id="${docId}" data-type="${type}">Decline</button>
+      <button class="btn reschedule" data-id="${docId}" data-type="${type}">Reschedule</button>
+      <button class="btn screenshot" data-id="${docId}" data-type="Appointment">View Screenshot</button>
+    `;
+  } else if (normalizedStatus === "confirmed") {
+    // ✅ ADD THIS SECTION - Start button for Confirmed appointments
+    actionButtons = `
+      <button class="btn start" data-id="${docId}" data-type="${type}">Start</button>
+      <button class="btn reschedule" data-id="${docId}" data-type="${type}">Reschedule</button>
+      <button class="btn view-pet-details" data-appointment-id="${docId}" data-type="${type}">View Pet Details</button>
+    `;
+  } else if (normalizedStatus === "in progress") {
+    actionButtons = `
+      <button class="btn complete" data-id="${docId}" data-type="${type}">Complete</button>
+      <button class="btn view-pet-details" data-appointment-id="${docId}" data-type="${type}">View Pet Details</button>
+      <button class="btn add-discount" data-id="${docId}" data-type="${type}" data-service="${displayData.service}">Apply Discount</button>
+    `;
+  } else if (normalizedStatus === "completed") {
+    actionButtons = `
+      <button class="btn view" data-id="${docId}" data-type="${type}">View</button>
+      <button class="btn edit" data-id="${docId}" data-type="${type}">Edit</button>
+    `;
+  } else if (normalizedStatus === "for-rescheduling") {
+    actionButtons = `
+      <button class="btn accept" data-id="${docId}" data-type="${type}">Accept</button>
+      <button class="btn decline" data-id="${docId}" data-type="${type}">Decline</button>
+    `;
+  } else if (normalizedStatus === "cancelled") {
+    actionButtons = `
+      <button class="btn viewreason" data-id="${docId}" data-type="${type}">View Reason</button>
+    `;
+  }
 
-        
-          <button class="btn add-discount" data-id="${docId}" data-type="${type}" data-service="${displayData.service}">Apply Discount</button>
-        `;
-
-              } else if (normalizedStatus === "completed") {
-                actionButtons = `
-                  <button class="btn view" data-id="${docId}" data-type="${type}">View</button>
-                  <button class="btn edit" data-id="${docId}" data-type="${type}">Edit</button>
-                `;
-              
-                } else if (normalizedStatus === "for-rescheduling") {
-          actionButtons = `
-            <button class="btn accept" data-id="${docId}" data-type="${type}">Accept</button>
-            <button class="btn decline" data-id="${docId}" data-type="${type}">Decline</button>
-          `;
-          } else if (normalizedStatus === "cancelled") {
-          actionButtons = `
-            <button class="btn viewreason" data-id="${docId}" data-type="${type}">View Reason</button>
-          `;
-        }
-
-            const fullRow = document.createElement("tr");
-            fullRow.innerHTML = `
-              <td>${displayData.date}</td>
-              <td>${displayData.time}</td>
-              <td>${displayData.name}</td>
-              
-              <td>${displayData.petName}</td>
-              <td>${displayData.service}</td>
-              <td class="status ${normalizedStatus}">${status || "Pending"}</td>
-                <td>${displayData.reservationType}</td>
-              <td>${actionButtons}</td>
-            `;
-            appointmentTable.appendChild(fullRow);
-          }
+  const fullRow = document.createElement("tr");
+  fullRow.innerHTML = `
+    <td>${displayData.date}</td>
+    <td>${displayData.time}</td>
+    <td>${displayData.name}</td>
+    <td>${displayData.petName}</td>
+    <td>${displayData.service}</td>
+    <td class="status ${normalizedStatus}">${status || "Pending"}</td>
+    <td>${displayData.reservationType}</td>
+    <td>${actionButtons}</td>
+  `;
+  appointmentTable.appendChild(fullRow);
+}
 
   // History table
 if (historyTable && (status || "").toLowerCase() === "completed") {
@@ -1496,18 +1481,57 @@ allAppointments.forEach((apt) => {
   const rowHTML = renderRow(apt, apt.type, apt.id);
 });
 
- // 📅 Listen to appointments in real-time
+// ==============================
+// 🔹 CONFIG
+// ==============================
+const ROWS_PER_PAGE = 10;
+const tableConfigs = {
+  dashboard: { tableId: "table-dashboard", page: 1, containerId: "pagination-dashboard" },
+  appointment: { tableId: "appointmentTable", page: 1, containerId: "pagination-appointment" },
+  history: { tableId: "historytable", page: 1, containerId: "pagination-history" },
+  walkin: { tableId: "walkinTableBody", page: 1, containerId: "pagination-walkin" },
+};
+
+// ==============================
+// 🔹 PAGINATION HELPERS
+// ==============================
+function paginateData(data, page, rowsPerPage = ROWS_PER_PAGE) {
+  const start = (page - 1) * rowsPerPage;
+  return data.slice(start, start + rowsPerPage);
+}
+
+function renderPaginationControls(config, totalRows, onPageChange) {
+  const totalPages = Math.ceil(totalRows / ROWS_PER_PAGE);
+  const container = document.getElementById(config.containerId);
+  if (!container) return;
+
+  container.innerHTML = `
+    <div style="display:flex;justify-content:center;align-items:center;gap:10px;margin-top:10px;">
+      <button id="prev-${config.tableId}" ${config.page === 1 ? "disabled" : ""}>◀ Prev</button>
+      <span>Page ${config.page} of ${totalPages || 1}</span>
+      <button id="next-${config.tableId}" ${config.page === totalPages || totalPages === 0 ? "disabled" : ""}>Next ▶</button>
+    </div>
+  `;
+
+  document.getElementById(`prev-${config.tableId}`)?.addEventListener("click", () => {
+    if (config.page > 1) {
+      config.page--;
+      onPageChange();
+    }
+  });
+
+  document.getElementById(`next-${config.tableId}`)?.addEventListener("click", () => {
+    if (config.page < totalPages) {
+      config.page++;
+      onPageChange();
+    }
+  });
+}
+
+// ==============================
+// 🔹 REAL-TIME LISTENER
+// ==============================
 function listenAppointmentsRealtime() {
-  const dashboardTable = document.getElementById("table-dashboard");
-  const appointmentTable = document.getElementById("appointmentTable");
-  const historyTable = document.getElementById("historytable");
-  const walkInTable = document.getElementById("walkinTableBody");
-
-  const today = new Date().toISOString().split("T")[0];
-
-  // Helper functions (keep your existing renderRow, getCreatedAtFromId, etc.)
-  
-  // Listen to Appointment collection
   const appointmentsRef = collection(db, "Appointment");
   onSnapshot(appointmentsRef, (snapshot) => {
     const allAppointments = [];
@@ -1516,43 +1540,62 @@ function listenAppointmentsRealtime() {
       allAppointments.push({ ...doc.data(), id: doc.id, type: "appointment" });
     });
 
-    // Similarly listen to WalkInAppointment
     const walkInsRef = collection(db, "WalkInAppointment");
     onSnapshot(walkInsRef, (walkInSnapshot) => {
       walkInSnapshot.forEach((doc) => {
         allAppointments.push({ ...doc.data(), id: doc.id, type: "walkin" });
       });
 
-      // Clear tables
-      if (dashboardTable) dashboardTable.innerHTML = "";
-      if (appointmentTable) appointmentTable.innerHTML = "";
-      if (historyTable) historyTable.innerHTML = "";
-      if (walkInTable) walkInTable.innerHTML = "";
-
-      // Sort appointments (your existing sort code)
+      // ✅ Sort by status + created date
       allAppointments.sort((a, b) => {
         const statusOrder = { pending: 1, "in progress": 2, cancelled: 98, completed: 99 };
         const aStatus = statusOrder[a.status?.toLowerCase()] || 50;
         const bStatus = statusOrder[b.status?.toLowerCase()] || 50;
         if (aStatus !== bStatus) return aStatus - bStatus;
-
         const aCreated = getCreatedAtFromId(a.id);
         const bCreated = getCreatedAtFromId(b.id);
-        if (aCreated && bCreated) return bCreated - aCreated;
-
-        return 0;
+        return bCreated - aCreated;
       });
 
-      // Render rows
-      allAppointments.forEach((apt) => {
-        renderRow(apt, apt.type, apt.id);
-      });
+      // ✅ Separate by table type
+      const dashboardData = allAppointments.filter((a) => a.type === "appointment" && a.status !== "completed");
+      const appointmentData = allAppointments.filter((a) => a.type === "appointment");
+      const historyData = allAppointments.filter((a) => a.status === "completed" || a.status === "cancelled");
+      const walkinData = allAppointments.filter((a) => a.type === "walkin");
+
+      // ✅ Render each table independently
+      renderTableWithPagination("dashboard", dashboardData);
+      renderTableWithPagination("appointment", appointmentData);
+      renderTableWithPagination("history", historyData);
+      renderTableWithPagination("walkin", walkinData);
     });
   });
 }
 
-// Call this once when your page loads
+// ==============================
+// 🔹 RENDER TABLE FUNCTION
+// ==============================
+function renderTableWithPagination(type, data) {
+  const config = tableConfigs[type];
+  const table = document.getElementById(config.tableId);
+  if (!table) return;
+
+  // Clear
+  table.innerHTML = "";
+
+  // Paginate
+  const pageData = paginateData(data, config.page);
+
+  // Render rows
+  pageData.forEach((apt) => renderRow(apt, apt.type, apt.id));
+
+  // Pagination controls
+  renderPaginationControls(config, data.length, () => renderTableWithPagination(type, data));
+}
+
+// ✅ Initialize listener
 listenAppointmentsRealtime();
+
 
 
 
@@ -1593,63 +1636,274 @@ listenAppointmentsRealtime();
       return Number(price.toString().replace(/[^\d.-]/g, "")) || 0;
     }
 
+// DEBUG VERSION - Replace your sendAcceptanceEmail function
+async function sendAcceptanceEmail(appointmentData) {
+  console.log('📧 Starting email process...');
+  console.log('📝 Appointment data:', appointmentData);
+  
+  try {
+    // Get user identifier - try multiple fields
+    const userId = appointmentData.userId || appointmentData.uid;
+    const userEmail = appointmentData.email;
+    const ownerName = appointmentData.name || appointmentData.ownerName;
+    
+    console.log('👤 Looking for user:', { userId, userEmail, ownerName });
 
+    let targetEmail = userEmail;
 
-  document.addEventListener("click", async (e) => {
-    const btn = e.target.closest(".btn.accept, .btn.decline, .btn.complete,  .btn.reschedule");
-    if (!btn) return;
+    // If no email in appointment data, search by userId
+    if (!targetEmail && userId) {
+      console.log('🔍 Searching for user by ID:', userId);
+      const userDoc = await getDoc(doc(db, "users", userId));
+      
+      if (userDoc.exists()) {
+        targetEmail = userDoc.data().email;
+        console.log('✅ Found user email by ID:', targetEmail);
+      } else {
+        console.error('❌ No user found with ID:', userId);
+      }
+    }
 
-    const docId = btn.getAttribute("data-id");
-    const type = btn.getAttribute("data-type");
-    const collectionName = type === "walkin" ? "WalkInAppointment" : "Appointment";
-    const docRef = doc(db, collectionName, docId);
+    // If still no email, try searching by name (less reliable)
+    if (!targetEmail && ownerName) {
+      console.log('🔍 Searching for user by name:', ownerName);
+      const usersRef = collection(db, "users");
+      const q = query(usersRef, where("name", "==", ownerName));
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+        const userDoc = querySnapshot.docs[0];
+        targetEmail = userDoc.data().email;
+        console.log('✅ Found user email by name:', targetEmail);
+      } else {
+        console.error('❌ No user found with name:', ownerName);
+      }
+    }
 
-    if (btn.classList.contains("reschedule")) {
-      await rescheduleAppointment(docId); // <-- call function with id
-      return;
+    if (!targetEmail) {
+      console.error('❌ Could not find email address for user');
+      return false;
+    }
+
+    // Prepare the request data
+    const requestData = {
+      email: targetEmail,
+      userId: ownerName || "Valued Customer",
+      purpose: 'appointment_accepted'
+    };
+
+    console.log('📤 SENDING REQUEST DATA:', JSON.stringify(requestData, null, 2));
+
+    // Send email
+    console.log('📤 Sending email to:', targetEmail);
+    const response = await fetch('http://localhost:3000/send-otp', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(requestData)
+    });
+
+    console.log('📬 Response status:', response.status);
+    const result = await response.json();
+    console.log('📬 Response data:', result);
+    
+    if (result.success) {
+      console.log('✅ Acceptance email sent successfully');
+      return true;
+    } else {
+      console.error('❌ Failed to send email:', result.message);
+      return false;
+    }
+  } catch (error) {
+    console.error('❌ Error sending acceptance email:', error);
+    return false;
+  }
+}
+
+// 2️⃣ BUTTON EVENT LISTENER - Replace your existing addEventListener
+document.addEventListener("click", async (e) => {
+  const btn = e.target.closest(".btn.accept, .btn.start, .btn.decline, .btn.complete, .btn.reschedule");
+  if (!btn) return;
+
+  const docId = btn.getAttribute("data-id");
+  const type = btn.getAttribute("data-type");
+  const collectionName = type === "walkin" ? "WalkInAppointment" : "Appointment";
+  const docRef = doc(db, collectionName, docId);
+
+  // ============================================
+  // HANDLE RESCHEDULE SEPARATELY
+  // ============================================
+  if (btn.classList.contains("reschedule")) {
+    await rescheduleAppointment(docId);
+    return;
+  }
+
+  // ============================================
+  // FETCH APPOINTMENT DATA
+  // ============================================
+  const docSnap = await getDoc(docRef);
+  if (!docSnap.exists()) {
+    Swal.fire("Error", "Appointment not found.", "error");
+    return;
+  }
+  
+  const data = docSnap.data();
+  let updateData = {};
+
+  // ============================================
+  // ACCEPT BUTTON - Changes Pending → Confirmed (with email)
+  // ============================================
+  if (btn.classList.contains("accept")) {
+    console.log('🔘 Accept button clicked');
+    console.log('📋 Document ID:', docId);
+    console.log('📋 Type:', type);
+    console.log('📋 Status:', data.status);
+    
+    if (data.status.toLowerCase() === "for-rescheduling") {
+      // Handle rescheduling acceptance
+      updateData = {
+        date: data.proposedDate || data.date,
+        status: "Pending",
+        proposedDate: deleteField()
+      };
+      await updateDoc(docRef, updateData);
+      Swal.fire("Accepted!", "Reschedule request accepted.", "success");
+    } else {
+      // Change status to "Confirmed"
+      updateData = { status: "Confirmed" };
+
+      // 📧 Send email notification for Appointments only (not walk-ins)
+      if (type !== "walkin") {
+        console.log('📧 This is an appointment, preparing to send email...');
+        console.log('📧 Owner name:', data.name || data.ownerName);
+        
+        const ownerName = data.name || data.ownerName;
+        if (!ownerName) {
+          console.error('❌ No owner name found in appointment data!');
+          Swal.fire({
+            icon: 'error',
+            title: 'No Owner Name Found',
+            text: 'This appointment has no owner name to look up email.',
+            timer: 2500
+          });
+          await updateDoc(docRef, updateData);
+          loadAllAppointments();
+          return;
+        }
+
+        // Show loading message
+        Swal.fire({
+          title: 'Confirming Appointment...',
+          text: 'Looking up user email and sending confirmation...',
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          }
+        });
+
+        console.log('📤 Calling sendAcceptanceEmail...');
+        const emailSent = await sendAcceptanceEmail(data);
+        console.log('📥 Email sent result:', emailSent);
+        
+        if (emailSent) {
+          console.log('✅ Email sent successfully, updating database...');
+          await updateDoc(docRef, updateData);
+          
+          // Create notification in Firestore
+          await addDoc(collection(db, "Notifications"), {
+            appointmentId: docId,
+            userId: data.userId || "",
+            type: "confirmation",
+            service: data.service || "Appointment",
+            status: "unread",
+            message: `Your appointment for ${data.petName || "your pet"} has been confirmed for ${data.date} at ${data.startTime || data.time}.`,
+            createdAt: serverTimestamp()
+          });
+
+          Swal.fire({
+            icon: 'success',
+            title: 'Appointment Confirmed!',
+            text: 'Confirmation email sent successfully.',
+            timer: 2000
+          });
+        } else {
+          console.warn('⚠️ Email failed but updating status anyway...');
+          await updateDoc(docRef, updateData);
+          
+          Swal.fire({
+            icon: 'warning',
+            title: 'Appointment Confirmed',
+            text: 'Appointment confirmed but email notification failed. User email not found.',
+            timer: 2500
+          });
+        }
+      } else {
+        // Walk-in: just update status, no email
+        console.log('🚶 This is a walk-in, no email needed');
+        await updateDoc(docRef, updateData);
+        Swal.fire("Confirmed!", "Walk-in appointment confirmed.", "success");
+      }
     }
     
-
-    // ✅ Handle Reschedule button separately (if needed)
-    if (btn.classList.contains("reschedule")) {
-      await updateDoc(docRef, { status: "for-rescheduling" });
-      loadAllAppointments();
-      return;
-    }
-
-    // ✅ Fetch data for Accept / Decline / Complete
-    const docSnap = await getDoc(docRef);
-    if (!docSnap.exists()) return;
-    const data = docSnap.data();
-
-    let updateData = {};
-
-    if (btn.classList.contains("accept")) {
-      if (data.status.toLowerCase() === "for-rescheduling") {
-        updateData = {
-          date: data.proposedDate || data.date,
-          status: "Pending",
-          proposedDate: deleteField()
-        };
-      } else {
-        updateData = { status: "In Progress" };
-      }
-    } else if (btn.classList.contains("decline")) {
-      if (data.status.toLowerCase() === "for-rescheduling") {
-        updateData = {
-          status: "Pending",
-          proposedDate: deleteField()
-        };
-      } else {
-        updateData = { status: "Cancelled" };
-      }
-    } else if (btn.classList.contains("complete")) {
-      updateData = { status: "Completed", completedAt: serverTimestamp() };
-    }
-
-    await updateDoc(docRef, updateData);
     loadAllAppointments();
-  });
+    return; // Important: exit after handling accept
+  }
+
+  // ============================================
+  // START BUTTON - Changes Confirmed → In Progress
+  // ============================================
+  else if (btn.classList.contains("start")) {
+    updateData = { 
+      status: "In Progress",
+      startedAt: serverTimestamp()
+    };
+    await updateDoc(docRef, updateData);
+    Swal.fire("Started!", "Appointment is now in progress.", "success");
+  }
+
+  // ============================================
+  // DECLINE BUTTON
+  // ============================================
+  else if (btn.classList.contains("decline")) {
+    if (data.status.toLowerCase() === "for-rescheduling") {
+      updateData = {
+        status: "Pending",
+        proposedDate: deleteField()
+      };
+    } else {
+      updateData = { status: "Cancelled" };
+      
+      // Add notification for declined appointment
+      await addDoc(collection(db, "Notifications"), {
+        appointmentId: docId,
+        userId: data.userId || "",
+        type: "decline",
+        message: `Your appointment for ${data.petName || "your pet"} has been declined.`,
+        service: data.service || "Unknown service",
+        status: "unread",
+        createdAt: serverTimestamp()
+      });
+    }
+    await updateDoc(docRef, updateData);
+    Swal.fire("Declined", "Appointment has been declined.", "info");
+  }
+
+  // ============================================
+  // COMPLETE BUTTON
+  // ============================================
+  else if (btn.classList.contains("complete")) {
+    updateData = { 
+      status: "Completed", 
+      completedAt: serverTimestamp() 
+    };
+    await updateDoc(docRef, updateData);
+    Swal.fire("Completed!", "Appointment marked as completed.", "success");
+  }
+
+  loadAllAppointments();
+});
+
 
   document.addEventListener("click", async (e) => {
     const btn = e.target.closest(".add-discount");
@@ -3894,152 +4148,116 @@ printBtn.addEventListener('click', async () => {
       });
     }
 
-    // Show pet details in modal
-    function showPetDetails(petId) {
-      const pet = allPets.find(p => p.id === petId);
-      if (!pet) return;
+   // Show pet details in modal
+function showPetDetails(petId) {
+  const pet = allPets.find(p => p.id === petId);
+  if (!pet) return;
 
-      const detailsContent = document.getElementById('petDetailsContent');
-      const createdDate = pet.createdAt?.toDate ? pet.createdAt.toDate().toLocaleDateString() : 'Unknown';
-      const lastUpdated = pet.lastUpdated?.toDate ? pet.lastUpdated.toDate().toLocaleDateString() : 'Unknown';
+  const detailsContent = document.getElementById('petDetailsContent');
+  const createdDate = pet.createdAt ? new Date(pet.createdAt).toLocaleDateString() : 'Unknown';
 
-      detailsContent.innerHTML = `
-        <div class="pet-card">
-          <div class="pet-header">
-            <div class="pet-name">${pet.petName || 'N/A'}</div>
-            <div class="pet-species">${pet.species || 'N/A'}</div>
-          </div>
-          
-          <div class="pet-details">
-            <div class="pet-detail">
-              <div class="pet-detail-label">Owner</div>
-              <div class="pet-detail-value">${pet.ownerName || 'N/A'}</div>
-            </div>
-            <div class="pet-detail">
-              <div class="pet-detail-label">Contact</div>
-              <div class="pet-detail-value">${pet.ownerContact || 'N/A'}</div>
-            </div>
-            <div class="pet-detail">
-              <div class="pet-detail-label">Breed</div>
-              <div class="pet-detail-value">${pet.breed || 'N/A'}</div>
-            </div>
-            <div class="pet-detail">
-              <div class="pet-detail-label">Age</div>
-              <div class="pet-detail-value">${pet.age || 'N/A'}</div>
-            </div>
-            <div class="pet-detail">
-              <div class="pet-detail-label">Sex</div>
-              <div class="pet-detail-value">${pet.sex || 'N/A'}</div>
-            </div>
-            <div class="pet-detail">
-              <div class="pet-detail-label">Weight</div>
-              <div class="pet-detail-value">${pet.weight ? pet.weight + ' kg' : 'N/A'}</div>
-            </div>
-            <div class="pet-detail">
-              <div class="pet-detail-label">Size</div>
-              <div class="pet-detail-value">${pet.size || 'N/A'}</div>
-            </div>
-            <div class="pet-detail">
-              <div class="pet-detail-label">Color</div>
-              <div class="pet-detail-value">${pet.color || 'N/A'}</div>
-            </div>
-            <div class="pet-detail">
-              <div class="pet-detail-label">Status</div>
-              <div class="pet-detail-value">
-                <span class="status ${(pet.status || 'active').toLowerCase()}">${pet.status || 'Active'}</span>
-              </div>
-            </div>
-            <div class="pet-detail">
-              <div class="pet-detail-label">Registered</div>
-              <div class="pet-detail-value">${createdDate}</div>
-            </div>
-          </div>
-          
-          ${pet.medicalHistory ? `
-            <div style="margin-top: 20px;">
-              <div class="pet-detail-label">Medical History</div>
-              <div class="pet-detail-value" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 5px;">
-                ${pet.medicalHistory}
-              </div>
-            </div>
-          ` : ''}
-          
-          ${pet.specialNotes ? `
-            <div style="margin-top: 15px;">
-              <div class="pet-detail-label">Special Notes</div>
-              <div class="pet-detail-value" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 5px;">
-                ${pet.specialNotes}
-              </div>
-            </div>
-          ` : ''}
-        </div>
-      `;
-
-      viewPetModal.classList.add('show');
-    }
-
-    // Open edit pet modal
-    function openEditPetModal(petId) {
-      const pet = allPets.find(p => p.id === petId);
-      if (!pet) return;
-
-      // Populate form fields
-      document.getElementById('editPetId').value = pet.id;
-      document.getElementById('editOwnerName').value = pet.ownerName || '';
-      document.getElementById('editOwnerContact').value = pet.ownerContact || '';
-      document.getElementById('editPetName').value = pet.petName || '';
-      document.getElementById('editSpecies').value = pet.species || '';
-      document.getElementById('editBreed').value = pet.breed || '';
-      document.getElementById('editAge').value = pet.age || '';
-      document.getElementById('editSex').value = pet.sex || '';
-      document.getElementById('editWeight').value = pet.weight || '';
-      document.getElementById('editSize').value = pet.size || '';
-      document.getElementById('editColor').value = pet.color || '';
-      document.getElementById('editMedicalHistory').value = pet.medicalHistory || '';
-      document.getElementById('editSpecialNotes').value = pet.specialNotes || '';
-
-      editPetModal.classList.add('show');
-    }
-
-    // Save pet changes
-    document.getElementById('savePetChanges').addEventListener('click', async () => {
-      const petId = document.getElementById('editPetId').value;
+  detailsContent.innerHTML = `
+    <div class="pet-card">
+      <div class="pet-header">
+        <div class="pet-name">${pet.petName || 'N/A'}</div>
+        <div class="pet-species">${pet.species || 'N/A'}</div>
+      </div>
       
-      const updatedData = {
-        ownerName: document.getElementById('editOwnerName').value,
-        ownerContact: document.getElementById('editOwnerContact').value,
-        petName: document.getElementById('editPetName').value,
-        species: document.getElementById('editSpecies').value,
-        breed: document.getElementById('editBreed').value,
-        age: document.getElementById('editAge').value,
-        sex: document.getElementById('editSex').value,
-        weight: document.getElementById('editWeight').value ? parseFloat(document.getElementById('editWeight').value) : null,
-        size: document.getElementById('editSize').value,
-        color: document.getElementById('editColor').value,
-        medicalHistory: document.getElementById('editMedicalHistory').value,
-        specialNotes: document.getElementById('editSpecialNotes').value,
-        lastUpdated: serverTimestamp()
-      };
+      <div class="pet-details">
+        <div class="pet-detail">
+          <div class="pet-detail-label">Owner ID</div>
+          <div class="pet-detail-value">${pet.ownerId || 'N/A'}</div>
+        </div>
+        <div class="pet-detail">
+          <div class="pet-detail-label">Breed</div>
+          <div class="pet-detail-value">${pet.breed || 'N/A'}</div>
+        </div>
+        <div class="pet-detail">
+          <div class="pet-detail-label">Sex</div>
+          <div class="pet-detail-value">${pet.sex || 'N/A'}</div>
+        </div>
+        <div class="pet-detail">
+          <div class="pet-detail-label">Weight</div>
+          <div class="pet-detail-value">${pet.weight ? pet.weight + ' kg' : 'N/A'}</div>
+        </div>
+        <div class="pet-detail">
+          <div class="pet-detail-label">Size</div>
+          <div class="pet-detail-value">${pet.size || 'N/A'}</div>
+        </div>
+        <div class="pet-detail">
+          <div class="pet-detail-label">Species</div>
+          <div class="pet-detail-value">${pet.species || 'N/A'}</div>
+        </div>
+        <div class="pet-detail">
+          <div class="pet-detail-label">Registered</div>
+          <div class="pet-detail-value">${createdDate}</div>
+        </div>
+      </div>
+    </div>
+  `;
 
-      try {
-       await updateDoc(doc(db, pet.collection, petId), updatedData);
-        
-        Swal.fire({
-          title: 'Success!',
-          text: 'Pet information updated successfully',
-          icon: 'success',
-          timer: 2000,
-          showConfirmButton: false
-        });
+  viewPetModal.classList.add('show');
+}
+// Open edit pet modal
+function openEditPetModal(petId) {
+  const pet = allPets.find(p => p.id === petId);
+  if (!pet) return;
 
-        editPetModal.classList.remove('show');
-        loadAllPets();
-      } catch (error) {
-        console.error("Error updating pet:", error);
-        Swal.fire('Error', 'Failed to update pet information. Please try again.', 'error');
-      }
+  // Populate form fields with your current collection structure
+  document.getElementById('editPetId').value = pet.id;
+  document.getElementById('editPetName').value = pet.petName || '';
+  document.getElementById('editSpecies').value = pet.species || '';
+  document.getElementById('editBreed').value = pet.breed || '';
+  document.getElementById('editSex').value = pet.sex || '';
+  document.getElementById('editWeight').value = pet.weight || '';
+  document.getElementById('editSize').value = pet.size || '';
+
+  editPetModal.classList.add('show');
+}
+
+// Save pet changes
+document.getElementById('savePetChanges').addEventListener('click', async () => {
+  const petId = document.getElementById('editPetId').value;
+  const pet = allPets.find(p => p.id === petId);
+  
+  if (!pet) {
+    Swal.fire('Error', 'Pet not found', 'error');
+    return;
+  }
+
+  const updatedData = {
+    petName: document.getElementById('editPetName').value,
+    species: document.getElementById('editSpecies').value,
+    breed: document.getElementById('editBreed').value,
+    sex: document.getElementById('editSex').value,
+    weight: document.getElementById('editWeight').value ? parseFloat(document.getElementById('editWeight').value) : null,
+    size: document.getElementById('editSize').value,
+    lastUpdated: serverTimestamp()
+  };
+
+  try {
+    console.log("Updating pet:", petId, updatedData);
+    
+    // Make sure you're using the correct collection name
+    const petDocRef = doc(db, "Pets", petId); // Change "pets" to your actual collection name
+    
+    await updateDoc(petDocRef, updatedData);
+    
+    Swal.fire({
+      title: 'Success!',
+      text: 'Pet information updated successfully',
+      icon: 'success',
+      timer: 2000,
+      showConfirmButton: false
     });
 
+    editPetModal.classList.remove('show');
+    loadAllPets();
+  } catch (error) {
+    console.error("Error updating pet:", error);
+    Swal.fire('Error', `Failed to update pet information: ${error.message}`, 'error');
+  }
+});
     // Delete pet
     function deletePet(petId) {
       const pet = allPets.find(p => p.id === petId);

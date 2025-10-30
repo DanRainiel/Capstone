@@ -27,63 +27,9 @@
 
     <div class="container">
         <div class="dashboard">
-            <div class="card">
-                <h2><i class="fa-solid fa-calendar-check"></i> Appointment Details</h2>
-                
-
-                <div class="appointment-info">
-
-                    <p><span>Pet Name:</span> <span id="pet-name">Buddy</span></p>
-                    <p>
-  <span>Pet Size:</span>
-  <input type="text" id="appt-size" readonly placeholder="Auto-calculated" />
-</p>
-
-                    <p><span>Owner Name:</span> <span id="owner-name">Kyle Pua</span></p>
-                    <p><span>Appointment Date:</span> <span id="appt-date">June 15, 2023</span></p>
-                    <p><span>Appointment Time:</span> <span id="appt-time">10:30</span></p>
-
-                    <div class="service-selection">
-                        <p><span>Main Service:</span> <span id="main-service">Vaccination</span></p>
-                         
-                     <div class="service-options-container">
-    <div class="service-category">
-        <div class="service-options" data-service="grooming" style="display:none">
-            <h4>Grooming Options</h4>
-            <div class="options-list"></div> <!-- dynamically filled -->
-        </div>
-
-        <div class="service-options" data-service="vaccination" style="display:none">
-            <h4>Vaccination Options</h4>
-            <div class="options-list"></div>
-        </div>
-
-        <div class="service-options" data-service="consultation" style="display:none">
-            <h4>Consultation Options</h4>
-            <div class="options-list"></div>
-        </div>
-
-        <div class="service-options" data-service="treatment" style="display:none">
-            <h4>Treatment Options</h4>
-            <div class="options-list"></div>
-        </div>
-
-        <div class="service-options" data-service="deworming" style="display:none">
-            <h4>Deworming Options</h4>
-            <div class="options-list"></div>
-        </div>
-
-        <div class="service-options" data-service="laboratory" style="display:none">
-            <h4>Laboratory Tests</h4>
-            <div class="options-list"></div>
-        </div>
-    </div>
-</div>
-
-                    </div>
-                    <p><span>Veterinarian:</span> <span id ="veterinarian" >Dr. Donna Doll Diones</span></p>
-                    <p><span>Special Instructions</span> <span id ="special-instructions" >Please bring any recent medical records</span></p>
-                </div>
+            <!-- Appointment sections will be dynamically generated here -->
+            <div id="appointments-container">
+                <!-- Dynamic content will be inserted here by JavaScript -->
             </div>
 
             <div class="card">
@@ -96,7 +42,6 @@
                           <option value="with-downpayment">With Downpayment (50%)</option>
                           <option value="with-full-payment">Full Payment</option>
                              </select>
-
                     </p>
                     <p><span>Selected Services</span></p>
                     <div id="selected-services-list">

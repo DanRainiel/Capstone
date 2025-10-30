@@ -29,146 +29,247 @@
     const loginButton = document.getElementById("SignInBtn");
 
   
-    loginButton.addEventListener("click", async (e) => {
-      e.preventDefault();
+loginButton.addEventListener("click", async (e) => {
+  e.preventDefault();
 
-      const email = document.getElementById("log-email").value.trim();
-      const password = document.getElementById("log-pass").value.trim();
-      const loader = document.getElementById("loading-screen");
+  const email = document.getElementById("log-email").value.trim();
+  const password = document.getElementById("log-pass").value.trim();
+  const loader = document.getElementById("loading-screen");
 
+  loader.style.display = "none";
 
+  if (!email || !password) {
+    Swal.fire({
+      icon: "warning",
+      title: "Missing Fields",
+      text: "Please fill in all fields.",
+      iconColor: '#f8732b',
+      confirmButtonColor: '#f8732b',
+      backdrop: `rgba(0, 0, 0, 0.5)`
+    });
+    return;
+  }
+
+  loader.style.display = "flex";
+
+  try {
+    let userFound = null;
+    let userData = null;
+    let userRole = null;
+    let userDocId = null;
+    let userName = null;
+
+    // 🔍 Check Customer Users
+    const usersRef = collection(db, "users");
+    const userSnapshot = await getDocs(usersRef);
+    for (const docItem of userSnapshot.docs) {
+      const data = docItem.data();
+      if (data.email === email && data.password === password) {
+        if (data.status && data.status.toLowerCase() === "inactive") {
+          Swal.fire({
+            icon: "error",
+            title: "Account Deactivated",
+            text: "Your account has been deactivated. Please contact admin.",
+            confirmButtonColor: "#f8732b"
+          });
+          loader.style.display = "none";
+          return;
+        }
+        userFound = data;
+        userRole = "customer";
+        userDocId = docItem.id;
+        userName = data.name || data.fullName;
+        break;
+      }
+    }
+
+    // 🔍 Check Admin Users
+    if (!userFound) {
+      const adminRef = collection(db, "Admin");
+      const adminSnapshot = await getDocs(adminRef);
+      for (const docItem of adminSnapshot.docs) {
+        const data = docItem.data();
+        if (data.email === email && data.password === password) {
+          userFound = data;
+          userRole = "admin";
+          userDocId = docItem.id;
+          userName = data.name;
+          break;
+        }
+      }
+    }
+
+    // 🔍 Check Staff Users
+    if (!userFound) {
+      const staffRef = collection(db, "Staff");
+      const staffSnapshot = await getDocs(staffRef);
+      for (const docItem of staffSnapshot.docs) {
+        const data = docItem.data();
+        if (data.email === email && data.password === password) {
+          // Check staff account status
+          if (data.status && data.status.toLowerCase() === "inactive") {
+            Swal.fire({
+              icon: "error",
+              title: "Account Deactivated",
+              text: "Your staff account has been deactivated. Please contact admin.",
+              confirmButtonColor: "#f8732b"
+            });
+            loader.style.display = "none";
+            return;
+          }
+          userFound = data;
+          userRole = "staff";
+          userDocId = docItem.id;
+          userName = data.name;
+          break;
+        }
+      }
+    }
+
+    // ❌ If no user found with matching credentials
+    if (!userFound) {
       loader.style.display = "none";
-
-     if (!email || !password) {
-       Swal.fire({
-        icon: "warning",
-        title: "Missing Fields",
-        text: "Please fill in all fields.",
-        iconColor:'#f8732b',
-        confirmButtonColor: '#f8732b', // your orange theme
-        backdrop: `rgba(0, 0, 0, 0.5)` // darken background a bit
+      Swal.fire({
+        icon: "error",
+        title: "Login Failed",
+        text: "Account not found or incorrect credentials.",
+        confirmButtonColor: "#ff8800"
       });
       return;
     }
 
-      loader.style.display = "flex";
+    // ✅ Credentials are valid - now send OTP for verification
+    loader.style.display = "none";
 
-      try {
-        // Check users
-        const usersRef = collection(db, "users");
-        const userSnapshot = await getDocs(usersRef);
+    // Send OTP
+    const sendOtpResponse = await fetch("http://localhost:3000/send-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ 
+        email: email, 
+        userId: userName || email 
+      })
+    });
 
-       for (const docItem of userSnapshot.docs) {
-  const data = docItem.data();
-  if (data.email === email && data.password === password) {
-
-    // 🔎 Check account status before login
-    if (data.status && data.status.toLowerCase() === "inactive") {
-      alert("Your account has been deactivated. Please contact admin.");
-      loader.style.display = "none"; // hide loader again
-      return; // ❌ stop login here
+    const sendOtpData = await sendOtpResponse.json();
+    if (!sendOtpData.success) {
+      Swal.fire({
+        icon: "error",
+        title: "Verification Failed",
+        text: "Failed to send verification code. Try again later.",
+        confirmButtonColor: "#f8732b"
+      });
+      return;
     }
 
-    // ✅ If Active, continue login
-    sessionStorage.setItem("isLoggedIn", "true");
-    sessionStorage.setItem("userId", docItem.id);
-    sessionStorage.setItem("role", "customer");
-    sessionStorage.setItem("userName", data.name);
-    sessionStorage.setItem("userFullName", data.fullName); // 
-    sessionStorage.setItem("currentUserId", docItem.id);
+    // Ask for OTP
+    const { value: otp } = await Swal.fire({
+      title: "Login Verification",
+      input: "text",
+      inputLabel: `Enter the 6-digit verification code sent to ${email}`,
+      inputPlaceholder: "Enter verification code",
+      inputAttributes: {
+        maxlength: "6",
+        autocapitalize: "off",
+        autocorrect: "off"
+      },
+      confirmButtonText: "Verify & Login",
+      confirmButtonColor: "#f8732b",
+      showCancelButton: true,
+      cancelButtonText: "Cancel Login",
+      cancelButtonColor: "#6c757d",
+      inputValidator: (value) => {
+        if (!value) return "Please enter the verification code.";
+        if (value.length !== 6) return "Verification code must be 6 digits.";
+        if (!/^\d+$/.test(value)) return "Verification code must contain only numbers.";
+      }
+    });
 
+    if (!otp) {
+      // User cancelled OTP entry
+      return;
+    }
+
+    // Show loader while verifying OTP
+    loader.style.display = "flex";
+
+    // Verify OTP
+    const verifyResponse = await fetch("http://localhost:3000/verify-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, otp })
+    });
+
+    const verifyData = await verifyResponse.json();
+    if (!verifyData.success) {
+      loader.style.display = "none";
+      Swal.fire({
+        icon: "error",
+        title: "Invalid Code",
+        text: verifyData.message || "Invalid verification code. Please try again.",
+        confirmButtonColor: "#f8732b"
+      });
+      return;
+    }
+
+    // ✅ OTP verified successfully - Complete login process
+    sessionStorage.setItem("isLoggedIn", "true");
+    sessionStorage.setItem("userId", userDocId);
+    sessionStorage.setItem("role", userRole);
+    sessionStorage.setItem("userName", userName);
+    sessionStorage.setItem("userFullName", userFound.fullName || userName);
+    sessionStorage.setItem("currentUserId", userDocId);
+    localStorage.setItem("currentUserId", userDocId);
+
+    // Log activity
+    await logActivity(userDocId, "Logged In", `${userRole.charAt(0).toUpperCase() + userRole.slice(1)} ${userName} logged in with OTP verification.`);
+
+    // Set welcome message and redirect URL based on role
+    let welcomeMessage = "";
+    let redirectUrl = "";
     
-    await logActivity(docItem.id, "Logged In", `User ${data.name} logged in.`);
-    sessionStorage.setItem("welcomeMessage", `Welcome back, ${data.name}!`);
+    switch (userRole) {
+      case "admin":
+        welcomeMessage = `Welcome back, Admin ${userName}!`;
+        redirectUrl = "../Dashboard/admin/admin.html";
+        break;
+      case "staff":
+        welcomeMessage = `Welcome back, Staff ${userName}!`;
+        redirectUrl = "../Dashboard/staff/staff.html";
+        break;
+      case "customer":
+        welcomeMessage = `Welcome back, ${userName}!`;
+        redirectUrl = "../Dashboard/customer/customer.html";
+        break;
+    }
 
-    // wait 2 seconds, then redirect
-    setTimeout(() => {
-      location.replace("../Dashboard/customer/customer.html");
-    }, 2000);
-    return;
-  }
-}
+    sessionStorage.setItem("welcomeMessage", welcomeMessage);
 
-        
-// ✅ Check Admin
-const adminRef = collection(db, "Admin");
-const adminSnapshot = await getDocs(adminRef);
-
-for (const docItem of adminSnapshot.docs) {
-  const data = docItem.data();
-  if (data.email === email && data.password === password) {
-    sessionStorage.setItem("isLoggedIn", "true");
-    sessionStorage.setItem("userId", docItem.id);
-    sessionStorage.setItem("role", "admin");
-    sessionStorage.setItem("userName", data.name);
-    sessionStorage.setItem("welcomeMessage", `Welcome back, Admin ${data.name}!`);
-
-localStorage.setItem("currentUserId", docItem.id);
-
+    // Show success message
     Swal.fire({
       icon: "success",
       title: "Login Successful",
-      text: `Welcome back, Admin ${data.name}!`,
+      text: welcomeMessage,
       timer: 2000,
-      showConfirmButton: false
+      showConfirmButton: false,
+      background: '#f8f9fa'
     });
 
+    // Redirect after delay
     setTimeout(() => {
-      location.replace("../Dashboard/admin/admin.html"); // keep admin redirect
+      location.replace(redirectUrl);
     }, 2000);
-    return;
-  }
-}
 
-// ✅ Check Staff
-const staffRef = collection(db, "Staff");
-const staffSnapshot = await getDocs(staffRef);
-
-for (const docItem of staffSnapshot.docs) {
-  const data = docItem.data();
-  if (data.email === email && data.password === password) {
-    sessionStorage.setItem("isLoggedIn", "true");
-    sessionStorage.setItem("userId", docItem.id);
-    sessionStorage.setItem("role", "staff");
-    sessionStorage.setItem("userName", data.name);
-    sessionStorage.setItem("welcomeMessage", `Welcome back, Staff ${data.name}!`);
-
-    localStorage.setItem("currentUserId", docItem.id);
-
+  } catch (error) {
+    console.error("Login error:", error);
+    loader.style.display = "none";
     Swal.fire({
-      icon: "success",
-      title: "Login Successful",
-      text: `Welcome back, Staff ${data.name}!`,
-      timer: 2000,
-      showConfirmButton: false
+      icon: "error",
+      title: "Login Failed",
+      text: "An unexpected error occurred. Please try again.",
+      confirmButtonColor: "#ff8800"
     });
-
-    setTimeout(() => {
-     location.replace("../Dashboard/staff/staff.html");
-
-    }, 2000);
-    return;
   }
-}
-
-
-loader.style.display = "none";
-Swal.fire({
-  icon: "error",
-  title: "Login Failed",
-  text: "Account not found or incorrect credentials.",
-  confirmButtonColor: "#ff8800" // Orange OK button
-});
-} catch (error) {
-console.error("Login error:", error);
-loader.style.display = "none";
-Swal.fire({
-  icon: "error",
-  title: "Login Failed",
-  text: "Please try again.",
-  confirmButtonColor: "#ff8800" // Orange OK button
-});
-}
 });
     
 const signUpButton = document.getElementById("SignUpBtn");
