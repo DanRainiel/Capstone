@@ -7,7 +7,7 @@
     <link rel ="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
+    <link rel="icon" href="./images/paw2.png" type="image/x-icon">
     <link rel="stylesheet" href="/Dashboard/staff/staff.css">
 </head>
 <body>
@@ -117,7 +117,7 @@
           </div>
           <div class="card">
             <div>
-              <div class="numbers">11,500</div>
+                         <div class="numbers">₱0.00</div>
               <div class="cardName">Today's Earnings</div>
             </div>
             <div class="iconBx"><i class="fa-solid fa-money-bill"></i></div>
@@ -175,6 +175,18 @@
           </div>
         </div>
 
+        <div class="table-controls">
+    <label for="statusFilter">Filter by Status:</label>
+    <select id="statusFilter">
+      <option value="all">All</option>
+      <option value="pending">Pending</option>
+      <option value="in progress">In Progress</option>
+      <option value="completed">Completed</option>
+      <option value="for-rescheduling">For Rescheduling</option>
+      <option value="cancelled">Cancelled</option>
+    </select>
+  </div>
+
         <div class="data-table">
           <table>
             <thead>
@@ -186,6 +198,7 @@
                 <th>Pet Name</th>
                 <th>Service</th>
                 <th>Status</th>
+                <th>Payment Method</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -321,6 +334,17 @@
     </form>
   </div>
 
+   <div class="table-controls walkin-status-filter">
+  <label for="walkinStatusFilter">Filter by Status:</label>
+  <select id="walkinStatusFilter" class="status-filter">
+    <option value="all">All</option>
+    <option value="pending">Pending</option>
+    <option value="in progress">In Progress</option>
+    <option value="completed">Completed</option>
+    <option value="for-rescheduling">For Rescheduling</option>
+    <option value="cancelled">Cancelled</option>
+  </select>
+</div>
   <!-- Walk-in Data Table -->
   <div class="data-table">
     <table>
@@ -398,6 +422,20 @@
           </div>
 
         </div>
+
+        
+            <div class="table-controls">
+    <label for="serviceFilter">Filter by Service:</label>
+    <select id="serviceFilter">
+      <option value="all">All</option>
+      <option value="vaccination">Vaccination</option>
+      <option value="consultation">Consultation</option>
+      <option value="grooming">Grooming</option>
+      <option value="treatment">Treatment</option>
+      <option value="deworming">Deworming</option>
+      <option value="laboratory">Laboratory</option>
+    </select>
+  </div>
 
         <div class="data-table">
           <table>

@@ -16,6 +16,7 @@
       onSnapshot,
       getDoc,
       deleteDoc,
+     
       writeBatch,  // ✅ needed for changing user status
       doc      
     } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
@@ -48,166 +49,290 @@
       }
     }
 
-
+    
 document.addEventListener("DOMContentLoaded", async () => {
 
   let services = [];
 
   const tableBody = document.querySelector("#fee-discount table tbody");
   const editModal = document.getElementById("editServiceModal");
-  const specialDiscountsList = document.getElementById("specialDiscountsList");
+  const specialDiscountsList = document.getElementById("specialDiscountsList"); 
   let currentServiceIndex = null;
 
   // ---------------- Firestore Helpers ----------------
-  async function saveServiceToFirestore(service) {
+  async function saveServiceToServicesCollection(service) {
     const docId = service.name.toLowerCase().replace(/\s+/g, '-');
-    await setDoc(doc(db, "services", docId), service);
+    await setDoc(doc(db, "Services", docId), service);
   }
 
- async function loadServicesFromFirestore() {
-  services = [];
-  const querySnapshot = await getDocs(collection(db, "services"));
+  async function loadServicesFromServicesCollection() {
+    services = [];
+    const querySnapshot = await getDocs(collection(db, "Services"));
 
-  if (querySnapshot.empty) {
-    // add default services if Firestore is totally empty
-    services = [
-      { name: "General Consultation", basePrice: 500, loyaltyDiscount: 10, notes: '', discounts: [] },
-      { name: "Vaccination", basePrice: 800, loyaltyDiscount: 5, notes: '', discounts: [] },
-      { name: "Deworming", basePrice: 300, loyaltyDiscount: 5, notes: '', discounts: [] },
-      { name: "Grooming", basePrice: 800, loyaltyDiscount: 10, notes: '', discounts: [] },
-      { name: "Treatment", basePrice: 800, loyaltyDiscount: 10, notes: '', discounts: [] },
-      { name: "Laboratory", basePrice: 800, loyaltyDiscount: 10, notes: '', discounts: [] }
-    ];
+    if (querySnapshot.empty) {
+      console.log("⚙️ Firestore 'Services' empty — seeding servicePrices with variants...");
 
-    for (const s of services) {
-      await saveServiceToFirestore(s);
-    }
-  } else {
-    querySnapshot.forEach(docSnap => {
-      const data = docSnap.data();
+      const servicePrices = {
+        vaccination: {
+          "5n1": { small: 500, medium: 500, large: 500 },
+          "8in1": { small: 600, medium: 600, large: 600 },
+          "Kennel Cough": { small: 500, medium: 500, large: 500 },
+          "4n1": { small: 950, medium: 950, large: 950, cat: 950 },
+          "Anti-Rabies": { small: 350, medium: 350, large: 350, cat: 350 }
+        },
+        grooming: { basic: { small: 450, medium: 600, large: 800, cat: 600 } },
+        consultation: { regular: { small: 350, medium: 350, large: 350, cat: 350 } },
+        treatment: {
+          tickFlea: { small: 650, medium: 700, large: 800 },
+          heartwormPrevention: { small: 2000, medium: 2500, large: 3000, xl: 4500 },
+          catTickFleaDeworm: { small: 650, large: 750 }
+        },
+        deworming: { regular: { small: 200, medium: 300, large: 400, cat: 300 } },
+        laboratory: {
+          "4 Way Test": 1200,
+          "CBC Bloodchem Package": 1500,
+          "Cat FIV/Felv Test": 1000,
+          "Leptospirosis Test": 950,
+          "Canine Distemper Test": 850,
+          "Canine Parvo Test": 859,
+          "Parvo/Corona Virus Test": 950,
+          "Earmite Test": 150,
+          "Skin Scraping": 150,
+          "Stool Exam": 300,
+          "Urinalysis": 950
+        }
+      };
 
-      services.push({
-        name: data.name || docSnap.id,  // fallback to doc ID
-        basePrice: data.basePrice || 0,
-        loyaltyDiscount: data.loyaltyDiscount || 0,
-        notes: data.notes || "",
-        discounts: data.discounts || []
+      for (const [serviceName, variants] of Object.entries(servicePrices)) {
+        const docData = {
+          name: serviceName,
+          variants: variants,
+          loyaltyDiscount: 10, // default 10%
+          notes: "",
+          discounts: []
+        };
+        await saveServiceToServicesCollection(docData);
+        services.push(docData);
+      }
+
+    } else {
+      console.log("✅ Existing services found — loading from 'Services' collection...");
+      querySnapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        services.push({
+          name: data.name || docSnap.id,
+          loyaltyDiscount: data.loyaltyDiscount !== undefined ? data.loyaltyDiscount : 10,
+          notes: data.notes || "",
+          discounts: data.discounts || [],
+          variants: data.variants || {}
+        });
       });
-    });
+    }
+
+    renderServices();
   }
-
-  renderServices();
-}
-
 
   // ---------------- Rendering ----------------
   function renderServices() {
     tableBody.innerHTML = "";
-    services.forEach((s, index) => {
+
+    services.forEach((s, serviceIndex) => {
       const discountList = s.discounts.length > 0
         ? s.discounts.map(d => `${d.name} (${d.type === "percentage" ? d.value + "%" : "₱" + d.value})`).join(", ")
         : "None";
 
-      const row = document.createElement("tr");
-      row.innerHTML = `
-        <td>${s.name}</td>
-        <td>₱${s.basePrice}</td>
+      // Parent row
+      const parentRow = document.createElement("tr");
+      parentRow.innerHTML = `
+        <td><strong>${s.name}</strong></td>
         <td>${s.loyaltyDiscount}%</td>
         <td>${discountList}</td>
-        <td><button class="btn-primary" data-index="${index}">Edit</button></td>
+        <td><button class="btn-primary edit-service-btn" data-index="${serviceIndex}">Edit</button></td>
       `;
-      tableBody.appendChild(row);
-    });
-  }
+      tableBody.appendChild(parentRow);
 
-  // ---------------- Edit Modal ----------------
-  tableBody.addEventListener("click", (e) => {
-    if (e.target.tagName === "BUTTON") {
-      currentServiceIndex = e.target.dataset.index;
-      const service = services[currentServiceIndex];
-
-      document.getElementById("editServiceName").value = service.name;
-      document.getElementById("editBasePrice").value = service.basePrice;
-      document.getElementById("editLoyaltyDiscount").value = service.loyaltyDiscount;
-      document.getElementById("editNotes").value = service.notes;
-
-      renderServiceDiscounts(service);
-      editModal.style.display = "block";
-    }
-  });
-
-  function renderServiceDiscounts(service) {
-    specialDiscountsList.innerHTML = "<h3>Applied Special Discounts</h3>";
-    service.discounts.forEach((d, idx) => {
-      const div = document.createElement("div");
-      div.innerHTML = `
-        ${d.name} - ${d.type === "percentage" ? d.value + "%" : "₱" + d.value} 
-        <button data-discount-index="${idx}">Delete</button>
-      `;
-      specialDiscountsList.appendChild(div);
-    });
-
-    specialDiscountsList.onclick = async (e) => {
-      if (e.target.tagName === "BUTTON") {
-        const discountIndex = e.target.dataset.discountIndex;
-        service.discounts.splice(discountIndex, 1);
-        await saveServiceToFirestore(service);
-        renderServiceDiscounts(service);
-        renderServices();
+      // Variant rows
+      if (s.variants) {
+        for (const [variantName, variantData] of Object.entries(s.variants)) {
+          const variantRow = document.createElement("tr");
+          variantRow.classList.add("variant-row");
+          variantRow.innerHTML = `
+            <td style="padding-left: 30px;">- ${variantName}</td>
+            <td colspan="3">
+              ${typeof variantData === "object"
+                ? Object.entries(variantData)
+                    .map(([size, price]) => `${size}: ₱${price}`)
+                    .join(" | ")
+                : `₱${variantData}`
+              }
+            </td>
+          `;
+          tableBody.appendChild(variantRow);
+        }
       }
-    };
+    });
+
+    document.querySelectorAll(".edit-service-btn").forEach(btn => {
+      btn.addEventListener("click", e => {
+        const index = e.target.dataset.index;
+        openEditModal(index);
+      });
+    });
   }
+
+function openEditModal(serviceIndex) {
+  const service = services[serviceIndex];
+  currentServiceIndex = serviceIndex;
+
+  document.getElementById("editServiceName").value = service.name;
+  document.getElementById("editLoyaltyDiscount").value = service.loyaltyDiscount;
+
+  const variantContainer = document.getElementById("specialDiscountsList");
+  variantContainer.innerHTML = "<h3>Variants & Prices</h3>";
+
+  for (const [variantName, variantData] of Object.entries(service.variants)) {
+    const div = document.createElement("div");
+    div.style.marginBottom = "12px";
+
+    // Add the variant name as a heading
+    const variantTitle = document.createElement("strong");
+    variantTitle.textContent = variantName;
+    div.appendChild(variantTitle);
+
+    // Container for the inputs
+    const inputsContainer = document.createElement("div");
+    inputsContainer.style.marginTop = "4px";
+    inputsContainer.style.display = "flex";
+    inputsContainer.style.flexDirection = "column"; // Stack vertically
+
+    if (typeof variantData === "object") {
+      for (const [size, price] of Object.entries(variantData)) {
+        const inputDiv = document.createElement("div");
+        inputDiv.style.marginBottom = "4px";
+
+        inputDiv.innerHTML = `${size}: <input type="number" class="modal-variant-input" 
+                          data-variant-name="${variantName}" data-size="${size}" 
+                          value="${price}" min="0" step="0.01">`;
+
+        inputsContainer.appendChild(inputDiv);
+      }
+    } else {
+      // Single price
+      const inputDiv = document.createElement("div");
+      inputDiv.innerHTML = `<input type="number" class="modal-variant-input" 
+                          data-variant-name="${variantName}" value="${variantData}" 
+                          min="0" step="0.01">`;
+      inputsContainer.appendChild(inputDiv);
+    }
+
+    div.appendChild(inputsContainer);
+    variantContainer.appendChild(div);
+  }
+
+  editModal.style.display = "block";
+}
+
 
   document.getElementById("saveServiceChanges").addEventListener("click", async () => {
-    if (currentServiceIndex !== null) {
-      const service = services[currentServiceIndex];
-      service.basePrice = parseFloat(document.getElementById("editBasePrice").value);
-      service.loyaltyDiscount = parseFloat(document.getElementById("editLoyaltyDiscount").value);
-      service.notes = document.getElementById("editNotes").value;
+    if (currentServiceIndex === null) return;
+    const service = services[currentServiceIndex];
 
-      await saveServiceToFirestore(service);
-      renderServices();
-      editModal.style.display = "none";
-    }
+
+    service.loyaltyDiscount = parseFloat(document.getElementById("editLoyaltyDiscount").value);
+
+    // Update variant prices
+    document.querySelectorAll(".modal-variant-input").forEach(input => {
+      const variantName = input.dataset.variantName;
+      const size = input.dataset.size;
+      const value = parseFloat(input.value);
+
+      if (size) {
+        service.variants[variantName][size] = value;
+      } else {
+        service.variants[variantName] = value;
+      }
+    });
+
+    await saveServiceToServicesCollection(service);
+    renderServices();
+    editModal.style.display = "none";
   });
 
- // ---------------- Discounts ----------------
-document.getElementById("discountForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const formData = new FormData(e.target);
 
-  const discount = {
-    name: formData.get("discountName"),
-    type: formData.get("discountType"),
-    value: parseFloat(formData.get("discountValue")),
-    applicableServices: formData.getAll("applicableServices"),
-    validFrom: formData.get("validFrom") || null,
-    validUntil: formData.get("validUntil") || null,
-    createdAt: new Date().toISOString()
-  };
+  // ================================
+// 🔹 Load Services for Discount Form
+// ================================
+async function loadServiceCheckboxes() {
+  const container = document.getElementById("applicableServicesContainer");
+  if (!container) return;
 
-  // Apply discount
-  for (const s of services) {
-    // Normalize service key (consultation, vaccination, etc.)
-    const key = s.name.toLowerCase().split(" ")[0]; 
+  // Fetch services from Firestore
+  const servicesSnapshot = await getDocs(collection(db, "Services"));
 
-    if (discount.applicableServices.includes("all") ||
-        discount.applicableServices.includes(key)) {
-      if (!s.discounts) s.discounts = [];
-      s.discounts.push(discount);
-      await saveServiceToFirestore(s);
+  servicesSnapshot.forEach(docSnap => {
+    const service = docSnap.data();
+
+    // Create checkbox for each service
+    const label = document.createElement("label");
+    label.classList.add("applicable-checkbox");
+
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.name = "applicableServices";
+    input.value = service.name.toLowerCase().split(" ")[0]; // key for matching later
+
+    const text = document.createTextNode(" " + service.name);
+
+    label.appendChild(input);
+    label.appendChild(text);
+    container.appendChild(label);
+  });
+}
+
+// Call this when page loads
+await loadServicesFromServicesCollection();
+await loadServiceCheckboxes();
+
+  document.querySelector("#editServiceModal .close").addEventListener("click", () => {
+    editModal.style.display = "none";
+  });
+
+  document.getElementById("cancelEdit").addEventListener("click", () => {
+    editModal.style.display = "none";
+  });
+
+  // ---------------- Discounts ----------------
+  document.getElementById("discountForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+
+    const discount = {
+      name: formData.get("discountName"),
+      type: formData.get("discountType"),
+      value: parseFloat(formData.get("discountValue")),
+      applicableServices: formData.getAll("applicableServices"),
+      validFrom: formData.get("validFrom") || null,
+      validUntil: formData.get("validUntil") || null,
+      createdAt: new Date().toISOString()
+    };
+
+    for (const s of services) {
+      const key = s.name.toLowerCase().split(" ")[0];
+      if (discount.applicableServices.includes("all") || discount.applicableServices.includes(key)) {
+        if (!s.discounts) s.discounts = [];
+        s.discounts.push(discount);
+        await saveServiceToServicesCollection(s);
+      }
     }
-  }
 
-  renderServices();
-  e.target.reset();
-});
-
+    renderServices();
+    e.target.reset();
+  });
 
   // ---------------- Initial Load ----------------
-  await loadServicesFromFirestore();
-});
+  await loadServicesFromServicesCollection();
 
+});
 
 
 
@@ -463,137 +588,7 @@ document.addEventListener("click", async (e) => {
   }
 });
 
-// Handle "View" button
-document.addEventListener("click", async (e) => {
-  if (e.target.classList.contains("view")) {
-    const docId = e.target.getAttribute("data-id");
-    const type = e.target.getAttribute("data-type");
-
-    try {
-      const docRef = doc(db, type === "walkin" ? "WalkInAppointment" : "Appointment", docId);
-      const snap = await getDoc(docRef);
-
-      if (snap.exists()) {
-        const data = snap.data();
-
-        Swal.fire({
-          title: "Appointment Details",
-          html: `
-            <p><strong>Name:</strong> ${data.name || `${data.firstName || ""} ${data.lastName || ""}`}</p>
-            <p><strong>Pet:</strong> ${data.petName || data.pet?.petName || "N/A"}</p>
-            <p><strong>Service:</strong> ${data.service || data.serviceType}</p>
-            <p><strong>Date:</strong> ${data.date}</p>
-            <p><strong>Time:</strong> ${data.time}</p>
-            <p><strong>Contact:</strong> ${data.contact}</p>
-            <p><strong>Status:</strong> ${data.status}</p>
-            <p><strong>Total Amount:</strong> ${data.totalAmount || "0.00"}</p>
-          `,
-          width: "600px",
-          confirmButtonText: "Close"
-        });
-
-      } else {
-        Swal.fire("Error", "Appointment not found.", "error");
-      }
-    } catch (err) {
-      console.error("Error viewing appointment:", err);
-      Swal.fire("Error", "Something went wrong while fetching appointment details.", "error");
-    }
-  }
-});
-
-// Handle "Edit" button
-document.addEventListener("click", async (e) => {
-  if (e.target.classList.contains("edit")) {
-    const docId = e.target.getAttribute("data-id");
-    const type = e.target.getAttribute("data-type");
-
-    try {
-      const docRef = doc(db, type === "walkin" ? "WalkInAppointment" : "Appointment", docId);
-      const snap = await getDoc(docRef);
-
-      if (snap.exists()) {
-        const data = snap.data();
-
-        const { value: formValues } = await Swal.fire({
-          title: "Edit Appointment",
-          html: `
-            <input id="swal-name" class="swal2-input" placeholder="Name" value="${data.name || `${data.firstName || ""} ${data.lastName || ""}`}">
-            <input id="swal-pet" class="swal2-input" placeholder="Pet Name" value="${data.petName || data.pet?.petName || ""}">
-            <input id="swal-service" class="swal2-input" placeholder="Service" value="${data.service || data.serviceType || ""}">
-            <input id="swal-date" type="date" class="swal2-input" value="${data.date || ""}">
-            <input id="swal-time" type="time" class="swal2-input" value="${data.time || ""}">
-            <input id="swal-contact" class="swal2-input" placeholder="Contact" value="${data.contact || ""}">
-          `,
-          focusConfirm: false,
-          showCancelButton: true,
-          confirmButtonText: "Save",
-          preConfirm: () => {
-            return {
-              name: document.getElementById("swal-name").value,
-              petName: document.getElementById("swal-pet").value,
-              service: document.getElementById("swal-service").value,
-              date: document.getElementById("swal-date").value,
-              time: document.getElementById("swal-time").value,
-              contact: document.getElementById("swal-contact").value
-            };
-          }
-        });
-
-        if (formValues) {
-          await updateDoc(docRef, formValues);
-          Swal.fire("Updated!", "Appointment has been updated.", "success");
-          loadAllAppointments(); // 🔄 refresh the tables
-        }
-      } else {
-        Swal.fire("Error", "Appointment not found.", "error");
-      }
-    } catch (err) {
-      console.error("Error editing appointment:", err);
-      Swal.fire("Error", "Something went wrong while editing appointment.", "error");
-    }
-  }
-});
-
-document.addEventListener("click", async (e) => {
-  if (e.target.classList.contains("viewreason")) {
-    const docId = e.target.getAttribute("data-id");
-    console.log("🔍 Fetching cancel reason for docId:", docId);
-
-    try {
-      const docRef = doc(db, "Appointment", docId); // make sure "Appointment" matches your collection name
-      const snap = await getDoc(docRef);
-
-      if (snap.exists()) {
-        const data = snap.data();
-        console.log("✅ Appointment data:", data);
-
-        const reason = data.cancelReason || "No reason provided.";
-        const cancelledAt = data.cancelledAt?.toDate
-          ? data.cancelledAt.toDate().toLocaleString()
-          : "Unknown time";
-
-        Swal.fire({
-          title: "Cancellation Reason",
-          html: `
-            <p><strong>Reason:</strong> ${reason}</p>
-            <p><strong>Cancelled At:</strong> ${cancelledAt}</p>
-          `,
-          icon: "info",
-          confirmButtonText: "Close"
-        });
-      } else {
-        console.warn("❌ Appointment not found for docId:", docId);
-        Swal.fire("Error", "Appointment not found.", "error");
-      }
-    } catch (error) {
-      console.error("🔥 Error fetching cancel reason:", error);
-      Swal.fire("Error", "Failed to load cancellation reason.", "error");
-    }
-  }
-});
-
- // Handle "View Screenshot"
+// Handle "View Screenshot"
 document.addEventListener("click", async (e) => {
   if (e.target.classList.contains("screenshot")) {
     const docId = e.target.getAttribute("data-id");
@@ -647,8 +642,132 @@ document.addEventListener("click", async (e) => {
     }
   }
 });
+// ============================================
+// CRITICAL TIME FORMAT FIXES
+// Changed from single "time" to "startTime" and "endTime"
+// ============================================
 
-// Handle "Reschedule" button
+// 🔹 FIX 1: View Appointment Modal (Line ~560)
+document.addEventListener("click", async (e) => {
+  if (e.target.classList.contains("view")) {
+    const docId = e.target.getAttribute("data-id");
+    const type = e.target.getAttribute("data-type");
+
+    try {
+      const docRef = doc(db, type === "walkin" ? "WalkInAppointment" : "Appointment", docId);
+      const snap = await getDoc(docRef);
+
+      if (snap.exists()) {
+        const data = snap.data();
+
+        // ✅ Fixed: Use startTime - endTime format
+        const displayTime = data.startTime && data.endTime 
+          ? `${data.startTime} - ${data.endTime}` 
+          : data.time || "N/A";
+
+       Swal.fire({
+  title: "Appointment Details",
+  html: `
+    <p><strong>Name:</strong> ${data.name || `${data.firstName || ""} ${data.lastName || ""}`}</p>
+    <p><strong>Pet:</strong> ${data.petName || data.pet?.petName || "N/A"}</p>
+    <p><strong>Service:</strong> ${data.service || data.serviceType}</p>
+    <p><strong>Date:</strong> ${data.date}</p>
+    <p><strong>Time:</strong> ${displayTime}</p>
+    <p><strong>Contact:</strong> ${
+      data.contact || 
+      data.contactNumber || 
+      data.ownerNumber || 
+      data.phone || 
+      "N/A"
+    }</p>
+    <p><strong>Status:</strong> ${data.status}</p>
+    <p><strong>Total Amount:</strong> ${data.totalAmount || "0.00"}</p>
+  `,
+  width: "600px",
+  confirmButtonText: "Close"
+});
+
+      } else {
+        Swal.fire("Error", "Appointment not found.", "error");
+      }
+    } catch (err) {
+      console.error("Error viewing appointment:", err);
+      Swal.fire("Error", "Something went wrong while fetching appointment details.", "error");
+    }
+  }
+});
+
+// 🔹 FIX 2: Edit Appointment Modal (Line ~590)
+document.addEventListener("click", async (e) => {
+  if (e.target.classList.contains("edit")) {
+    const docId = e.target.getAttribute("data-id");
+    const type = e.target.getAttribute("data-type");
+
+    try {
+      const docRef = doc(db, type === "walkin" ? "WalkInAppointment" : "Appointment", docId);
+      const snap = await getDoc(docRef);
+
+      if (snap.exists()) {
+        const data = snap.data();
+
+        // ✅ Fixed: Display and edit startTime & endTime
+        const displayTime = data.startTime && data.endTime 
+          ? `${data.startTime} - ${data.endTime}` 
+          : data.time || "";
+
+        const { value: formValues } = await Swal.fire({
+          title: "Edit Appointment",
+          html: `
+            <input id="swal-name" class="swal2-input" placeholder="Name" value="${data.name || `${data.firstName || ""} ${data.lastName || ""}`}">
+            <input id="swal-pet" class="swal2-input" placeholder="Pet Name" value="${data.petName || data.pet?.petName || ""}">
+            <input id="swal-service" class="swal2-input" placeholder="Service" value="${data.service || data.serviceType || ""}">
+            <input id="swal-date" type="date" class="swal2-input" value="${data.date || ""}">
+            <input id="swal-start-time" type="time" class="swal2-input" placeholder="Start Time" value="${data.startTime || ""}">
+            <input id="swal-end-time" type="time" class="swal2-input" placeholder="End Time" value="${data.endTime || ""}">
+            <input id="swal-contact" class="swal2-input" placeholder="Contact" value="${data.contact || ""}">
+          `,
+          focusConfirm: false,
+          showCancelButton: true,
+          confirmButtonText: "Save",
+          preConfirm: () => {
+            return {
+              name: document.getElementById("swal-name").value,
+              petName: document.getElementById("swal-pet").value,
+              service: document.getElementById("swal-service").value,
+              date: document.getElementById("swal-date").value,
+              startTime: document.getElementById("swal-start-time").value,
+              endTime: document.getElementById("swal-end-time").value,
+              contact: document.getElementById("swal-contact").value
+            };
+          }
+        });
+
+        if (formValues) {
+          // ✅ Save both startTime and endTime
+          await updateDoc(docRef, {
+            name: formValues.name,
+            petName: formValues.petName,
+            service: formValues.service,
+            date: formValues.date,
+            startTime: formValues.startTime,
+            endTime: formValues.endTime,
+            contact: formValues.contact
+          });
+          
+          Swal.fire("Updated!", "Appointment has been updated.", "success");
+          loadAllAppointments();
+        }
+      } else {
+        Swal.fire("Error", "Appointment not found.", "error");
+      }
+    } catch (err) {
+      console.error("Error editing appointment:", err);
+      Swal.fire("Error", "Something went wrong while editing appointment.", "error");
+    }
+  }
+});
+
+// 🔹 FIX 3: Reschedule Modal (Line ~650)
 document.addEventListener("click", async (e) => {
   if (e.target.classList.contains("reschedule")) {
     const docId = e.target.getAttribute("data-id");
@@ -669,35 +788,38 @@ document.addEventListener("click", async (e) => {
     const appointmentData = docSnap.data();
     const userId = appointmentData.userId;
 
-    // ✅ Generate time slots dynamically (9:00 AM to 5:30 PM, 30min intervals)
     function generateTimeSlots(startHour, endHour) {
       const slots = [];
       const start = new Date();
       start.setHours(startHour, 0, 0, 0);
 
       const end = new Date();
-      end.setHours(endHour, 30, 0, 0); // until 5:30 PM
+      end.setHours(endHour, 30, 0, 0);
 
       while (start < end) {
-        const endSlot = new Date(start.getTime() + 30 * 60000); // add 30 minutes
+        const endSlot = new Date(start.getTime() + 30 * 60000);
 
         const formatTime = (date) =>
           date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 
-        slots.push(`${formatTime(start)} - ${formatTime(endSlot)}`);
+        slots.push({
+          display: `${formatTime(start)} - ${formatTime(endSlot)}`,
+          start: formatTime(start),
+          end: formatTime(endSlot)
+        });
+        
         start.setMinutes(start.getMinutes() + 30);
       }
 
       return slots;
     }
 
-    const timeSlots = generateTimeSlots(9, 17); // 9:00 AM to 5:30 PM
+    const timeSlots = generateTimeSlots(9, 17);
 
     const slotOptions = timeSlots
-      .map((slot) => `<option value="${slot}">${slot}</option>`)
+      .map((slot) => `<option value="${slot.start}|${slot.end}">${slot.display}</option>`)
       .join("");
 
-    // ✅ SweetAlert with dynamic dropdown
     const { value: formValues } = await Swal.fire({
       title: "Reschedule Appointment",
       width: 600,
@@ -719,42 +841,42 @@ document.addEventListener("click", async (e) => {
       cancelButtonText: "Cancel",
       preConfirm: () => {
         const date = document.getElementById("new-date").value;
-        const slot = document.getElementById("new-time").value;
+        const timeValue = document.getElementById("new-time").value;
 
-        if (!date || !slot) {
+        if (!date || !timeValue) {
           Swal.showValidationMessage("Please select both date and time slot.");
           return false;
         }
 
-        // ✅ Extract starting time only (e.g., "9:00 AM")
-        const time = slot.split(" - ")[0];
-        return { date, time };
+        // ✅ Split the time value to get start and end times
+        const [startTime, endTime] = timeValue.split("|");
+        return { date, startTime, endTime };
       }
     });
 
-    if (!formValues) return; // Cancelled
+    if (!formValues) return;
 
     try {
-      // ✅ Update appointment in Firestore
+      // ✅ Update with both startTime and endTime
       await updateDoc(docRef, {
         date: formValues.date,
-        time: formValues.time, // Only the starting time
-        status: "pending",     // 👈 Bring back to pending
+        startTime: formValues.startTime,
+        endTime: formValues.endTime,
+        status: "pending",
         updatedAt: serverTimestamp()
       });
 
-      // ✅ Create reminder notification
       await addDoc(collection(db, "Notifications"), {
         appointmentId: docId,
         userId,
         type: "reminder",
         service: appointmentData.service || "Appointment",
         status: "unread",
-        message: `Your appointment for ${appointmentData.petName || "your pet"} has been rescheduled to ${formValues.date} at ${formValues.time}.`,
+        message: `Your appointment for ${appointmentData.petName || "your pet"} has been rescheduled to ${formValues.date} at ${formValues.startTime} - ${formValues.endTime}.`,
         createdAt: serverTimestamp()
       });
 
-      Swal.fire("Rescheduled", "The appointment has been updated and set back to pending. A reminder was sent to the user.", "success");
+      Swal.fire("Rescheduled", "The appointment has been updated with new time slot.", "success");
     } catch (err) {
       console.error("❌ Error during reschedule:", err);
       Swal.fire("Error", "Something went wrong while rescheduling.", "error");
@@ -762,96 +884,376 @@ document.addEventListener("click", async (e) => {
   }
 });
 
+// 🔹 FIX 4: View Pet Details Modal (Line ~720)
+async function viewAppointmentDetails(appointmentId) {
+  try {
+    const apptRef = doc(db, "Appointment", appointmentId);
+    const apptSnap = await getDoc(apptRef);
 
-
-  // 📅 Load appointments into two tables
-  async function loadAllAppointments() {
-    const dashboardTable = document.getElementById("table-dashboard");
-    const appointmentTable = document.getElementById("appointmentTable");
-    const historyTable = document.getElementById("historytable");
-    const walkInTable = document.getElementById("walkinTableBody");
-
-    if (dashboardTable) dashboardTable.innerHTML = "";
-    if (appointmentTable) appointmentTable.innerHTML = "";
-    if (historyTable) historyTable.innerHTML = "";
-    if (walkInTable) walkInTable.innerHTML = "";
-      
-    // ✅ Counts
-    let todayScheduleCount = 0;
-    let finishedAppointmentsCount = 0;
-    let walkInCount = 0;
-
-    let totalAppointmentsToday = 0;
-    let pendingAppointmentsToday = 0;
-    let cancelledAppointmentsToday = 0;
-    let todaysEarnings = 0;
-
-    let totalUsers = 0;
-
-    const today = new Date().toISOString().split("T")[0]; // "YYYY-MM-DD"
-
-    try {
-      const [snapshot, walkInSnapshot] = await Promise.all([
-        getDocs(collection(db, "Appointment")),
-        getDocs(collection(db, "WalkInAppointment")),
-      ]);
-
-      if (snapshot.empty && walkInSnapshot.empty) {
-        const emptyRow = "<tr><td colspan='8'>No appointments found.</td></tr>";
-        if (dashboardTable) dashboardTable.innerHTML = emptyRow;
-        if (appointmentTable) appointmentTable.innerHTML = emptyRow;
-        await logActivity("admin", "Load Appointments", "No appointments found.");
-        return;
-      }
-
-      // Function to render each row
-      const renderRow = (data, type, docId) => {
-        const status = data.status || "Pending";
-
-        const safe = (val) => (val === undefined || val === null ? "" : val);
-
-  const displayData = {
-    name:
-      type === "walkin"
-        ? `${safe(data.firstName)} ${safe(data.lastName)}`.trim()
-        : safe(data.name),
-    petName: safe(data.petName) || safe(data.pet?.petName),
-      service: safe(data.service),              // for regular appointments
-    walkinService: safe(data.serviceType), 
-    date: type === "walkin" && data.timestamp ? 
-          new Date(data.timestamp).toLocaleDateString() : safe(data.date),
-    time: type === "walkin" && data.timestamp ? 
-          new Date(data.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : safe(data.time),
-    contact: safe(data.contact),
-    status: safe(status),
-    mode: type === "walkin" ? "Walk-In" : "Appointment",
-      reservationType: safe(data.reservationType),
-    reservationFee: safe(data.reservationFee),
-    userId: safe(data.userId),      // 🔹 include userId
-    appointmentId: docId,           // 🔹 include docId 
-    sourceType: type
-  };
-
-
-        // ✅ Count today's scheduled appointments
-        if (displayData.date === today) {
-          totalAppointmentsToday++;
-        }
-
-        // ✅ Count finished appointments
-        if (status.toLowerCase() === "completed") {
-          finishedAppointmentsCount++;
-        
-          // 🟢 Add to today's earnings only if completed today
-  if (displayData.date === today) {
-    let amount = data.totalAmount || 0;
-    if (typeof amount === "string") {
-      amount = amount.replace(/[^\d.-]/g, ""); // remove ₱ and commas
+    if (!apptSnap.exists()) {
+      return Swal.fire("Not Found", "Appointment not found in database.", "warning");
     }
-    todaysEarnings += Number(amount) || 0;
+
+    const data = apptSnap.data();
+    const safe = (val) => (val ? val : "—");
+
+    // ✅ Fixed: Display startTime - endTime
+    const displayTime = data.startTime && data.endTime 
+      ? `${data.startTime} - ${data.endTime}` 
+      : data.time || "—";
+
+    // ✅ Fixed: Get contact number from multiple possible fields
+    const contactNumber = data.contact || data.ownerNumber || data.contactNumber || "—";
+
+    let petImageHTML = "";
+    if (data.petId) {
+      try {
+        const petRef = doc(db, "Pets", data.petId);
+        const petSnap = await getDoc(petRef);
+        if (petSnap.exists()) {
+          const petData = petSnap.data();
+          if (petData.petImage) {
+            petImageHTML = `
+              <div style="text-align:center;margin-bottom:10px;">
+                <img src="${petData.petImage}" alt="${safe(data.petName)}"
+                     style="width:120px;height:120px;border-radius:10px;object-fit:cover;">
+              </div>`;
+          }
+        }
+      } catch (e) {
+        console.warn("⚠️ Could not load pet image:", e);
+      }
+    }
+
+    await Swal.fire({
+      title: `<i class="fa-solid fa-calendar-check"></i> Appointment Details`,
+      html: `
+        ${petImageHTML}
+        <div style="text-align:left;line-height:1.8;">
+          <strong>Owner Name:</strong> ${safe(data.name || data.ownerName)}<br>
+          <strong>Contact Number:</strong> ${contactNumber}<br>
+          <strong>Pet Name:</strong> ${safe(data.petName)}<br>
+          <strong>Pet Size:</strong> ${safe(data.petSize)}<br>
+          <strong>Service:</strong> ${safe(data.service)}<br>
+          <strong>Selected Services:</strong> ${safe(data.selectedServices?.join(", "))}<br>
+          <strong>Service Fee:</strong> ${safe(data.serviceFee)}<br>
+          <strong>Reservation Fee:</strong> ${safe(data.reservationFee)}<br>
+          <strong>Total Amount:</strong> ${safe(data.totalAmount)}<br>
+          <strong>Vet:</strong> ${safe(data.vet)}<br>
+          <strong>Status:</strong> ${safe(data.status)}<br>
+          <strong>Date:</strong> ${safe(data.date)}<br>
+          <strong>Time:</strong> ${displayTime}<br>
+          <strong>Reservation Type:</strong> ${safe(data.reservationType)}<br>
+          <strong>Instructions:</strong> ${safe(data.instructions)}<br>
+        </div>
+      `,
+      confirmButtonText: "Close",
+      width: 520,
+      confirmButtonColor: "#3085d6"
+    });
+
+  } catch (err) {
+    console.error("❌ Error loading appointment details:", err);
+    Swal.fire("Error", "Failed to load appointment details. Please try again.", "error");
+  }
+}
+
+// 🔹 FIX 5: View Pet Details Button Event Listener (FIXED)
+// The issue is that the event listener needs to be attached correctly
+
+// ✅ Remove the old broken event listener and replace with this:
+document.addEventListener("click", async (e) => {
+  const btn = e.target.closest(".btn.view-pet-details");
+  if (!btn) return;
+
+  // Read appointment ID from the button's data attribute
+  const appointmentId = btn.dataset.appointmentId;
+  const type = btn.dataset.type || "appointment";
+
+  if (!appointmentId) {
+    Swal.fire("Missing Info", "Appointment ID not found for this record.", "warning");
+    return;
   }
 
+  console.log("🔍 Opening pet details for appointment:", appointmentId, "Type:", type);
+  await viewAppointmentDetails(appointmentId);
+});
+
+
+document.addEventListener("click", async (e) => {
+  if (e.target.classList.contains("view-pet-details")) {
+    const btn = e.target;
+    const docId = btn.getAttribute("data-id");
+    const appointmentId = btn.getAttribute("data-appointment-id");
+    const type = btn.getAttribute("data-type");
+
+    console.log("🔍 View Pet Details clicked:", { docId, appointmentId, type });
+
+    // Use appointmentId if available, otherwise use docId
+    const idToUse = appointmentId || docId;
+
+    if (!idToUse) {
+      return Swal.fire("Error", "Cannot find appointment information.", "error");
+    }
+
+    // Determine collection based on type
+    const collectionName = type === "walkin" ? "WalkInAppointment" : "Appointment";
+
+    try {
+      const docRef = doc(db, collectionName, idToUse);
+      const docSnap = await getDoc(docRef);
+
+      if (!docSnap.exists()) {
+        return Swal.fire("Not Found", "Appointment not found.", "error");
+      }
+
+      const data = docSnap.data();
+      const safe = (val) => (val ? val : "—");
+
+      // Format time
+      const displayTime = data.startTime && data.endTime 
+        ? `${data.startTime} - ${data.endTime}` 
+        : data.time || "—";
+
+      // Get pet name
+      const petName = data.petName || data.pet?.petName || "Unknown";
+
+      // ✅ Fixed: Get contact number from multiple possible fields
+      const contactNumber = data.contact || data.ownerNumber || data.contactNumber || "—";
+      
+      // ✅ Fixed: Get owner name from multiple possible fields
+      const ownerName = data.name || data.ownerName || `${data.firstName || ''} ${data.lastName || ''}`.trim() || "Unknown";
+
+      // Try to get pet image if petId exists
+      let petImageHTML = "";
+      if (data.petId) {
+        try {
+          const petRef = doc(db, "Pets", data.petId);
+          const petSnap = await getDoc(petRef);
+          if (petSnap.exists()) {
+            const petData = petSnap.data();
+            if (petData.petImage) {
+              petImageHTML = `
+                <div style="text-align:center;margin-bottom:10px;">
+                  <img src="${petData.petImage}" alt="${petName}"
+                       style="width:120px;height:120px;border-radius:10px;object-fit:cover;">
+                </div>`;
+            }
+          }
+        } catch (e) {
+          console.warn("⚠️ Could not load pet image:", e);
         }
+      }
+
+      // Display modal
+      await Swal.fire({
+        title: `<i class="fa-solid fa-paw"></i> Pet & Appointment Details`,
+        html: `
+          ${petImageHTML}
+          <div style="text-align:left;line-height:1.8;">
+            <h3 style="color:#4CAF50;margin-bottom:10px;">Owner Information</h3>
+            <strong>Owner Name:</strong> ${ownerName}<br>
+            <strong>Contact Number:</strong> ${contactNumber}<br>
+            
+            <h3 style="color:#4CAF50;margin-top:15px;margin-bottom:10px;">Pet Information</h3>
+            <strong>Pet Name:</strong> ${safe(petName)}<br>
+            <strong>Species:</strong> ${safe(data.pet?.species || data.species || data.petType)}<br>
+            <strong>Breed:</strong> ${safe(data.pet?.breed || data.breed)}<br>
+            <strong>Age:</strong> ${safe(data.pet?.age || data.age)}<br>
+            <strong>Sex:</strong> ${safe(data.pet?.sex || data.sex || data.gender)}<br>
+            <strong>Weight:</strong> ${safe(data.pet?.weight || data.weight)} kg<br>
+            <strong>Size:</strong> ${safe(data.petSize || data.pet?.size || data.size)}<br>
+            <strong>Color:</strong> ${safe(data.pet?.color || data.color)}<br>
+            
+            <h3 style="color:#4CAF50;margin-top:15px;margin-bottom:10px;">Appointment Details</h3>
+            <strong>Service:</strong> ${safe(data.service || data.serviceType)}<br>
+            <strong>Variant:</strong> ${safe(data.variant)}<br>
+            <strong>Date:</strong> ${safe(data.date)}<br>
+            <strong>Time:</strong> ${displayTime}<br>
+            <strong>Status:</strong> <span class="status ${(data.status || '').toLowerCase()}">${safe(data.status)}</span><br>
+            <strong>Priority:</strong> ${safe(data.priority)}<br>
+            
+            <h3 style="color:#4CAF50;margin-top:15px;margin-bottom:10px;">Financial Details</h3>
+            <strong>Service Fee:</strong> ₱${safe(data.serviceFee || data.totalAmount)}<br>
+            <strong>Applied Discounts:</strong> ${safe(data.appliedDiscounts?.join(", ") || "None")}<br>
+            <strong>Total Amount:</strong> <strong style="color:#4CAF50;">₱${safe(data.totalAmount)}</strong><br>
+            
+            ${data.reason ? `
+              <h3 style="color:#4CAF50;margin-top:15px;margin-bottom:10px;">Additional Information</h3>
+              <strong>Reason for Visit:</strong> ${safe(data.reason)}<br>
+            ` : ''}
+            
+            ${data.pet?.medicalHistory || data.medicalHistory ? `
+              <strong>Medical History:</strong><br>
+              <div style="background:#f5f5f5;padding:10px;border-radius:5px;margin-top:5px;">
+                ${safe(data.pet?.medicalHistory || data.medicalHistory)}
+              </div>
+            ` : ''}
+          </div>
+        `,
+        confirmButtonText: "Close",
+        width: 650,
+        confirmButtonColor: "#4CAF50"
+      });
+
+    } catch (err) {
+      console.error("❌ Error loading pet details:", err);
+      Swal.fire("Error", "Failed to load pet details. Please try again.", "error");
+    }
+  }
+});
+
+console.log("✅ All time format fixes applied successfully!");
+console.log("✅ View Pet Details button listener fixed!");
+console.log("✅ Contact number field mapping fixed!");
+console.log("📌 Updated areas:");
+console.log("   - View Appointment Modal");
+console.log("   - Edit Appointment Modal");
+console.log("   - Reschedule Modal");
+console.log("   - View Pet Details Modal");
+console.log("   - View Pet Details Button (FIXED)");
+console.log("   - Contact Number Display (FIXED)");
+
+
+document.addEventListener("click", async (e) => {
+  const btn = e.target.closest(".btn.view-pet-details");
+  if (!btn) return;
+
+  // Read appointment ID from the button itself (matches innerHTML)
+  const appointmentId = btn.dataset.appointmentId;
+  const type = btn.dataset.type || "appointment"; // fallback
+
+  if (!appointmentId) {
+    Swal.fire("Missing Info", "Appointment ID not found for this record.", "warning");
+    return;
+  }
+
+  console.log("Viewing appointment:", appointmentId, "Type:", type);
+  await viewAppointmentDetails(appointmentId);
+});
+
+
+
+
+
+    // 📅 Load appointments into two tables
+    async function loadAllAppointments() {
+      const dashboardTable = document.getElementById("table-dashboard");
+      const appointmentTable = document.getElementById("appointmentTable");
+      const historyTable = document.getElementById("historytable");
+      const walkInTable = document.getElementById("walkinTableBody");
+
+      if (dashboardTable) dashboardTable.innerHTML = "";
+      if (appointmentTable) appointmentTable.innerHTML = "";
+      if (historyTable) historyTable.innerHTML = "";
+      if (walkInTable) walkInTable.innerHTML = "";
+        
+      // ✅ Counts
+      let todayScheduleCount = 0;
+      let finishedAppointmentsCount = 0;
+      let walkInCount = 0;
+
+      let totalAppointmentsToday = 0;
+      let pendingAppointmentsToday = 0;
+      let cancelledAppointmentsToday = 0;
+      let todaysEarnings = 0;
+
+      let totalUsers = 0;
+
+      const today = new Date().toISOString().split("T")[0]; // "YYYY-MM-DD"
+
+      try {
+        const [snapshot, walkInSnapshot] = await Promise.all([
+          getDocs(collection(db, "Appointment")),
+          getDocs(collection(db, "WalkInAppointment")),
+        ]);
+
+        if (snapshot.empty && walkInSnapshot.empty) {
+          const emptyRow = "<tr><td colspan='8'>No appointments found.</td></tr>";
+          if (dashboardTable) dashboardTable.innerHTML = emptyRow;
+          if (appointmentTable) appointmentTable.innerHTML = emptyRow;
+          await logActivity("admin", "Load Appointments", "No appointments found.");
+          return;
+        }
+
+        const renderRow = (data, type, docId) => {
+    const status = data.status || "Pending";
+    const safe = (val) => (val === undefined || val === null ? "" : val);
+
+    // 🕒 Format time properly (start–end)
+    let formattedTime = "";
+    if (type === "walkin" && data.timestamp) {
+      // Walk-in: derive from timestamp
+      formattedTime = new Date(data.timestamp).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } else if (data.startTime && data.endTime) {
+      // Regular appointment: start–end range
+      formattedTime = `${safe(data.startTime)} - ${safe(data.endTime)}`;
+    } else if (data.startTime) {
+      formattedTime = safe(data.startTime);
+    } else if (data.time) {
+      // fallback if old data still uses `time`
+      formattedTime = safe(data.time);
+    }
+
+    const displayData = {
+      name:
+        type === "walkin"
+          ? `${safe(data.firstName)} ${safe(data.lastName)}`.trim()
+          : safe(data.name),
+      petName: safe(data.petName) || safe(data.pet?.petName),
+      service: safe(data.service),
+      walkinService: safe(data.serviceType),
+      date:
+        type === "walkin" && data.timestamp
+          ? new Date(data.timestamp).toLocaleDateString()
+          : safe(data.date),
+      time: formattedTime, // ✅ fixed
+      contact: safe(data.contact),
+      status: safe(status),
+      mode: type === "walkin" ? "Walk-In" : "Appointment",
+      reservationType: safe(data.reservationType),
+      reservationFee: safe(data.reservationFee),
+      userId: safe(data.userId),
+      appointmentId: docId,
+      sourceType: type,
+    };
+
+        // ✅ Count finished appointments
+  if (status && status.toLowerCase().trim() === "completed") {
+    finishedAppointmentsCount++;
+
+    // 🟢 Always derive earnings date from completedAt
+    let completionDate;
+    if (data.completedAt?.seconds) {
+      // Firestore Timestamp object
+      const d = new Date(data.completedAt.seconds * 1000);
+      completionDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    } else if (typeof data.completedAt === "string") {
+      // If stored as a string
+      completionDate = data.completedAt.split("T")[0].replace(/\//g, "-");
+    }
+
+    // 🕒 Normalize today's date
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+    // ✅ Add to today's earnings if completed today
+    if (completionDate === todayStr) {
+      let amount = data.totalAmount || data.serviceFee || 0;
+      if (typeof amount === "string") {
+        amount = amount.replace(/[^\d.-]/g, "");
+      }
+      const numAmount = Number(amount) || 0;
+      console.log(`💰 Adding to today's earnings: ₱${numAmount} (Completed at: ${completionDate})`);
+      todaysEarnings += numAmount;
+    } else {
+      console.log(`⏰ Skipping: completed at ${completionDate}, not today (${todayStr})`);
+    }
+  }
+
 
         // ✅ Count walk-ins
         if (type === "walkin") {
@@ -895,10 +1297,12 @@ document.addEventListener("click", async (e) => {
     } else if (normalizedStatus === "in progress") {
       actionButtons = `
         <button class="btn complete" data-id="${docId}" data-type="${type}">Complete</button>
+         <button class="btn view-pet-details" data-id="${docId}" data-type="${type}">View Pet Details</button>
         <button class="btn add-discount" data-id="${docId}" data-type="${type}" 
           data-service="${displayData.walkinService || displayData.serviceType}">
           Apply Discount
         </button>
+
       `;
     } else if (normalizedStatus === "completed") {
       actionButtons = `
@@ -921,56 +1325,60 @@ document.addEventListener("click", async (e) => {
     walkInTable.appendChild(dashRow);
   }
 
-            // Appointment table
-          if (appointmentTable && type !== "walkin") {
-              const normalizedStatus = (status || "Pending").toLowerCase();
-              let actionButtons = "";
+       // In your renderRow function, update the actionButtons section for regular appointments:
+if (appointmentTable && type !== "walkin") {
+  const normalizedStatus = (status || "Pending").toLowerCase();
+  let actionButtons = "";
 
-              if (normalizedStatus === "pending") {
-                actionButtons = `
-                  <button class="btn accept" data-id="${docId}" data-type="${type}">Accept</button>
-                  <button class="btn decline" data-id="${docId}" data-type="${type}">Decline</button>
-                  <button class="btn reschedule" data-id="${docId}" data-type="${type}">Reschedule</button>
-                <button class="btn screenshot" data-id="${docId}" data-type="Appointment">View Screenshot</button>
-                `;
-      } else if (normalizedStatus === "in progress") {
-        actionButtons = `
-          <button class="btn complete" data-id="${docId}" data-type="${type}">Complete</button>
-        
-          <button class="btn add-discount" data-id="${docId}" data-type="${type}" data-service="${displayData.service}">Apply Discount</button>
-        `;
+  if (normalizedStatus === "pending") {
+    actionButtons = `
+      <button class="btn accept" data-id="${docId}" data-type="${type}">Accept</button>
+      <button class="btn decline" data-id="${docId}" data-type="${type}">Decline</button>
+      <button class="btn reschedule" data-id="${docId}" data-type="${type}">Reschedule</button>
+      <button class="btn screenshot" data-id="${docId}" data-type="Appointment">View Screenshot</button>
+    `;
+  } else if (normalizedStatus === "confirmed") {
+    // ✅ ADD THIS SECTION - Start button for Confirmed appointments
+    actionButtons = `
+      <button class="btn start" data-id="${docId}" data-type="${type}">Start</button>
+      <button class="btn reschedule" data-id="${docId}" data-type="${type}">Reschedule</button>
+      <button class="btn view-pet-details" data-appointment-id="${docId}" data-type="${type}">View Pet Details</button>
+    `;
+  } else if (normalizedStatus === "in progress") {
+    actionButtons = `
+      <button class="btn complete" data-id="${docId}" data-type="${type}">Complete</button>
+      <button class="btn view-pet-details" data-appointment-id="${docId}" data-type="${type}">View Pet Details</button>
+      <button class="btn add-discount" data-id="${docId}" data-type="${type}" data-service="${displayData.service}">Apply Discount</button>
+    `;
+  } else if (normalizedStatus === "completed") {
+    actionButtons = `
+      <button class="btn view" data-id="${docId}" data-type="${type}">View</button>
+      <button class="btn edit" data-id="${docId}" data-type="${type}">Edit</button>
+    `;
+  } else if (normalizedStatus === "for-rescheduling") {
+    actionButtons = `
+      <button class="btn accept" data-id="${docId}" data-type="${type}">Accept</button>
+      <button class="btn decline" data-id="${docId}" data-type="${type}">Decline</button>
+    `;
+  } else if (normalizedStatus === "cancelled") {
+    actionButtons = `
+      <button class="btn viewreason" data-id="${docId}" data-type="${type}">View Reason</button>
+    `;
+  }
 
-              } else if (normalizedStatus === "completed") {
-                actionButtons = `
-                  <button class="btn view" data-id="${docId}" data-type="${type}">View</button>
-                  <button class="btn edit" data-id="${docId}" data-type="${type}">Edit</button>
-                `;
-              
-                } else if (normalizedStatus === "for-rescheduling") {
-          actionButtons = `
-            <button class="btn accept" data-id="${docId}" data-type="${type}">Accept</button>
-            <button class="btn decline" data-id="${docId}" data-type="${type}">Decline</button>
-          `;
-          } else if (normalizedStatus === "cancelled") {
-          actionButtons = `
-            <button class="btn viewreason" data-id="${docId}" data-type="${type}">View Reason</button>
-          `;
-        }
-
-            const fullRow = document.createElement("tr");
-            fullRow.innerHTML = `
-              <td>${displayData.date}</td>
-              <td>${displayData.time}</td>
-              <td>${displayData.name}</td>
-              
-              <td>${displayData.petName}</td>
-              <td>${displayData.service}</td>
-              <td class="status ${normalizedStatus}">${status || "Pending"}</td>
-                <td>${displayData.reservationType}</td>
-              <td>${actionButtons}</td>
-            `;
-            appointmentTable.appendChild(fullRow);
-          }
+  const fullRow = document.createElement("tr");
+  fullRow.innerHTML = `
+    <td>${displayData.date}</td>
+    <td>${displayData.time}</td>
+    <td>${displayData.name}</td>
+    <td>${displayData.petName}</td>
+    <td>${displayData.service}</td>
+    <td class="status ${normalizedStatus}">${status || "Pending"}</td>
+    <td>${displayData.reservationType}</td>
+    <td>${actionButtons}</td>
+  `;
+  appointmentTable.appendChild(fullRow);
+}
 
   // History table
 if (historyTable && (status || "").toLowerCase() === "completed") {
@@ -1030,7 +1438,19 @@ function normalizeDate(dateStr) {
   return new Date(dateStr); // fallback
 }
 
-// ✅ Custom sort: latest date/time first, but completed always at bottom
+// ✅ Helper: extract createdAt from custom ID
+function getCreatedAtFromId(id) {
+  // Example: owner1_2025-10-01T01-38-35-518Z
+  const parts = id.split("_");
+  if (parts.length < 2) return null;
+
+  const raw = parts.slice(1).join("_"); 
+  // convert 2025-10-01T01-38-35-518Z → 2025-10-01T01:38:35.518Z
+  const iso = raw.replace(/T(\d+)-(\d+)-(\d+)-(\d+)Z$/, "T$1:$2:$3.$4Z");
+  return new Date(iso);
+}
+
+// ✅ Sort by status first, then latest created first
 allAppointments.sort((a, b) => {
   const statusOrder = { 
     pending: 1,
@@ -1042,28 +1462,141 @@ allAppointments.sort((a, b) => {
   const aStatus = statusOrder[a.status?.toLowerCase()] || 50;
   const bStatus = statusOrder[b.status?.toLowerCase()] || 50;
 
-  if (aStatus !== bStatus) {
-    return aStatus - bStatus;
+  // 1. Sort by status order
+  if (aStatus !== bStatus) return aStatus - bStatus;
+
+  // 2. Sort by createdAt (descending)
+  const aCreated = getCreatedAtFromId(a.id);
+  const bCreated = getCreatedAtFromId(b.id);
+
+  if (aCreated && bCreated) {
+    return bCreated - aCreated; // newest first
   }
 
-  // ⬇️ use normalizeDate here
-  const aDate = normalizeDate(a.date);
-  const bDate = normalizeDate(b.date);
-
-  if (aDate && bDate && aDate.getTime() !== bDate.getTime()) {
-    return bDate - aDate; // latest first
-  }
-
-  // If same date, sort by time (latest first)
-  return (b.time || "").localeCompare(a.time || "");
+  return 0;
 });
 
 // ✅ Render into the correct table
 allAppointments.forEach((apt) => {
   const rowHTML = renderRow(apt, apt.type, apt.id);
-  
 });
- 
+
+// ==============================
+// 🔹 CONFIG
+// ==============================
+const ROWS_PER_PAGE = 10;
+const tableConfigs = {
+  dashboard: { tableId: "table-dashboard", page: 1, containerId: "pagination-dashboard" },
+  appointment: { tableId: "appointmentTable", page: 1, containerId: "pagination-appointment" },
+  history: { tableId: "historytable", page: 1, containerId: "pagination-history" },
+  walkin: { tableId: "walkinTableBody", page: 1, containerId: "pagination-walkin" },
+};
+
+// ==============================
+// 🔹 PAGINATION HELPERS
+// ==============================
+function paginateData(data, page, rowsPerPage = ROWS_PER_PAGE) {
+  const start = (page - 1) * rowsPerPage;
+  return data.slice(start, start + rowsPerPage);
+}
+
+function renderPaginationControls(config, totalRows, onPageChange) {
+  const totalPages = Math.ceil(totalRows / ROWS_PER_PAGE);
+  const container = document.getElementById(config.containerId);
+  if (!container) return;
+
+  container.innerHTML = `
+    <div style="display:flex;justify-content:center;align-items:center;gap:10px;margin-top:10px;">
+      <button id="prev-${config.tableId}" ${config.page === 1 ? "disabled" : ""}>◀ Prev</button>
+      <span>Page ${config.page} of ${totalPages || 1}</span>
+      <button id="next-${config.tableId}" ${config.page === totalPages || totalPages === 0 ? "disabled" : ""}>Next ▶</button>
+    </div>
+  `;
+
+  document.getElementById(`prev-${config.tableId}`)?.addEventListener("click", () => {
+    if (config.page > 1) {
+      config.page--;
+      onPageChange();
+    }
+  });
+
+  document.getElementById(`next-${config.tableId}`)?.addEventListener("click", () => {
+    if (config.page < totalPages) {
+      config.page++;
+      onPageChange();
+    }
+  });
+}
+
+// ==============================
+// 🔹 REAL-TIME LISTENER
+// ==============================
+function listenAppointmentsRealtime() {
+  const appointmentsRef = collection(db, "Appointment");
+  onSnapshot(appointmentsRef, (snapshot) => {
+    const allAppointments = [];
+
+    snapshot.forEach((doc) => {
+      allAppointments.push({ ...doc.data(), id: doc.id, type: "appointment" });
+    });
+
+    const walkInsRef = collection(db, "WalkInAppointment");
+    onSnapshot(walkInsRef, (walkInSnapshot) => {
+      walkInSnapshot.forEach((doc) => {
+        allAppointments.push({ ...doc.data(), id: doc.id, type: "walkin" });
+      });
+
+      // ✅ Sort by status + created date
+      allAppointments.sort((a, b) => {
+        const statusOrder = { pending: 1, "in progress": 2, cancelled: 98, completed: 99 };
+        const aStatus = statusOrder[a.status?.toLowerCase()] || 50;
+        const bStatus = statusOrder[b.status?.toLowerCase()] || 50;
+        if (aStatus !== bStatus) return aStatus - bStatus;
+        const aCreated = getCreatedAtFromId(a.id);
+        const bCreated = getCreatedAtFromId(b.id);
+        return bCreated - aCreated;
+      });
+
+      // ✅ Separate by table type
+      const dashboardData = allAppointments.filter((a) => a.type === "appointment" && a.status !== "completed");
+      const appointmentData = allAppointments.filter((a) => a.type === "appointment");
+      const historyData = allAppointments.filter((a) => a.status === "completed" || a.status === "cancelled");
+      const walkinData = allAppointments.filter((a) => a.type === "walkin");
+
+      // ✅ Render each table independently
+      renderTableWithPagination("dashboard", dashboardData);
+      renderTableWithPagination("appointment", appointmentData);
+      renderTableWithPagination("history", historyData);
+      renderTableWithPagination("walkin", walkinData);
+    });
+  });
+}
+
+// ==============================
+// 🔹 RENDER TABLE FUNCTION
+// ==============================
+function renderTableWithPagination(type, data) {
+  const config = tableConfigs[type];
+  const table = document.getElementById(config.tableId);
+  if (!table) return;
+
+  // Clear
+  table.innerHTML = "";
+
+  // Paginate
+  const pageData = paginateData(data, config.page);
+
+  // Render rows
+  pageData.forEach((apt) => renderRow(apt, apt.type, apt.id));
+
+  // Pagination controls
+  renderPaginationControls(config, data.length, () => renderTableWithPagination(type, data));
+}
+
+// ✅ Initialize listener
+listenAppointmentsRealtime();
+
+
 
 
       // ✅ Update dashboard card numbers
@@ -1103,63 +1636,274 @@ allAppointments.forEach((apt) => {
       return Number(price.toString().replace(/[^\d.-]/g, "")) || 0;
     }
 
+// DEBUG VERSION - Replace your sendAcceptanceEmail function
+async function sendAcceptanceEmail(appointmentData) {
+  console.log('📧 Starting email process...');
+  console.log('📝 Appointment data:', appointmentData);
+  
+  try {
+    // Get user identifier - try multiple fields
+    const userId = appointmentData.userId || appointmentData.uid;
+    const userEmail = appointmentData.email;
+    const ownerName = appointmentData.name || appointmentData.ownerName;
+    
+    console.log('👤 Looking for user:', { userId, userEmail, ownerName });
 
+    let targetEmail = userEmail;
 
-  document.addEventListener("click", async (e) => {
-    const btn = e.target.closest(".btn.accept, .btn.decline, .btn.complete,  .btn.reschedule");
-    if (!btn) return;
+    // If no email in appointment data, search by userId
+    if (!targetEmail && userId) {
+      console.log('🔍 Searching for user by ID:', userId);
+      const userDoc = await getDoc(doc(db, "users", userId));
+      
+      if (userDoc.exists()) {
+        targetEmail = userDoc.data().email;
+        console.log('✅ Found user email by ID:', targetEmail);
+      } else {
+        console.error('❌ No user found with ID:', userId);
+      }
+    }
 
-    const docId = btn.getAttribute("data-id");
-    const type = btn.getAttribute("data-type");
-    const collectionName = type === "walkin" ? "WalkInAppointment" : "Appointment";
-    const docRef = doc(db, collectionName, docId);
+    // If still no email, try searching by name (less reliable)
+    if (!targetEmail && ownerName) {
+      console.log('🔍 Searching for user by name:', ownerName);
+      const usersRef = collection(db, "users");
+      const q = query(usersRef, where("name", "==", ownerName));
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+        const userDoc = querySnapshot.docs[0];
+        targetEmail = userDoc.data().email;
+        console.log('✅ Found user email by name:', targetEmail);
+      } else {
+        console.error('❌ No user found with name:', ownerName);
+      }
+    }
 
-    if (btn.classList.contains("reschedule")) {
-      await rescheduleAppointment(docId); // <-- call function with id
-      return;
+    if (!targetEmail) {
+      console.error('❌ Could not find email address for user');
+      return false;
+    }
+
+    // Prepare the request data
+    const requestData = {
+      email: targetEmail,
+      userId: ownerName || "Valued Customer",
+      purpose: 'appointment_accepted'
+    };
+
+    console.log('📤 SENDING REQUEST DATA:', JSON.stringify(requestData, null, 2));
+
+    // Send email
+    console.log('📤 Sending email to:', targetEmail);
+    const response = await fetch('http://localhost:3000/send-otp', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(requestData)
+    });
+
+    console.log('📬 Response status:', response.status);
+    const result = await response.json();
+    console.log('📬 Response data:', result);
+    
+    if (result.success) {
+      console.log('✅ Acceptance email sent successfully');
+      return true;
+    } else {
+      console.error('❌ Failed to send email:', result.message);
+      return false;
+    }
+  } catch (error) {
+    console.error('❌ Error sending acceptance email:', error);
+    return false;
+  }
+}
+
+// 2️⃣ BUTTON EVENT LISTENER - Replace your existing addEventListener
+document.addEventListener("click", async (e) => {
+  const btn = e.target.closest(".btn.accept, .btn.start, .btn.decline, .btn.complete, .btn.reschedule");
+  if (!btn) return;
+
+  const docId = btn.getAttribute("data-id");
+  const type = btn.getAttribute("data-type");
+  const collectionName = type === "walkin" ? "WalkInAppointment" : "Appointment";
+  const docRef = doc(db, collectionName, docId);
+
+  // ============================================
+  // HANDLE RESCHEDULE SEPARATELY
+  // ============================================
+  if (btn.classList.contains("reschedule")) {
+    await rescheduleAppointment(docId);
+    return;
+  }
+
+  // ============================================
+  // FETCH APPOINTMENT DATA
+  // ============================================
+  const docSnap = await getDoc(docRef);
+  if (!docSnap.exists()) {
+    Swal.fire("Error", "Appointment not found.", "error");
+    return;
+  }
+  
+  const data = docSnap.data();
+  let updateData = {};
+
+  // ============================================
+  // ACCEPT BUTTON - Changes Pending → Confirmed (with email)
+  // ============================================
+  if (btn.classList.contains("accept")) {
+    console.log('🔘 Accept button clicked');
+    console.log('📋 Document ID:', docId);
+    console.log('📋 Type:', type);
+    console.log('📋 Status:', data.status);
+    
+    if (data.status.toLowerCase() === "for-rescheduling") {
+      // Handle rescheduling acceptance
+      updateData = {
+        date: data.proposedDate || data.date,
+        status: "Pending",
+        proposedDate: deleteField()
+      };
+      await updateDoc(docRef, updateData);
+      Swal.fire("Accepted!", "Reschedule request accepted.", "success");
+    } else {
+      // Change status to "Confirmed"
+      updateData = { status: "Confirmed" };
+
+      // 📧 Send email notification for Appointments only (not walk-ins)
+      if (type !== "walkin") {
+        console.log('📧 This is an appointment, preparing to send email...');
+        console.log('📧 Owner name:', data.name || data.ownerName);
+        
+        const ownerName = data.name || data.ownerName;
+        if (!ownerName) {
+          console.error('❌ No owner name found in appointment data!');
+          Swal.fire({
+            icon: 'error',
+            title: 'No Owner Name Found',
+            text: 'This appointment has no owner name to look up email.',
+            timer: 2500
+          });
+          await updateDoc(docRef, updateData);
+          loadAllAppointments();
+          return;
+        }
+
+        // Show loading message
+        Swal.fire({
+          title: 'Confirming Appointment...',
+          text: 'Looking up user email and sending confirmation...',
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          }
+        });
+
+        console.log('📤 Calling sendAcceptanceEmail...');
+        const emailSent = await sendAcceptanceEmail(data);
+        console.log('📥 Email sent result:', emailSent);
+        
+        if (emailSent) {
+          console.log('✅ Email sent successfully, updating database...');
+          await updateDoc(docRef, updateData);
+          
+          // Create notification in Firestore
+          await addDoc(collection(db, "Notifications"), {
+            appointmentId: docId,
+            userId: data.userId || "",
+            type: "confirmation",
+            service: data.service || "Appointment",
+            status: "unread",
+            message: `Your appointment for ${data.petName || "your pet"} has been confirmed for ${data.date} at ${data.startTime || data.time}.`,
+            createdAt: serverTimestamp()
+          });
+
+          Swal.fire({
+            icon: 'success',
+            title: 'Appointment Confirmed!',
+            text: 'Confirmation email sent successfully.',
+            timer: 2000
+          });
+        } else {
+          console.warn('⚠️ Email failed but updating status anyway...');
+          await updateDoc(docRef, updateData);
+          
+          Swal.fire({
+            icon: 'warning',
+            title: 'Appointment Confirmed',
+            text: 'Appointment confirmed but email notification failed. User email not found.',
+            timer: 2500
+          });
+        }
+      } else {
+        // Walk-in: just update status, no email
+        console.log('🚶 This is a walk-in, no email needed');
+        await updateDoc(docRef, updateData);
+        Swal.fire("Confirmed!", "Walk-in appointment confirmed.", "success");
+      }
     }
     
-
-    // ✅ Handle Reschedule button separately (if needed)
-    if (btn.classList.contains("reschedule")) {
-      await updateDoc(docRef, { status: "for-rescheduling" });
-      loadAllAppointments();
-      return;
-    }
-
-    // ✅ Fetch data for Accept / Decline / Complete
-    const docSnap = await getDoc(docRef);
-    if (!docSnap.exists()) return;
-    const data = docSnap.data();
-
-    let updateData = {};
-
-    if (btn.classList.contains("accept")) {
-      if (data.status.toLowerCase() === "for-rescheduling") {
-        updateData = {
-          date: data.proposedDate || data.date,
-          status: "Pending",
-          proposedDate: deleteField()
-        };
-      } else {
-        updateData = { status: "In Progress" };
-      }
-    } else if (btn.classList.contains("decline")) {
-      if (data.status.toLowerCase() === "for-rescheduling") {
-        updateData = {
-          status: "Pending",
-          proposedDate: deleteField()
-        };
-      } else {
-        updateData = { status: "Cancelled" };
-      }
-    } else if (btn.classList.contains("complete")) {
-      updateData = { status: "Completed", completedAt: serverTimestamp() };
-    }
-
-    await updateDoc(docRef, updateData);
     loadAllAppointments();
-  });
+    return; // Important: exit after handling accept
+  }
+
+  // ============================================
+  // START BUTTON - Changes Confirmed → In Progress
+  // ============================================
+  else if (btn.classList.contains("start")) {
+    updateData = { 
+      status: "In Progress",
+      startedAt: serverTimestamp()
+    };
+    await updateDoc(docRef, updateData);
+    Swal.fire("Started!", "Appointment is now in progress.", "success");
+  }
+
+  // ============================================
+  // DECLINE BUTTON
+  // ============================================
+  else if (btn.classList.contains("decline")) {
+    if (data.status.toLowerCase() === "for-rescheduling") {
+      updateData = {
+        status: "Pending",
+        proposedDate: deleteField()
+      };
+    } else {
+      updateData = { status: "Cancelled" };
+      
+      // Add notification for declined appointment
+      await addDoc(collection(db, "Notifications"), {
+        appointmentId: docId,
+        userId: data.userId || "",
+        type: "decline",
+        message: `Your appointment for ${data.petName || "your pet"} has been declined.`,
+        service: data.service || "Unknown service",
+        status: "unread",
+        createdAt: serverTimestamp()
+      });
+    }
+    await updateDoc(docRef, updateData);
+    Swal.fire("Declined", "Appointment has been declined.", "info");
+  }
+
+  // ============================================
+  // COMPLETE BUTTON
+  // ============================================
+  else if (btn.classList.contains("complete")) {
+    updateData = { 
+      status: "Completed", 
+      completedAt: serverTimestamp() 
+    };
+    await updateDoc(docRef, updateData);
+    Swal.fire("Completed!", "Appointment marked as completed.", "success");
+  }
+
+  loadAllAppointments();
+});
+
 
   document.addEventListener("click", async (e) => {
     const btn = e.target.closest(".add-discount");
@@ -1177,6 +1921,64 @@ allAppointments.forEach((apt) => {
     const docRef = doc(db, type, id);
     await openDiscountModal(docRef, type);
   });
+
+// 🔎 Filter table rows by status
+document.getElementById("statusFilter").addEventListener("change", function () {
+  const filterValue = this.value.toLowerCase();
+  const rows = document.querySelectorAll("#appointmentTable tr");
+
+  rows.forEach((row) => {
+    const statusCell = row.querySelector("td.status");
+    if (!statusCell) return;
+
+    const rowStatus = statusCell.textContent.trim().toLowerCase();
+
+    if (filterValue === "all" || rowStatus === filterValue) {
+      row.style.display = "";
+    } else {
+      row.style.display = "none";
+    }
+  });
+});
+
+// 🔎 Filter Walk-in table rows by status
+document.getElementById("walkinStatusFilter").addEventListener("change", function () {
+  const filterValue = this.value.toLowerCase();
+  const rows = document.querySelectorAll("#walkinTableBody tr"); // ✅ only walk-in table rows
+
+  rows.forEach((row) => {
+    const cells = row.querySelectorAll("td");
+    if (cells.length < 6) return; // safety, Status = 6th column
+
+    const rowStatus = cells[5].textContent.trim().toLowerCase(); // 6th column = Status
+
+    if (filterValue === "all" || rowStatus === filterValue) {
+      row.style.display = "";   // ✅ show row
+    } else {
+      row.style.display = "none"; // ❌ hide row
+    }
+  });
+});
+
+
+// 🔎 Filter table rows by service (using column index)
+document.getElementById("serviceFilter").addEventListener("change", function () {
+  const filterValue = this.value.toLowerCase();
+  const rows = document.querySelectorAll("#walkinTableBody tr");
+
+  rows.forEach((row) => {
+    const cells = row.querySelectorAll("td");
+    if (cells.length < 5) return; // safety
+
+    const rowService = cells[4].textContent.trim().toLowerCase(); // 5th column = Service
+
+    if (filterValue === "all" || rowService.includes(filterValue)) {
+      row.style.display = "";
+    } else {
+      row.style.display = "none";
+    }
+  });
+});
 
 
 
@@ -1201,7 +2003,7 @@ allAppointments.forEach((apt) => {
       const serviceName = data.service || data.serviceType;
 
       // Fetch services from Firestore
-      const q = query(collection(db, "services"));
+      const q = query(collection(db, "Services"));
       const querySnapshot = await getDocs(q);
 
       let service = null;
@@ -1223,8 +2025,7 @@ allAppointments.forEach((apt) => {
 
       // 🔹 Built-in discounts
       const discountObj = {
-        pwdDiscount: service.pwdDiscount ?? 0,
-        seniorDiscount: service.seniorDiscount ?? 0,
+      
         loyaltyDiscount: service.loyaltyDiscount ?? 0
       };
 
@@ -1285,46 +2086,60 @@ allAppointments.forEach((apt) => {
         return Swal.fire("No Selection", "Please select at least one discount.", "warning");
       }
 
-      // 🔹 Calculate new total
-      let totalAmount = parsePrice(service.basePrice ?? 0);
-      let appliedDiscounts = [];
+  // 🔹 Determine base price from available fields
+let basePrice = 0;
+if (service.basePrice) {
+  basePrice = parseFloat(service.basePrice.toString().replace(/[₱,]/g, "")) || 0;
+} else if (service.price) {
+  basePrice = parseFloat(service.price.toString().replace(/[₱,]/g, "")) || 0;
+} else if (service.serviceFee) {
+  basePrice = parseFloat(service.serviceFee.toString().replace(/[₱,]/g, "")) || 0;
+} else if (data.totalAmount) {
+  basePrice = parseFloat(data.totalAmount.toString().replace(/[₱,]/g, "")) || 0;
+}
 
-      selectedDiscounts.forEach(selected => {
-        if (discountObj[selected]) {
-          // Built-in discount
-          const discountValue = parseFloat(discountObj[selected]) || 0;
-          const discountPercent = discountValue / 100;
-          totalAmount -= service.basePrice * discountPercent;
-          appliedDiscounts.push(`${selected.replace("Discount", "")}: ${discountValue}%`);
-        } else if (selected.startsWith("special-")) {
-          // Special discount
-          const idx = parseInt(selected.split("-")[1], 10);
-          const d = specialDiscounts[idx];
-          if (d) {
-            if (d.type === "percentage") {
-              totalAmount -= service.basePrice * (d.value / 100);
-              appliedDiscounts.push(`${d.name}: ${d.value}%`);
-            } else {
-              totalAmount -= d.value;
-              appliedDiscounts.push(`${d.name}: ₱${d.value}`);
-            }
-          }
-        }
-      });
+console.log("✅ Base Price Used:", basePrice);
 
-      totalAmount = Math.max(0, Math.round(totalAmount * 100) / 100);
+// 🔹 Now apply discounts correctly
+let totalAmount = basePrice;
+let appliedDiscounts = [];
 
-      // ✅ Save to Firestore
-      await updateDoc(currentDiscountDocRef, {
-        totalAmount,
-        appliedDiscounts
-      });
+selectedDiscounts.forEach(selected => {
+  if (discountObj[selected]) {
+    // Built-in discount (e.g. loyalty)
+    const discountValue = parseFloat(discountObj[selected]) || 0;
+    const discountPercent = discountValue / 100;
+    totalAmount -= basePrice * discountPercent;
+    appliedDiscounts.push(`${selected.replace("Discount", "")}: ${discountValue}%`);
+  } else if (selected.startsWith("special-")) {
+    // Special discount
+    const idx = parseInt(selected.split("-")[1], 10);
+    const d = specialDiscounts[idx];
+    if (d) {
+      if (d.type === "percentage") {
+        totalAmount -= basePrice * (parseFloat(d.value) / 100);
+        appliedDiscounts.push(`${d.name}: ${d.value}%`);
+      } else {
+        totalAmount -= parseFloat(d.value);
+        appliedDiscounts.push(`${d.name}: ₱${d.value}`);
+      }
+    }
+  }
+});
 
-      Swal.fire(
-        "Discounts Applied ✅",
-        `Applied:\n${appliedDiscounts.join("\n")}\n\nNew Total: ₱${totalAmount}`,
-        "success"
-      );
+totalAmount = Math.max(0, Math.round(totalAmount * 100) / 100);
+
+// ✅ Save to Firestore
+await updateDoc(currentDiscountDocRef, {
+  totalAmount,
+  appliedDiscounts
+});
+
+Swal.fire(
+  "Discounts Applied ✅",
+  `Applied:\n${appliedDiscounts.join("\n")}\n\nNew Total: ₱${totalAmount}`,
+  "success"
+);
 
       currentDiscountDocRef = null;
       currentDiscountType = null;
@@ -1396,6 +2211,8 @@ async function filterHistory() {
   });
 }
 
+
+
 // 📌 Event Listeners
 document.getElementById("searchOwner").addEventListener("input", filterHistory);
 document.getElementById("searchPet").addEventListener("input", filterHistory);
@@ -1403,19 +2220,20 @@ document.getElementById("dateFrom").addEventListener("change", filterHistory);
 document.getElementById("dateTo").addEventListener("change", filterHistory);
 document.querySelector(".btn-primary").addEventListener("click", filterHistory);
 
-
-
-//USER MANAGEMENT//
-  // 👥 Load all users + update stats
-async function loadAllUsers() {
+// 👥 Real-time Users Listener (sorted latest → oldest)
+function loadAllUsers() {
   const userTable = document.getElementById("userTable");
   if (userTable) userTable.innerHTML = "";
 
-  try {
-    const snapshot = await getDocs(collection(db, "users"));
+  // 👇 orderBy joinedDate DESC
+  const usersRef = query(collection(db, "users"), orderBy("joinedDate", "desc"));
+
+  onSnapshot(usersRef, async (snapshot) => {
+    if (!userTable) return;
+    userTable.innerHTML = "";
 
     if (snapshot.empty) {
-      if (userTable) userTable.innerHTML = "<tr><td colspan='8'>No users found.</td></tr>";
+      userTable.innerHTML = "<tr><td colspan='8'>No users found.</td></tr>";
       return;
     }
 
@@ -1438,17 +2256,8 @@ async function loadAllUsers() {
 
       // ✅ Count new users this month
       if (joinedDate) {
-        let joinDateObj;
-        if (joinedDate.toDate) {
-          joinDateObj = joinedDate.toDate();
-        } else {
-          joinDateObj = new Date(joinedDate);
-        }
-
-        if (
-          joinDateObj.getMonth() === currentMonth &&
-          joinDateObj.getFullYear() === currentYear
-        ) {
+        let joinDateObj = joinedDate.toDate ? joinedDate.toDate() : new Date(joinedDate);
+        if (joinDateObj.getMonth() === currentMonth && joinDateObj.getFullYear() === currentYear) {
           newUsersThisMonth++;
         }
       }
@@ -1459,9 +2268,7 @@ async function loadAllUsers() {
       }
 
       // Count pets
-      const petSnapshot = await getDocs(
-        query(collection(db, "Pets"), where("userId", "==", userId))
-      );
+      const petSnapshot = await getDocs(query(collection(db, "Pets"), where("userId", "==", userId)));
       const petCount = petSnapshot.size;
 
       // Action buttons
@@ -1473,32 +2280,29 @@ async function loadAllUsers() {
         ? `<button class="btn deactivate" data-id="${userId}">Deactivate</button>`
         : `<button class="btn activate" data-id="${userId}">Activate</button>`;
 
-      if (userTable) {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${userId}</td>
-          <td>${name}</td>
-          <td>${email}</td>
-          <td>${contact}</td>
-          <td>${petCount}</td>
-          <td class="status">${status}</td>
-          <td>${actions}</td>
-        `;
-        userTable.appendChild(row);
-      }
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${userId}</td>
+        <td>${name}</td>
+        <td>${email}</td>
+        <td>${contact}</td>
+        <td>${petCount}</td>
+        <td class="status">${status}</td>
+        <td>${actions}</td>
+      `;
+      userTable.appendChild(row);
     }
 
-    // ✅ Update the dashboard stat cards
+    // ✅ Update stats
     document.querySelector("#user-management .stat-card:nth-child(1) .stat-number").textContent = totalUsers;
     document.querySelector("#user-management .stat-card:nth-child(2) .stat-number").textContent = newUsersThisMonth;
     document.querySelector("#user-management .stat-card:nth-child(3) .stat-number").textContent = deactivatedAccounts;
 
     attachUserStatusListeners();
-  } catch (error) {
-    console.error("Error loading users:", error);
-    if (userTable) userTable.innerHTML = "<tr><td colspan='8'>Error loading users.</td></tr>";
-  }
+  });
 }
+
+
 
 // 🔄 Update user status
 async function updateUserStatus(userId, newStatus) {
@@ -1595,72 +2399,50 @@ function attachUserStatusListeners() {
 
 
 
-  
-
-    //NEWS MANAGEMENT
-document.addEventListener("DOMContentLoaded", function () {
+  document.addEventListener("DOMContentLoaded", function () {
   const newsForm = document.getElementById('newsForm');
   const newsTableBody = document.querySelector('#news-management table tbody');
+  const newsCollection = collection(db, "NEWS");
 
-  // Utility function to generate unique IDs for news items
-  function generateId() {
-    return '_' + Math.random().toString(36).substr(2, 9);
-  }
-
-  // Capitalize first letter helper
+  // --- Helper: Capitalize first letter
   function capitalize(str) {
-    if (!str) return '';
-    return str.charAt(0).toUpperCase() + str.slice(1);
+    return str ? str.charAt(0).toUpperCase() + str.slice(1) : "";
   }
 
-  // Save newsList back to localStorage
-  function saveNewsList(newsList) {
-    localStorage.setItem('newsList', JSON.stringify(newsList));
-  }
+  // --- Render News Table (Admin Side)
+  async function renderNewsTable() {
+    const q = query(newsCollection, orderBy("priority"));
+    const querySnapshot = await getDocs(q);
+    newsTableBody.innerHTML = "";
 
-  function sortByPriority(newsList) {
-  const priorityOrder = { urgent: 1, important: 2, normal: 3 };
-  return newsList.sort((a, b) => {
-    return priorityOrder[a.priority] - priorityOrder[b.priority];
-  });
-}
+    querySnapshot.forEach((docSnap) => {
+      const news = docSnap.data();
+      const id = docSnap.id;
+      const isDraft = news.status === "draft";
 
-
-  // Render the table from localStorage
-  function renderNewsTable() {
-    let newsList = JSON.parse(localStorage.getItem('newsList')) || [];
-    newsTableBody.innerHTML = '';
-
-    newsList.forEach((news, index) => {
-      const isDraft = news.status === 'draft';
-
-      const tr = document.createElement('tr');
-      tr.dataset.index = index;
-
+      const tr = document.createElement("tr");
+      tr.dataset.id = id;
       tr.innerHTML = `
         <td>${news.title}</td>
         <td>${capitalize(news.category)}</td>
-        <td>${news.publishDate ? new Date(news.publishDate).toLocaleDateString() : '-'}</td>
+        <td>${news.publishDate ? new Date(news.publishDate).toLocaleDateString() : "-"}</td>
         <td><span class="status ${isDraft ? 'pending' : 'completed'}">${isDraft ? 'Draft' : 'Published'}</span></td>
-      
         <td>
           <button class="btn-primary edit-btn">Edit</button>
-          ${isDraft 
-            ? `<button class="btn-primary publish-btn">Publish</button>` 
+          ${isDraft
+            ? `<button class="btn-primary publish-btn">Publish</button>`
             : `<button class="btn-primary view-btn">View</button>`}
-          <button class="btn-danger delete-btn">${isDraft ? 'Delete' : 'Unpublish'}</button>
+          <button class="btn-danger delete-btn">${isDraft ? "Delete" : "Unpublish"}</button>
         </td>
       `;
-
       newsTableBody.appendChild(tr);
     });
   }
 
-  // Event listener for form submit (publish news)
+  // --- Add or Publish News
   if (newsForm) {
-    newsForm.addEventListener('submit', function (e) {
+    newsForm.addEventListener("submit", async function (e) {
       e.preventDefault();
-
       const title = this.newsTitle.value.trim();
       const category = this.newsCategory.value;
       const priority = this.newsPriority.value;
@@ -1673,31 +2455,25 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
       }
 
-      const newsItem = {
-        id: generateId(),
+      await addDoc(newsCollection, {
         title,
         category,
         priority,
         content,
-        publishDate,
+        publishDate: publishDate || new Date().toISOString(),
         image: "/images/news2.webp",
         status,
-       
-      };
-
-      let newsList = JSON.parse(localStorage.getItem('newsList')) || [];
-      newsList.unshift(newsItem);
-      saveNewsList(newsList);
+        views: 0,
+        timestamp: new Date().toISOString(),
+      });
 
       Swal.fire("Success", "News published successfully!", "success");
       this.reset();
-
-      renderNewsTable();
     });
 
-    // Save as Draft button logic
+    // --- Save as Draft
     const draftBtn = newsForm.querySelector('button[type="button"]');
-    draftBtn.addEventListener('click', function () {
+    draftBtn.addEventListener("click", async function () {
       const title = newsForm.newsTitle.value.trim();
       const category = newsForm.newsCategory.value;
       const priority = newsForm.newsPriority.value;
@@ -1710,274 +2486,233 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
       }
 
-      const newsItem = {
-        id: generateId(),
+      await addDoc(newsCollection, {
         title,
         category,
         priority,
         content,
-        publishDate,
+        publishDate: publishDate || null,
         image: "/images/news2.webp",
         status,
-        views: 0
-      };
-
-      let newsList = JSON.parse(localStorage.getItem('newsList')) || [];
-      newsList.unshift(newsItem);
-      saveNewsList(newsList);
+        views: 0,
+        timestamp: new Date().toISOString(),
+      });
 
       Swal.fire("Saved", "Draft saved successfully!", "success");
       newsForm.reset();
-
-      renderNewsTable();
     });
   }
 
-  // Delegate table button clicks (edit, delete, publish, view)
+  // --- Delegate table actions (edit, delete, publish, view)
   if (newsTableBody) {
-    newsTableBody.addEventListener('click', function (e) {
+    newsTableBody.addEventListener("click", async function (e) {
       const btn = e.target;
-      const row = btn.closest('tr');
+      const row = btn.closest("tr");
       if (!row) return;
-      const index = row.dataset.index;
-      let newsList = JSON.parse(localStorage.getItem('newsList')) || [];
-      let newsItem = newsList[index];
-// --- DELETE / UNPUBLISH ---
-if (btn.classList.contains('delete-btn')) {
-  const isDraft = newsItem.status === 'draft';
-  Swal.fire({
-    title: isDraft ? "Delete this draft?" : "Unpublish this news?",
-    text: isDraft ? "This draft will be removed permanently." : "The news will no longer be visible.",
-    icon: "warning",
-    showCancelButton: true,
-    confirmButtonText: isDraft ? "Yes, delete" : "Yes, unpublish"
-  }).then((result) => {
-    if (result.isConfirmed) {
-      if (isDraft) {
-        newsList.splice(index, 1);
-      } else {
-        newsList[index].status = 'draft';
-        newsList[index].publishDate = null;
+      const id = row.dataset.id;
+      const newsRef = doc(db, "NEWS", id);
+
+      const snapshot = await getDocs(newsCollection);
+      let newsItem;
+      snapshot.forEach((docSnap) => {
+        if (docSnap.id === id) newsItem = { id: docSnap.id, ...docSnap.data() };
+      });
+
+      if (!newsItem) return;
+
+      // --- DELETE / UNPUBLISH ---
+      if (btn.classList.contains("delete-btn")) {
+        const isDraft = newsItem.status === "draft";
+        Swal.fire({
+          title: isDraft ? "Delete this draft?" : "Unpublish this news?",
+          text: isDraft
+            ? "This draft will be removed permanently."
+            : "The news will no longer be visible.",
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonText: isDraft ? "Yes, delete" : "Yes, unpublish",
+        }).then(async (result) => {
+          if (result.isConfirmed) {
+            if (isDraft) {
+              await deleteDoc(newsRef);
+            } else {
+              await updateDoc(newsRef, {
+                status: "draft",
+                publishDate: null,
+              });
+            }
+            Swal.fire("Done!", isDraft ? "Draft deleted." : "News unpublished.", "success");
+          }
+        });
       }
-      saveNewsList(newsList);
-      renderNewsTable();
-      renderNewsCards(); // ✅ refresh customer cards
-      Swal.fire("Done!", isDraft ? "Draft deleted." : "News unpublished.", "success");
-    }
-  });
-}
 
       // --- PUBLISH ---
-      else if (btn.classList.contains('publish-btn')) {
+      else if (btn.classList.contains("publish-btn")) {
         Swal.fire({
           title: "Publish this news?",
           text: "It will be visible to readers.",
           icon: "question",
           showCancelButton: true,
-          confirmButtonText: "Yes, publish"
-        }).then((result) => {
+          confirmButtonText: "Yes, publish",
+        }).then(async (result) => {
           if (result.isConfirmed) {
-            newsList[index].status = 'published';
-            newsList[index].publishDate = new Date().toISOString();
-            saveNewsList(newsList);
-            renderNewsTable();
+            await updateDoc(newsRef, {
+              status: "published",
+              publishDate: new Date().toISOString(),
+            });
             Swal.fire("Published!", "News is now live.", "success");
           }
         });
-      } 
-
-    // --- EDIT ---
-else if (btn.classList.contains('edit-btn')) {
-  Swal.fire({
-    title: "Edit News",
-    html: `
-      <input id="swal-title" class="swal2-input" value="${newsItem.title}" placeholder="Title">
-      <input id="swal-category" class="swal2-input" value="${newsItem.category}" placeholder="Category">
-      
-      <select id="swal-priority" class="swal2-input" style="margin-top:10px;">
-        <option value="urgent" ${newsItem.priority === "urgent" ? "selected" : ""}>Urgent</option>
-        <option value="important" ${newsItem.priority === "important" ? "selected" : ""}>Important</option>
-        <option value="normal" ${newsItem.priority === "normal" ? "selected" : ""}>Normal</option>
-      </select>
-      
-      <textarea id="swal-content" class="swal2-textarea" placeholder="Content">${newsItem.content || ''}</textarea>
-    `,
-    showCancelButton: true,
-    confirmButtonText: "Save",
-    preConfirm: () => {
-      const newTitle = document.getElementById("swal-title").value.trim();
-      const newCategory = document.getElementById("swal-category").value.trim();
-      const newPriority = document.getElementById("swal-priority").value;
-      const newContent = document.getElementById("swal-content").value.trim();
-      if (!newTitle || !newCategory) {
-        Swal.showValidationMessage("Title and Category are required!");
-        return false;
       }
-      return { newTitle, newCategory, newPriority, newContent };
-    }
-  }).then((result) => {
-    if (result.isConfirmed) {
-      newsList[index].title = result.value.newTitle;
-      newsList[index].category = result.value.newCategory;
-      newsList[index].priority = result.value.newPriority;
-      newsList[index].content = result.value.newContent;
-      saveNewsList(newsList);
-      renderNewsTable();
-      Swal.fire("Saved!", "News updated successfully.", "success");
-    }
-  });
-}
 
-     else if (btn.classList.contains('view-btn')) {
-  Swal.fire({
-    title: newsItem.title,
-    html: `
-      <p><b>Category:</b> ${capitalize(newsItem.category)}</p>
-      <p><b>Priority:</b> ${capitalize(newsItem.priority)}</p>
-      <p><b>Status:</b> ${newsItem.status === 'draft' ? 'Draft' : 'Published'}</p>
-      <p><b>Date:</b> ${newsItem.publishDate ? new Date(newsItem.publishDate).toLocaleDateString() : '-'}</p>
-      <hr>
-      <p>${newsItem.content || 'No content available.'}</p>
-    `,
-    icon: "info",
-    confirmButtonText: "Close"
-  });
-}
+      // --- EDIT ---
+      else if (btn.classList.contains("edit-btn")) {
+        Swal.fire({
+          title: "Edit News",
+          html: `
+            <input id="swal-title" class="swal2-input" value="${newsItem.title}" placeholder="Title">
+            <input id="swal-category" class="swal2-input" value="${newsItem.category}" placeholder="Category">
+            <select id="swal-priority" class="swal2-input" style="margin-top:10px;">
+              <option value="urgent" ${newsItem.priority === "urgent" ? "selected" : ""}>Urgent</option>
+              <option value="important" ${newsItem.priority === "important" ? "selected" : ""}>Important</option>
+              <option value="normal" ${newsItem.priority === "normal" ? "selected" : ""}>Normal</option>
+            </select>
+            <textarea id="swal-content" class="swal2-textarea" placeholder="Content">${newsItem.content || ""}</textarea>
+          `,
+          showCancelButton: true,
+          confirmButtonText: "Save",
+          preConfirm: () => {
+            const newTitle = document.getElementById("swal-title").value.trim();
+            const newCategory = document.getElementById("swal-category").value.trim();
+            const newPriority = document.getElementById("swal-priority").value;
+            const newContent = document.getElementById("swal-content").value.trim();
+            if (!newTitle || !newCategory) {
+              Swal.showValidationMessage("Title and Category are required!");
+              return false;
+            }
+            return { newTitle, newCategory, newPriority, newContent };
+          },
+        }).then(async (result) => {
+          if (result.isConfirmed) {
+            await updateDoc(newsRef, {
+              title: result.value.newTitle,
+              category: result.value.newCategory,
+              priority: result.value.newPriority,
+              content: result.value.newContent,
+            });
+            Swal.fire("Saved!", "News updated successfully.", "success");
+          }
+        });
+      }
 
+      // --- VIEW ---
+      else if (btn.classList.contains("view-btn")) {
+        Swal.fire({
+          title: newsItem.title,
+          html: `
+            <p><b>Category:</b> ${capitalize(newsItem.category)}</p>
+            <p><b>Priority:</b> ${capitalize(newsItem.priority)}</p>
+            <p><b>Status:</b> ${newsItem.status === "draft" ? "Draft" : "Published"}</p>
+            <p><b>Date:</b> ${newsItem.publishDate ? new Date(newsItem.publishDate).toLocaleDateString() : "-"}</p>
+            <hr>
+            <p>${newsItem.content || "No content available."}</p>
+          `,
+          icon: "info",
+          confirmButtonText: "Close",
+        });
+      }
     });
   }
 
-  // Initial render of table
-  renderNewsTable();
-
-  // --- CUSTOMER PAGE LOGIC (updated with priority) ---
-const newsContainer = document.querySelector('.cards');
-if (newsContainer) {
-  const newsList = JSON.parse(localStorage.getItem('newsList')) || [];
-
-  // Only published news & sort by priority first
-  const priorityOrder = { urgent: 1, important: 2, normal: 3 };
-  const publishedNews = newsList
-    .filter(news => news.status === 'published')
-    .sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
-
-  newsContainer.innerHTML = '';
-
-  publishedNews.forEach(news => {
-    const card = document.createElement('div');
-    card.classList.add('card');
-    card.innerHTML = `
-      <div class="image-section">
-        <img src="${news.image}" alt="${news.title}">
-      </div>
-      <div class="content">
-        <h4>${news.title}</h4>
-        <p>${news.content}</p>
-        <p><b>Priority:</b> ${news.priority.charAt(0).toUpperCase() + news.priority.slice(1)}</p>
-      </div>
-      <div class="posted-date">
-        <p>${news.publishDate ? new Date(news.publishDate).toLocaleDateString() : ''}</p>
-      </div>
-    `;
-    newsContainer.appendChild(card);
-  });
-}
-
-
- // --- INDEX PAGE LOGIC (updated with priority) ---
-function renderIndexNews() {
-  const newsContainer = document.querySelector('#news .box-container');
-  if (!newsContainer) return; // stop if not on index
-
-  const newsList = JSON.parse(localStorage.getItem('newsList')) || [];
-
-  // Only published news
-  let publishedNews = newsList.filter(n => n.status === 'published');
-
-  // Sort by priority (urgent → important → normal) then by newest date
-  const priorityOrder = { urgent: 1, important: 2, normal: 3 };
-  publishedNews = publishedNews
-    .sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority])
-    .sort((a, b) => new Date(b.publishDate) - new Date(a.publishDate));
-
-  // Take top 3 only
-  publishedNews = publishedNews.slice(0, 3);
-
-  newsContainer.innerHTML = '';
-
-  publishedNews.forEach(news => {
-    const box = document.createElement('div');
-    box.classList.add('box');
-    box.innerHTML = `
-      <div class="image">
-        <img src="${news.image}" alt="${news.title}">
-      </div>
-      <div class="content">
-        <div class="icons">
-          <a href="#"><i class="fa-solid fa-calendar"></i> 
-            ${news.publishDate ? new Date(news.publishDate).toLocaleDateString() : ''}
-          </a>
-          <a href="#"><i class="fas fa-user"></i> By admin</a>
-          <span class="priority ${news.priority}">${news.priority.charAt(0).toUpperCase() + news.priority.slice(1)}</span>
-        </div>
-        <h3>${news.title}</h3>
-        <p>${news.content}</p>
-        <a href="news.html" class="btn">Learn More <span class="fas fa-chevron-right"></span></a>
-      </div>
-    `;
-    newsContainer.appendChild(box);
+  // --- Real-time updates (live reload)
+  onSnapshot(newsCollection, (snapshot) => {
+    renderNewsTable();
+    renderIndexNews();
+    renderCustomerNews();
   });
 
-  // Optional: "See All News" button
-  if (publishedNews.length > 0) {
-    const seeAll = document.createElement('div');
-    seeAll.classList.add('see-all');
-    seeAll.innerHTML = `<a href="news.html" class="btn">See All News</a>`;
-    newsContainer.appendChild(seeAll);
-  }
-}
+  // --- CUSTOMER PAGE LOGIC
+  async function renderCustomerNews() {
+    const newsContainer = document.querySelector(".cards");
+    if (!newsContainer) return;
 
-// --- CUSTOMER PAGE LOGIC ---
-function renderCustomerNews() {
-  const newsContainer = document.querySelector('.cards');
-  if (!newsContainer) return; // stop if not on customer/news page
+    const querySnapshot = await getDocs(newsCollection);
+    const priorityOrder = { urgent: 1, important: 2, normal: 3 };
+    const published = [];
 
-  const newsList = JSON.parse(localStorage.getItem('newsList')) || [];
+    querySnapshot.forEach((docSnap) => {
+      const n = docSnap.data();
+      if (n.status === "published") published.push(n);
+    });
 
-  newsContainer.innerHTML = '';
+    published.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+    newsContainer.innerHTML = "";
 
-  newsList.forEach(news => {
-    if (news.status === 'published') {
-      const card = document.createElement('div');
-      card.classList.add('card');
+    published.forEach((n) => {
+      const card = document.createElement("div");
+      card.classList.add("card");
       card.innerHTML = `
         <div class="image-section">
-          <img src="${news.image}" alt="${news.title}">
+          <img src="${n.image}" alt="${n.title}">
         </div>
         <div class="content">
-          <h4>${news.title}</h4>
-          <p>${news.content}</p>
+          <h4>${n.title}</h4>
+          <p>${n.content}</p>
+          <p><b>Priority:</b> ${capitalize(n.priority)}</p>
         </div>
         <div class="posted-date">
-          <p>${news.publishDate ? new Date(news.publishDate).toLocaleDateString() : ''}</p>
+          <p>${n.publishDate ? new Date(n.publishDate).toLocaleDateString() : ""}</p>
         </div>
       `;
       newsContainer.appendChild(card);
-    }
-  });
-}
+    });
+  }
 
-// ✅ Run both (each will only run if container exists)
-renderIndexNews();
-renderCustomerNews();
+  // --- INDEX PAGE LOGIC
+  async function renderIndexNews() {
+    const newsContainer = document.querySelector("#news .box-container");
+    if (!newsContainer) return;
 
-// ✅ Update live if localStorage changes
-window.addEventListener('storage', () => {
-  renderIndexNews();
-  renderCustomerNews();
+    const querySnapshot = await getDocs(newsCollection);
+    let publishedNews = [];
+
+    querySnapshot.forEach((docSnap) => {
+      const n = docSnap.data();
+      if (n.status === "published") publishedNews.push(n);
+    });
+
+    const priorityOrder = { urgent: 1, important: 2, normal: 3 };
+    publishedNews = publishedNews
+      .sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority])
+      .sort((a, b) => new Date(b.publishDate) - new Date(a.publishDate))
+      .slice(0, 3);
+
+    newsContainer.innerHTML = "";
+
+    publishedNews.forEach((n) => {
+      const box = document.createElement("div");
+      box.classList.add("box");
+      box.innerHTML = `
+        <div class="image">
+          <img src="${n.image}" alt="${n.title}">
+        </div>
+        <div class="content">
+          <div class="icons">
+            <a href="#"><i class="fa-solid fa-calendar"></i>
+              ${n.publishDate ? new Date(n.publishDate).toLocaleDateString() : ""}
+            </a>
+            <a href="#"><i class="fas fa-user"></i> By admin</a>
+            <span class="priority ${n.priority}">${capitalize(n.priority)}</span>
+          </div>
+          <h3>${n.title}</h3>
+          <p>${n.content}</p>
+          <a href="news.html" class="btn">Learn More <span class="fas fa-chevron-right"></span></a>
+        </div>
+      `;
+      newsContainer.appendChild(box);
+    });
+  }
 });
-});
-
 
   //CALENDAR MANAGEMENT//
   document.addEventListener("DOMContentLoaded", () => {
@@ -2075,12 +2810,13 @@ window.addEventListener('storage', () => {
     dayDiv.style.pointerEvents = "none";   // disable clicking
   }
 
-  // 🔹 Highlight blocked dates
-  if (blockedSlots.some(b => b.date === dateStr)) {
-    dayDiv.style.background = "#ffcccc";
-    dayDiv.style.borderRadius = "5px";
-    dayDiv.style.pointerEvents = "none";
-  }
+// 🔹 Highlight dates that have blocked slots
+if (blockedSlots.some(b => b.date === dateStr)) {
+  dayDiv.style.background = "#ffe0e0"; // light red
+  dayDiv.style.borderRadius = "5px";
+  // Still clickable!
+}
+
 
   calendarGrid.appendChild(dayDiv);
 }
@@ -2814,9 +3550,21 @@ reportTypeEl.addEventListener("change", () => {
   }
 });
 
+// ===== Initially disable export/print buttons =====
+exportPdfBtn.disabled = true;
+exportExcelBtn.disabled = true;
+printBtn.disabled = true;
+
+
 // --- Generate Report Button ---
 generateBtn.addEventListener("click", async () => {
   try {
+    // Disable buttons while generating
+    exportPdfBtn.disabled = true;
+    exportExcelBtn.disabled = true;
+    printBtn.disabled = true;
+
+    
     const reportType = reportTypeEl.value;
     const category = serviceCategoryEl.value;
     const fromDateInput = reportDateFrom.value ? new Date(reportDateFrom.value) : null;
@@ -2826,161 +3574,231 @@ generateBtn.addEventListener("click", async () => {
     let totalServices = 0;
     const rows = [];
 
+    // --- calculate start/end dates based on reportType ---
     const today = new Date();
-    today.setHours(0, 0, 0, 0); 
+    today.setHours(0,0,0,0); 
     let startDate = null;
     let endDate = new Date();
-    endDate.setHours(23, 59, 59, 999);
+    endDate.setHours(23,59,59,999);
 
-    switch (reportType) {
-      case "daily":
-        startDate = new Date();
-        startDate.setHours(0, 0, 0, 0);
-        break;
-
-      case "weekly":
-        startDate = new Date();
-        startDate.setDate(today.getDate() - 6);
-        startDate.setHours(0, 0, 0, 0);
-        break;
-
-      case "monthly":
-        startDate = new Date(today.getFullYear(), today.getMonth(), 1);
-        break;
-
-      case "yearly":
-        startDate = new Date(today.getFullYear(), 0, 1);
-        break;
-
-      case "custom":
-        if (!fromDateInput || !toDateInput) {
-          Swal.fire("Missing Dates", "Please select both From and To dates.", "warning");
-          return;
-        }
-        startDate = new Date(fromDateInput.setHours(0, 0, 0, 0));
-        endDate = new Date(toDateInput.setHours(23, 59, 59, 999));
-
-        if (startDate > endDate) {
-          Swal.fire("Invalid Range", "From Date cannot be later than To Date.", "error");
-          return;
-        }
-        break;
+    switch(reportType) {
+        case "daily":
+            startDate = new Date(); startDate.setHours(0,0,0,0); break;
+        case "weekly":
+            startDate = new Date(); startDate.setDate(today.getDate()-6); startDate.setHours(0,0,0,0); break;
+        case "monthly":
+            startDate = new Date(today.getFullYear(), today.getMonth(), 1); break;
+        case "yearly":
+            startDate = new Date(today.getFullYear(), 0, 1); break;
+        case "custom":a
+            if(!fromDateInput || !toDateInput) {
+                Swal.fire("Missing Dates", "Please select both From and To dates.", "warning");
+                return;
+            }
+            startDate = new Date(fromDateInput.setHours(0,0,0,0));
+            endDate = new Date(toDateInput.setHours(23,59,59,999));
+            if(startDate > endDate){
+                Swal.fire("Invalid Range","From Date cannot be later than To Date.","error");
+                return;
+            }
+            break;
     }
-    // --- Queries ---
-let appointmentQuery = query(
-  collection(db, "Appointment"),
-  where("status", "==", "Completed")
-);
 
-let walkInQuery = query(
-  collection(db, "WalkInAppointment"),
-  where("status", "==", "Completed")
-);
+    // --- Fetch Appointments ---
+    let appointmentQuery = query(collection(db, "Appointment"), where("status","==","Completed"));
+    let walkInQuery = query(collection(db, "WalkInAppointment"), where("status","==","Completed"));
 
-if (category.toLowerCase() !== "all") {
-  // Appointment
-  appointmentQuery = query(
-    appointmentQuery,
-    where("service", "==", category.toLowerCase())
-  );
+    if(category.toLowerCase() !== "all"){
+        appointmentQuery = query(appointmentQuery, where("service","==",category.toLowerCase()));
+        walkInQuery = query(walkInQuery, where("serviceType","==",category.toLowerCase()));
+    }
 
-  // Walk-in
-  walkInQuery = query(
-    walkInQuery,
-    where("serviceType", "==", category.toLowerCase())
-  );
-}
+    const [apptSnapshot, walkInSnapshot] = await Promise.all([getDocs(appointmentQuery), getDocs(walkInQuery)]);
 
+    const processDoc = (docSnap,type) => {
+        const data = docSnap.data();
+        if((data.status||"").toLowerCase() !== "completed") return;
 
+        let amount = Number((data.totalAmount||"0").toString().replace(/[^\d.-]/g,""))||0;
+        const saleDate = data.createdAt?.toDate ? data.createdAt.toDate() : (data.timestamp ? new Date(data.timestamp) : new Date());
+        if(!saleDate) return;
+        if(startDate && saleDate < startDate) return;
+        if(endDate && saleDate > endDate) return;
 
-    const [apptSnapshot, walkInSnapshot] = await Promise.all([
-      getDocs(appointmentQuery),
-      getDocs(walkInQuery),
-    ]);
+        const serviceType = type==="walkin" ? data.serviceType||"Walk-In" : data.service||"Appointment";
+        if(category.toLowerCase() !== "all" && serviceType.toLowerCase() !== category.toLowerCase()) return;
 
-  const processDoc = (docSnap, type) => {
-  const data = docSnap.data();
+        totalRevenue += amount;
+        totalServices += 1;
 
-  // ✅ Skip if not completed
-  if ((data.status || "").toLowerCase() !== "completed") return;
+        rows.push({
+            date: saleDate.toLocaleDateString(),
+            type: serviceType,
+            revenue: amount,
+            avg: amount
+        });
+    };
 
-  let amount = Number((data.totalAmount || "0").toString().replace(/[^\d.-]/g, "")) || 0;
+    apptSnapshot.forEach(doc => processDoc(doc,"appointment"));
+    walkInSnapshot.forEach(doc => processDoc(doc,"walkin"));
 
-  const saleDate = data.createdAt?.toDate
-    ? data.createdAt.toDate()
-    : (data.timestamp ? new Date(data.timestamp) : new Date());
-
-  if (!saleDate) return;
-  if (startDate && saleDate < startDate) return;
-  if (endDate && saleDate > endDate) return;
-
-  const serviceType = type === "walkin" ? data.serviceType || "Walk-In" : data.service || "Appointment";
-
-  // ✅ Skip if category filter is applied
-  if (category.toLowerCase() !== "all" && serviceType.toLowerCase() !== category.toLowerCase()) return;
-
-  totalRevenue += amount;
-  totalServices += 1;
-
-  rows.push({
-    date: saleDate.toLocaleDateString(), 
-    type: serviceType,
-    revenue: amount,
-    avg: amount,
-    growth: "N/A",
-  });
-};
-
-
-    apptSnapshot.forEach(doc => processDoc(doc, "appointment"));
-    walkInSnapshot.forEach(doc => processDoc(doc, "walkin"));
-
-    // --- Clear old SalesReport docs ---
-    const salesSnapshot = await getDocs(collection(db, "SalesReport"));
+    // --- Clear old SalesReport and save new ---
+    const salesSnapshot = await getDocs(collection(db,"SalesReport"));
     const batch = writeBatch(db);
     salesSnapshot.forEach(d => batch.delete(d.ref));
     await batch.commit();
 
-    // --- Save new report ---
-    await addDoc(collection(db, "SalesReport"), {
-      reportType,
-      category,
-      fromDate: startDate || null,
-      toDate: endDate || null,
-      totalRevenue,
-      totalServices,
-      createdAt: serverTimestamp(),
-      details: rows,
+    await addDoc(collection(db,"SalesReport"),{
+        reportType,
+        category,
+        fromDate: startDate||null,
+        toDate: endDate||null,
+        totalRevenue,
+        totalServices,
+        createdAt: serverTimestamp(),
+        details: rows
     });
 
     // --- Populate table ---
     reportTableBody.innerHTML = "";
-    if (rows.length > 0) {
-      rows.forEach(r => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${r.date}</td>
-          <td>${r.type}</td>
-          <td>₱${r.revenue.toLocaleString()}</td>
-          <td>₱${r.avg.toLocaleString()}</td>
-        `;
-        reportTableBody.appendChild(tr);
-      });
+    if(rows.length > 0){
+        rows.forEach(r=>{
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${r.date}</td>
+                <td>${r.type}</td>
+                <td>₱${r.revenue.toLocaleString()}</td>
+                <td>₱${r.avg.toLocaleString()}</td>
+            `;
+            reportTableBody.appendChild(tr);
+        });
     } else {
-      reportTableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;">No data found.</td></tr>`;
+        reportTableBody.innerHTML = `<tr><td colspan="4" style="text-align:center;">No data found.</td></tr>`;
     }
 
-    // ✅ Update stats
+    // --- Update stats ---
     document.getElementById("servicesCompleted").textContent = totalServices.toLocaleString();
-    document.getElementById("todayRevenue").textContent = "₱" + totalRevenue.toLocaleString();
-
+    document.getElementById("todayRevenue").textContent = "₱"+totalRevenue.toLocaleString();
     await updateRevenueCards(category, reportType);
 
-  } catch (err) {
+    // --- ✅ Enable export/print buttons and show Swal ---
+    exportPdfBtn.disabled = false;
+    exportExcelBtn.disabled = false;
+    printBtn.disabled = false;
+
+    Swal.fire({
+        icon: "success",
+        title: "Report Generated",
+        text: "You can now print or export the report.",
+        timer: 2500,
+        showConfirmButton: false
+    });
+
+  } catch(err){
     console.error("Error generating report:", err);
+    Swal.fire("Error","Failed to generate report. Check console for details.","error");
   }
 });
 });
+
+// ===== External JS for Export & Print (without growth) =====
+
+// Buttons
+const exportPdfBtn = document.getElementById('exportPdfBtn');
+const exportExcelBtn = document.getElementById('exportExcelBtn');
+const printBtn = document.getElementById('print-btn');
+
+// Fetch all details from SalesReport
+async function fetchSalesReportDetails() {
+    const querySnapshot = await getDocs(collection(db, "SalesReport"));
+    const rows = [];
+
+    querySnapshot.forEach(doc => {
+        const data = doc.data();
+        const details = data.details || [];
+        details.forEach(item => {
+            rows.push({
+                date: item.date || '',
+                type: item.type || '',
+                revenue: item.revenue || 0,
+                avg: item.avg || 0
+            });
+        });
+    });
+
+    return rows;
+}
+
+// Generate HTML table dynamically
+function generateTableHTML(rows) {
+    let html = `<table border="1" id="reportTable" style="border-collapse: collapse; width: 100%;">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Service Type</th>
+                <th>Revenue</th>
+                <th>Average</th>
+            </tr>
+        </thead>
+        <tbody>`;
+
+    rows.forEach(row => {
+        html += `<tr>
+            <td>${row.date}</td>
+            <td>${row.type}</td>
+            <td>${row.revenue}</td>
+            <td>${row.avg}</td>
+        </tr>`;
+    });
+
+    html += `</tbody></table>`;
+    return html;
+}
+
+// ===== Export to PDF =====
+exportPdfBtn.addEventListener('click', async () => {
+    const rows = await fetchSalesReportDetails();
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    doc.text("Sales Report", 14, 20);
+
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = generateTableHTML(rows);
+    document.body.appendChild(tempDiv);
+
+    doc.autoTable({ html: tempDiv.querySelector('#reportTable'), startY: 30 });
+    doc.save('Sales_Report.pdf');
+
+    document.body.removeChild(tempDiv);
+});
+
+// ===== Export to Excel =====
+exportExcelBtn.addEventListener('click', async () => {
+    const rows = await fetchSalesReportDetails();
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = generateTableHTML(rows);
+    document.body.appendChild(tempDiv);
+
+    const wb = XLSX.utils.table_to_book(tempDiv.querySelector('#reportTable'), { sheet: "Report" });
+    XLSX.writeFile(wb, "Sales_Report.xlsx");
+
+    document.body.removeChild(tempDiv);
+});
+
+// ===== Print Report =====
+printBtn.addEventListener('click', async () => {
+    const rows = await fetchSalesReportDetails();
+    const tableHTML = generateTableHTML(rows);
+
+    const newWin = window.open('', '', 'width=900,height=700');
+    newWin.document.write('<html><head><title>Print Report</title></head><body>');
+    newWin.document.write('<h2>Sales Report</h2>');
+    newWin.document.write(tableHTML);
+    newWin.document.write('</body></html>');
+    newWin.document.close();
+    newWin.print();
+});
+
 
 
   // 🕓 Load recent activities
@@ -3060,6 +3878,7 @@ if (category.toLowerCase() !== "all") {
   loadRecentActivity();
   loadAllAppointments();
   loadAllUsers();
+  
 
   // 🐾 Load services and special discounts
 
@@ -3329,152 +4148,116 @@ if (category.toLowerCase() !== "all") {
       });
     }
 
-    // Show pet details in modal
-    function showPetDetails(petId) {
-      const pet = allPets.find(p => p.id === petId);
-      if (!pet) return;
+   // Show pet details in modal
+function showPetDetails(petId) {
+  const pet = allPets.find(p => p.id === petId);
+  if (!pet) return;
 
-      const detailsContent = document.getElementById('petDetailsContent');
-      const createdDate = pet.createdAt?.toDate ? pet.createdAt.toDate().toLocaleDateString() : 'Unknown';
-      const lastUpdated = pet.lastUpdated?.toDate ? pet.lastUpdated.toDate().toLocaleDateString() : 'Unknown';
+  const detailsContent = document.getElementById('petDetailsContent');
+  const createdDate = pet.createdAt ? new Date(pet.createdAt).toLocaleDateString() : 'Unknown';
 
-      detailsContent.innerHTML = `
-        <div class="pet-card">
-          <div class="pet-header">
-            <div class="pet-name">${pet.petName || 'N/A'}</div>
-            <div class="pet-species">${pet.species || 'N/A'}</div>
-          </div>
-          
-          <div class="pet-details">
-            <div class="pet-detail">
-              <div class="pet-detail-label">Owner</div>
-              <div class="pet-detail-value">${pet.ownerName || 'N/A'}</div>
-            </div>
-            <div class="pet-detail">
-              <div class="pet-detail-label">Contact</div>
-              <div class="pet-detail-value">${pet.ownerContact || 'N/A'}</div>
-            </div>
-            <div class="pet-detail">
-              <div class="pet-detail-label">Breed</div>
-              <div class="pet-detail-value">${pet.breed || 'N/A'}</div>
-            </div>
-            <div class="pet-detail">
-              <div class="pet-detail-label">Age</div>
-              <div class="pet-detail-value">${pet.age || 'N/A'}</div>
-            </div>
-            <div class="pet-detail">
-              <div class="pet-detail-label">Sex</div>
-              <div class="pet-detail-value">${pet.sex || 'N/A'}</div>
-            </div>
-            <div class="pet-detail">
-              <div class="pet-detail-label">Weight</div>
-              <div class="pet-detail-value">${pet.weight ? pet.weight + ' kg' : 'N/A'}</div>
-            </div>
-            <div class="pet-detail">
-              <div class="pet-detail-label">Size</div>
-              <div class="pet-detail-value">${pet.size || 'N/A'}</div>
-            </div>
-            <div class="pet-detail">
-              <div class="pet-detail-label">Color</div>
-              <div class="pet-detail-value">${pet.color || 'N/A'}</div>
-            </div>
-            <div class="pet-detail">
-              <div class="pet-detail-label">Status</div>
-              <div class="pet-detail-value">
-                <span class="status ${(pet.status || 'active').toLowerCase()}">${pet.status || 'Active'}</span>
-              </div>
-            </div>
-            <div class="pet-detail">
-              <div class="pet-detail-label">Registered</div>
-              <div class="pet-detail-value">${createdDate}</div>
-            </div>
-          </div>
-          
-          ${pet.medicalHistory ? `
-            <div style="margin-top: 20px;">
-              <div class="pet-detail-label">Medical History</div>
-              <div class="pet-detail-value" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 5px;">
-                ${pet.medicalHistory}
-              </div>
-            </div>
-          ` : ''}
-          
-          ${pet.specialNotes ? `
-            <div style="margin-top: 15px;">
-              <div class="pet-detail-label">Special Notes</div>
-              <div class="pet-detail-value" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 5px;">
-                ${pet.specialNotes}
-              </div>
-            </div>
-          ` : ''}
-        </div>
-      `;
-
-      viewPetModal.classList.add('show');
-    }
-
-    // Open edit pet modal
-    function openEditPetModal(petId) {
-      const pet = allPets.find(p => p.id === petId);
-      if (!pet) return;
-
-      // Populate form fields
-      document.getElementById('editPetId').value = pet.id;
-      document.getElementById('editOwnerName').value = pet.ownerName || '';
-      document.getElementById('editOwnerContact').value = pet.ownerContact || '';
-      document.getElementById('editPetName').value = pet.petName || '';
-      document.getElementById('editSpecies').value = pet.species || '';
-      document.getElementById('editBreed').value = pet.breed || '';
-      document.getElementById('editAge').value = pet.age || '';
-      document.getElementById('editSex').value = pet.sex || '';
-      document.getElementById('editWeight').value = pet.weight || '';
-      document.getElementById('editSize').value = pet.size || '';
-      document.getElementById('editColor').value = pet.color || '';
-      document.getElementById('editMedicalHistory').value = pet.medicalHistory || '';
-      document.getElementById('editSpecialNotes').value = pet.specialNotes || '';
-
-      editPetModal.classList.add('show');
-    }
-
-    // Save pet changes
-    document.getElementById('savePetChanges').addEventListener('click', async () => {
-      const petId = document.getElementById('editPetId').value;
+  detailsContent.innerHTML = `
+    <div class="pet-card">
+      <div class="pet-header">
+        <div class="pet-name">${pet.petName || 'N/A'}</div>
+        <div class="pet-species">${pet.species || 'N/A'}</div>
+      </div>
       
-      const updatedData = {
-        ownerName: document.getElementById('editOwnerName').value,
-        ownerContact: document.getElementById('editOwnerContact').value,
-        petName: document.getElementById('editPetName').value,
-        species: document.getElementById('editSpecies').value,
-        breed: document.getElementById('editBreed').value,
-        age: document.getElementById('editAge').value,
-        sex: document.getElementById('editSex').value,
-        weight: document.getElementById('editWeight').value ? parseFloat(document.getElementById('editWeight').value) : null,
-        size: document.getElementById('editSize').value,
-        color: document.getElementById('editColor').value,
-        medicalHistory: document.getElementById('editMedicalHistory').value,
-        specialNotes: document.getElementById('editSpecialNotes').value,
-        lastUpdated: serverTimestamp()
-      };
+      <div class="pet-details">
+        <div class="pet-detail">
+          <div class="pet-detail-label">Owner ID</div>
+          <div class="pet-detail-value">${pet.ownerId || 'N/A'}</div>
+        </div>
+        <div class="pet-detail">
+          <div class="pet-detail-label">Breed</div>
+          <div class="pet-detail-value">${pet.breed || 'N/A'}</div>
+        </div>
+        <div class="pet-detail">
+          <div class="pet-detail-label">Sex</div>
+          <div class="pet-detail-value">${pet.sex || 'N/A'}</div>
+        </div>
+        <div class="pet-detail">
+          <div class="pet-detail-label">Weight</div>
+          <div class="pet-detail-value">${pet.weight ? pet.weight + ' kg' : 'N/A'}</div>
+        </div>
+        <div class="pet-detail">
+          <div class="pet-detail-label">Size</div>
+          <div class="pet-detail-value">${pet.size || 'N/A'}</div>
+        </div>
+        <div class="pet-detail">
+          <div class="pet-detail-label">Species</div>
+          <div class="pet-detail-value">${pet.species || 'N/A'}</div>
+        </div>
+        <div class="pet-detail">
+          <div class="pet-detail-label">Registered</div>
+          <div class="pet-detail-value">${createdDate}</div>
+        </div>
+      </div>
+    </div>
+  `;
 
-      try {
-       await updateDoc(doc(db, pet.collection, petId), updatedData);
-        
-        Swal.fire({
-          title: 'Success!',
-          text: 'Pet information updated successfully',
-          icon: 'success',
-          timer: 2000,
-          showConfirmButton: false
-        });
+  viewPetModal.classList.add('show');
+}
+// Open edit pet modal
+function openEditPetModal(petId) {
+  const pet = allPets.find(p => p.id === petId);
+  if (!pet) return;
 
-        editPetModal.classList.remove('show');
-        loadAllPets();
-      } catch (error) {
-        console.error("Error updating pet:", error);
-        Swal.fire('Error', 'Failed to update pet information. Please try again.', 'error');
-      }
+  // Populate form fields with your current collection structure
+  document.getElementById('editPetId').value = pet.id;
+  document.getElementById('editPetName').value = pet.petName || '';
+  document.getElementById('editSpecies').value = pet.species || '';
+  document.getElementById('editBreed').value = pet.breed || '';
+  document.getElementById('editSex').value = pet.sex || '';
+  document.getElementById('editWeight').value = pet.weight || '';
+  document.getElementById('editSize').value = pet.size || '';
+
+  editPetModal.classList.add('show');
+}
+
+// Save pet changes
+document.getElementById('savePetChanges').addEventListener('click', async () => {
+  const petId = document.getElementById('editPetId').value;
+  const pet = allPets.find(p => p.id === petId);
+  
+  if (!pet) {
+    Swal.fire('Error', 'Pet not found', 'error');
+    return;
+  }
+
+  const updatedData = {
+    petName: document.getElementById('editPetName').value,
+    species: document.getElementById('editSpecies').value,
+    breed: document.getElementById('editBreed').value,
+    sex: document.getElementById('editSex').value,
+    weight: document.getElementById('editWeight').value ? parseFloat(document.getElementById('editWeight').value) : null,
+    size: document.getElementById('editSize').value,
+    lastUpdated: serverTimestamp()
+  };
+
+  try {
+    console.log("Updating pet:", petId, updatedData);
+    
+    // Make sure you're using the correct collection name
+    const petDocRef = doc(db, "Pets", petId); // Change "pets" to your actual collection name
+    
+    await updateDoc(petDocRef, updatedData);
+    
+    Swal.fire({
+      title: 'Success!',
+      text: 'Pet information updated successfully',
+      icon: 'success',
+      timer: 2000,
+      showConfirmButton: false
     });
 
+    editPetModal.classList.remove('show');
+    loadAllPets();
+  } catch (error) {
+    console.error("Error updating pet:", error);
+    Swal.fire('Error', `Failed to update pet information: ${error.message}`, 'error');
+  }
+});
     // Delete pet
     function deletePet(petId) {
       const pet = allPets.find(p => p.id === petId);
@@ -3574,6 +4357,381 @@ onSnapshot(collection(db, "Pets"), () => {
       deletePet
     };
 
-    
+
+// 🔹 DOM References
+const addSpeciesBtn = document.getElementById("addSpeciesBtn");
+const speciesTable = document.getElementById("speciesTable");
+const totalSpecies = document.getElementById("totalSpecies");
+const activeSpecies = document.getElementById("activeSpecies");
+const inactiveSpecies = document.getElementById("inactiveSpecies");
+
+// ✅ Helper: Render breed table inside Swal
+function renderBreedTableHTML(breeds = []) {
+  if (breeds.length === 0) {
+    return `<p style="color: gray; text-align:center;">No breeds added yet</p>`;
+  }
+
+  let tableHTML = `
+    <table style="width:100%; border-collapse: collapse; margin-top:10px;">
+      <thead>
+        <tr style="background:#f5f5f5;">
+          <th style="padding:5px; border:1px solid #ccc;">Breed Name</th>
+          <th style="padding:5px; border:1px solid #ccc;">Status</th>
+          <th style="padding:5px; border:1px solid #ccc;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  breeds.forEach((breed, index) => {
+    tableHTML += `
+      <tr>
+        <td style="padding:5px; border:1px solid #ccc;">${breed.name}</td>
+        <td style="padding:5px; border:1px solid #ccc;">${breed.status}</td>
+        <td style="padding:5px; border:1px solid #ccc; text-align:center;">
+          <button class="btn-delete-breed" data-index="${index}" style="color:red;">Delete</button>
+        </td>
+      </tr>
+    `;
+  });
+
+  tableHTML += `</tbody></table>`;
+  return tableHTML;
+}
+
+// ✅ Function: Add or manage breeds
+async function openAddBreedModal(speciesId, speciesName, existingBreeds = []) {
+  let breeds = [...(existingBreeds || [])];
+
+  const getSwalHTML = () => `
+    <div style="max-height:400px; overflow-y:auto;">
+      ${renderBreedTableHTML(breeds)}
+    </div>
+    <hr>
+    <input id="swal-breed-name" class="swal2-input" placeholder="New Breed Name">
+    <select id="swal-breed-status" class="swal2-input">
+      <option value="Active" selected>Active</option>
+      <option value="Inactive">Inactive</option>
+    </select>
+  `;
+
+  const swalInstance = await Swal.fire({
+    title: `Manage Breeds for ${speciesName}`,
+    html: getSwalHTML(),
+    showCancelButton: true,
+    confirmButtonText: "Save Changes",
+    didOpen: () => {
+      // Handle delete buttons dynamically
+      document.querySelectorAll(".btn-delete-breed").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          const index = parseInt(e.target.dataset.index);
+          breeds.splice(index, 1);
+          Swal.update({ html: getSwalHTML() });
+          openAddBreedModal(speciesId, speciesName, breeds); // refresh UI
+        });
+      });
+    },
+    preConfirm: () => {
+      const breedName = document.getElementById("swal-breed-name").value.trim();
+      const breedStatus = document.getElementById("swal-breed-status").value;
+
+      if (breedName) {
+        breeds.push({
+          name: breedName,
+          status: breedStatus,
+          createdAt: new Date().toISOString(),
+        });
+      }
+
+      return breeds;
+    }
+  });
+
+  if (swalInstance.isConfirmed) {
+    try {
+      await updateDoc(doc(db, "Species", speciesId), { breeds });
+      Swal.fire("✅ Updated!", "Breeds updated successfully.", "success");
+    } catch (error) {
+      console.error("Error updating breeds:", error);
+      Swal.fire("❌ Error", "Failed to update breeds.", "error");
+    }
+  }
+}
+
+// ✅ Render Species Row
+function renderSpeciesRow(docId, data) {
+  const row = document.createElement("tr");
+  row.innerHTML = `
+    <td>${data.name}</td>
+    <td>${data.status}</td>
+    <td>${new Date(data.createdAt?.seconds * 1000).toLocaleDateString()}</td>
+    <td>
+      ${
+        data.status === "Active"
+          ? `<button class="btn-inactive" data-id="${docId}">Inactive</button>`
+          : `<span style="color: gray;">Already Inactive</span>`
+      }
+      <button class="btn-delete" data-id="${docId}">Delete</button>
+      <button class="btn-breed" data-id="${docId}">Manage Breeds</button>
+    </td>
+  `;
+  speciesTable.appendChild(row);
+
+  // 🔹 Inactive button event
+  const inactiveBtn = row.querySelector(".btn-inactive");
+  if (inactiveBtn) {
+    inactiveBtn.addEventListener("click", async () => {
+      const confirm = await Swal.fire({
+        title: "Mark Inactive?",
+        text: "This species will be marked as Inactive.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Yes, mark inactive"
+      });
+
+      if (confirm.isConfirmed) {
+        await updateDoc(doc(db, "Species", docId), {
+          status: "Inactive"
+        });
+        Swal.fire("Updated!", "Species marked as Inactive.", "success");
+      }
+    });
+  }
+
+  // 🔹 Delete button event
+  const deleteBtn = row.querySelector(".btn-delete");
+  deleteBtn.addEventListener("click", async () => {
+    const confirm = await Swal.fire({
+      title: "Delete Species?",
+      text: "This action cannot be undone.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, delete it"
+    });
+
+    if (confirm.isConfirmed) {
+      await deleteDoc(doc(db, "Species", docId));
+      Swal.fire("Deleted!", "Species has been deleted.", "success");
+    }
+  });
+
+  // 🔹 Manage Breeds button
+  const breedBtn = row.querySelector(".btn-breed");
+  if (breedBtn) {
+    breedBtn.addEventListener("click", () => {
+      openAddBreedModal(docId, data.name, data.breeds || []);
+    });
+  }
+}
+
+// ✅ Add Species (auto Active)
+addSpeciesBtn.addEventListener("click", async () => {
+  const { value: formValues } = await Swal.fire({
+    title: "Add New Species",
+    html: `
+      <input id="swal-species-name" class="swal2-input" placeholder="Species Name">
+    `,
+    focusConfirm: false,
+    preConfirm: () => {
+      const name = document.getElementById("swal-species-name").value.trim();
+      if (!name) {
+        Swal.showValidationMessage("Species Name is required");
+        return false;
+      }
+      return { name };
+    }
+  });
+
+  if (formValues) {
+    try {
+      await addDoc(collection(db, "Species"), {
+        name: formValues.name,
+        status: "Active",
+        createdAt: serverTimestamp(),
+        breeds: [] // initialize empty breed list
+      });
+      Swal.fire("Success!", "Species added successfully.", "success");
+    } catch (error) {
+      console.error("Error adding species:", error);
+      Swal.fire("Error", "Failed to add species.", "error");
+    }
+  }
+});
+
+// ✅ Real-time Listener
+onSnapshot(collection(db, "Species"), (snapshot) => {
+  speciesTable.innerHTML = "";
+  let activeCount = 0;
+  let inactiveCount = 0;
+
+  snapshot.forEach((docSnap) => {
+    const data = docSnap.data();
+    renderSpeciesRow(docSnap.id, data);
+
+    if (data.status === "Active") activeCount++;
+    else inactiveCount++;
+  });
+
+  totalSpecies.textContent = snapshot.size;
+  activeSpecies.textContent = activeCount;
+  inactiveSpecies.textContent = inactiveCount;
+});
 
 
+
+
+// ---------------- Load Existing Services ----------------
+async function loadServices() {
+  const servicesRef = collection(db, "Services");
+  const snapshot = await getDocs(servicesRef);
+  const tableBody = document.getElementById("servicesTable");
+  tableBody.innerHTML = "";
+
+  let total = 0, active = 0, inactive = 0;
+
+  snapshot.forEach((docSnap) => {
+    const service = docSnap.data();
+    const id = docSnap.id;
+
+    total++;
+
+    // Default to Active if no status field
+    const status = service.status || "Active";
+    if (status === "Active") active++;
+    else inactive++;
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${service.name}</td>
+      <td>${service.duration || "—"}</td>
+      <td>${status}</td>
+      <td>
+        <button class="btn-edit" data-id="${id}">Edit Duration</button>
+        <button class="btn-status" data-id="${id}" data-status="${status}">
+          ${status === "Active" ? "Deactivate" : "Activate"}
+        </button>
+      </td>
+    `;
+    tableBody.appendChild(tr);
+  });
+
+  document.getElementById("totalServices").textContent = total;
+  document.getElementById("activeServices").textContent = active;
+  document.getElementById("inactiveServices").textContent = inactive;
+
+  // Edit duration
+  document.querySelectorAll(".btn-edit").forEach((btn) => {
+    btn.addEventListener("click", () => openDurationEditor(btn.dataset.id));
+  });
+
+  // Activate / Deactivate
+  document.querySelectorAll(".btn-status").forEach((btn) => {
+    btn.addEventListener("click", () =>
+      toggleServiceStatus(btn.dataset.id, btn.dataset.status)
+    );
+  });
+}
+
+// ---------------- Edit Duration (SweetAlert) ----------------
+async function openDurationEditor(serviceId) {
+  const serviceDoc = doc(db, "Services", serviceId);
+  const servicesRef = collection(db, "Services");
+  const snapshot = await getDocs(servicesRef);
+  const service = snapshot.docs.find((d) => d.id === serviceId).data();
+
+  const { value: newDuration } = await Swal.fire({
+    title: `Edit Duration for "${service.name}"`,
+    input: "number",
+    inputLabel: "Enter new duration (in minutes)",
+    inputValue: service.duration || "",
+    inputAttributes: { min: 1 },
+    showCancelButton: true,
+    confirmButtonText: "Save",
+    cancelButtonText: "Cancel",
+    inputValidator: (value) => {
+      if (!value || value <= 0) return "Please enter a valid duration.";
+    },
+  });
+
+  if (newDuration) {
+    await updateDoc(serviceDoc, { duration: parseInt(newDuration) });
+    Swal.fire("✅ Updated!", "Service duration updated successfully.", "success");
+    loadServices();
+  }
+}
+
+// ---------------- Activate / Deactivate Service ----------------
+async function toggleServiceStatus(serviceId, currentStatus) {
+  const serviceDoc = doc(db, "Services", serviceId);
+  const newStatus = currentStatus === "Active" ? "Inactive" : "Active";
+
+  const confirm = await Swal.fire({
+    title: `${newStatus === "Active" ? "Activate" : "Deactivate"} this service?`,
+    text:
+      newStatus === "Active"
+        ? "This service will now be available for booking."
+        : "This service will no longer appear for clients.",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: `Yes, ${newStatus.toLowerCase()} it`,
+    cancelButtonText: "Cancel",
+  });
+
+  if (confirm.isConfirmed) {
+    await updateDoc(serviceDoc, { status: newStatus });
+    Swal.fire(
+      "Done!",
+      `Service has been marked as ${newStatus}.`,
+      "success"
+    );
+    loadServices();
+  }
+}
+
+// ---------------- Add New Service ----------------
+document.getElementById("addServiceBtn").addEventListener("click", async () => {
+  const { value: formValues } = await Swal.fire({
+    title: "Add New Service",
+    html: `
+      <input id="swal-service-name" class="swal2-input" placeholder="Service Name">
+      <input id="swal-service-duration" type="number" min="1" class="swal2-input" placeholder="Duration (in minutes)">
+    `,
+    focusConfirm: false,
+    showCancelButton: true,
+    confirmButtonText: "Add Service",
+    cancelButtonText: "Cancel",
+    preConfirm: () => {
+      const name = document.getElementById("swal-service-name").value.trim();
+      const duration = parseInt(document.getElementById("swal-service-duration").value);
+      
+      if (!name) {
+        Swal.showValidationMessage("Please enter a service name");
+        return false;
+      }
+      if (!duration || duration <= 0) {
+        Swal.showValidationMessage("Please enter a valid duration");
+        return false;
+      }
+
+      return { name, duration };
+    },
+  });
+
+  if (formValues) {
+    const { name, duration } = formValues;
+
+    // Add to Firestore
+    await addDoc(collection(db, "Services"), {
+      name,
+      duration,
+      status: "Active",
+      createdAt: serverTimestamp(),
+    });
+
+    Swal.fire("✅ Added!", "New service has been added successfully.", "success");
+    loadServices();
+  }
+});
+
+// ---------------- Initialize ----------------
+window.addEventListener("DOMContentLoaded", loadServices);
