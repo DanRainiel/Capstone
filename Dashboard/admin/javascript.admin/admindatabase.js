@@ -1455,6 +1455,7 @@ allAppointments.sort((a, b) => {
   const statusOrder = { 
     pending: 1,
     "in progress": 2,
+    "no show": 3,       // ← added here
     cancelled: 98,
     completed: 99
   };
@@ -1480,6 +1481,7 @@ allAppointments.sort((a, b) => {
 allAppointments.forEach((apt) => {
   const rowHTML = renderRow(apt, apt.type, apt.id);
 });
+
 
 // ==============================
 // 🔹 CONFIG
