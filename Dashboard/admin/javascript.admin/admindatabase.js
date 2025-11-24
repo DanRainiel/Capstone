@@ -1455,7 +1455,8 @@ allAppointments.sort((a, b) => {
   const statusOrder = { 
     pending: 1,
     "in progress": 2,
-    "no show": 3,       // ← added here
+    confirmed: 3, 
+    "no show": 4,        // ← now placed AFTER confirmed
     cancelled: 98,
     completed: 99
   };
