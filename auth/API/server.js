@@ -542,8 +542,8 @@ app.get("/health", (req, res) => {
 // ✅ Server Startup
 // ---------------------------
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`🚀 Email Server running on http://localhost:${PORT}`);
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`🚀 Email Server running on http://0.0.0.0:${PORT}`);
   console.log(`📧 SMTP User: ${process.env.SMTP_USER}`);
   console.log("✅ Email service ready with:");
   console.log("   - OTP verification (login, registration, password_reset)");
@@ -551,7 +551,8 @@ app.listen(PORT, () => {
   console.log("   - Login verification system");
   console.log("");
   console.log("🎯 TEST THE FIX:");
-  console.log("   Send POST to http://localhost:3000/test-appointment-email");
-  console.log("   Or POST to http://localhost:3000/send-otp with:");
+  console.log("   Access from other devices on the same network using your LAN IP:");
+  console.log(`   http://<YOUR_LAN_IP>:${PORT}/test-appointment-email`);
+  console.log("   Or POST to /send-otp with:");
   console.log('   { "email": "user@example.com", "userId": "Test User", "purpose": "appointment_accepted" }');
 });

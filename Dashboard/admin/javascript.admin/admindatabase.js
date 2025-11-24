@@ -1450,13 +1450,13 @@ function getCreatedAtFromId(id) {
   return new Date(iso);
 }
 
+
 // ✅ Sort by status first, then latest created first
 allAppointments.sort((a, b) => {
   const statusOrder = { 
     pending: 1,
     "in progress": 2,
-    confirmed: 3, 
-    "no show": 4,        // ← now placed AFTER confirmed
+    "no show": 3,
     cancelled: 98,
     completed: 99
   };
@@ -1464,15 +1464,13 @@ allAppointments.sort((a, b) => {
   const aStatus = statusOrder[a.status?.toLowerCase()] || 50;
   const bStatus = statusOrder[b.status?.toLowerCase()] || 50;
 
-  // 1. Sort by status order
   if (aStatus !== bStatus) return aStatus - bStatus;
 
-  // 2. Sort by createdAt (descending)
   const aCreated = getCreatedAtFromId(a.id);
   const bCreated = getCreatedAtFromId(b.id);
 
   if (aCreated && bCreated) {
-    return bCreated - aCreated; // newest first
+    return bCreated - aCreated;
   }
 
   return 0;
@@ -1494,6 +1492,8 @@ const tableConfigs = {
   history: { tableId: "historytable", page: 1, containerId: "pagination-history" },
   walkin: { tableId: "walkinTableBody", page: 1, containerId: "pagination-walkin" },
 };
+
+
 
 // ==============================
 // 🔹 PAGINATION HELPERS
@@ -1906,6 +1906,7 @@ document.addEventListener("click", async (e) => {
 
   loadAllAppointments();
 });
+
 
 
   document.addEventListener("click", async (e) => {
@@ -4735,6 +4736,8 @@ document.getElementById("addServiceBtn").addEventListener("click", async () => {
     loadServices();
   }
 });
+
+
 
 // ---------------- Initialize ----------------
 window.addEventListener("DOMContentLoaded", loadServices);

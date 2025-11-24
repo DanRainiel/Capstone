@@ -1229,3 +1229,36 @@
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
     }
+
+    .status {
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .status.pending {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .status.completed {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .status.cancelled {
+        background: #f8d7da;
+        color: #721c24;
+}
+
+ .status.In Progress {
+        background: #f8d7da;
+        color: var(--orange);
+}
+
+.status.for-rescheduling {
+    background: #f8d7da;
+    color: var(--orange);
+}
